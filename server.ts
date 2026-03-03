@@ -283,6 +283,17 @@ async function startServer() {
     }
   });
 
+  app.put('/api/locations/:id', (req, res) => {
+    try {
+      const { id } = req.params;
+      const { name } = req.body;
+      db.prepare('UPDATE locations SET name = ? WHERE id = ?').run(name, id);
+      res.json({ success: true });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   app.get('/api/assets', (req, res) => {
     try {
       res.json(db.prepare('SELECT * FROM assets').all());
@@ -304,6 +315,17 @@ async function startServer() {
       const { name } = req.body;
       const result = db.prepare('INSERT INTO categories (name) VALUES (?)').run(name);
       res.json({ id: result.lastInsertRowid, name });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.put('/api/categories/:id', (req, res) => {
+    try {
+      const { id } = req.params;
+      const { name } = req.body;
+      db.prepare('UPDATE categories SET name = ? WHERE id = ?').run(name, id);
+      res.json({ success: true });
     } catch (error: any) {
       res.status(500).json({ error: error.message });
     }

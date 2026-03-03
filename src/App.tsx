@@ -25,7 +25,8 @@ import {
   Download,
   Camera,
   Sun,
-  Moon
+  Moon,
+  RotateCcw
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import jsPDF from 'jspdf';
@@ -181,8 +182,10 @@ const Inventory = ({
   onUpdateProduct,
   onDeleteProduct,
   onAddCategory,
+  onUpdateCategory,
   onAddSupplier,
   onAddLocation,
+  onUpdateLocation,
   onStockIn,
   onStockOut 
 }: { 
@@ -196,8 +199,10 @@ const Inventory = ({
   onUpdateProduct: (id: number, p: Partial<Product>) => Promise<void>,
   onDeleteProduct: (id: number) => Promise<void>,
   onAddCategory: (name: string) => Promise<void>,
+  onUpdateCategory: (id: number, name: string) => Promise<void>,
   onAddSupplier: (name: string) => Promise<void>,
   onAddLocation: (name: string) => Promise<void>,
+  onUpdateLocation: (id: number, name: string) => Promise<void>,
   onStockIn: (data: any) => Promise<void>,
   onStockOut: (data: any) => Promise<void>
 }) => {
@@ -206,6 +211,9 @@ const Inventory = ({
   const [isStockInModalOpen, setIsStockInModalOpen] = useState(false);
   const [isStockOutModalOpen, setIsStockOutModalOpen] = useState(false);
   const [isMinStockModalOpen, setIsMinStockModalOpen] = useState(false);
+  const [isPdfOptionsModalOpen, setIsPdfOptionsModalOpen] = useState(false);
+  const [selectedPdfFields, setSelectedPdfFields] = useState<string[]>(['id', 'name', 'category', 'quantity', 'unit', 'cost_price', 'status']);
+  const [includeTotalValue, setIncludeTotalValue] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [activeMenuId, setActiveMenuId] = useState<number | null>(null);
   const [menuPosition, setMenuPosition] = useState<{ top: number, left: number } | null>(null);
@@ -213,8 +221,12 @@ const Inventory = ({
   const [productError, setProductError] = useState<string | null>(null);
   const [stockInError, setStockInError] = useState<string | null>(null);
   const [isAddingCategory, setIsAddingCategory] = useState(false);
+  const [isEditingCategory, setIsEditingCategory] = useState(false);
+  const [editingCategoryId, setEditingCategoryId] = useState<number | null>(null);
   const [isAddingSupplier, setIsAddingSupplier] = useState(false);
   const [isAddingLocation, setIsAddingLocation] = useState(false);
+  const [isEditingLocation, setIsEditingLocation] = useState(false);
+  const [editingLocationId, setEditingLocationId] = useState<number | null>(null);
   const [newCategoryName, setNewCategoryName] = useState('');
   const [newSupplierName, setNewSupplierName] = useState('');
   const [newLocationName, setNewLocationName] = useState('');
@@ -225,6 +237,8 @@ const Inventory = ({
   const [isLoadingMovements, setIsLoadingMovements] = useState(false);
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
+  const [movementTypeFilter, setMovementTypeFilter] = useState<'ALL' | 'IN' | 'OUT'>('ALL');
+  const [movementLocationFilter, setMovementLocationFilter] = useState<string>('ALL');
   const fileInputRef = React.useRef<HTMLInputElement>(null);
   
   const [formData, setFormData] = useState({
@@ -232,6 +246,7 @@ const Inventory = ({
     category: '',
     unit: 'un',
     photo: '',
+    cost_price: 0,
     min_quantity: null as number | null
   });
 
@@ -242,6 +257,7 @@ const Inventory = ({
         category: editingProduct.category,
         unit: editingProduct.unit,
         photo: editingProduct.photo || '',
+        cost_price: editingProduct.cost_price,
         min_quantity: editingProduct.min_quantity
       });
     } else {
@@ -250,6 +266,7 @@ const Inventory = ({
         category: '',
         unit: 'un',
         photo: '',
+        cost_price: 0,
         min_quantity: null
       });
     }
@@ -351,10 +368,17 @@ const Inventory = ({
 
   const handleAddCategory = async () => {
     if (newCategoryName.trim()) {
-      await onAddCategory(newCategoryName.trim());
+      if (isEditingCategory && editingCategoryId) {
+        await onUpdateCategory(editingCategoryId, newCategoryName.trim());
+        // Update local state if needed, but fetchData will handle it
+      } else {
+        await onAddCategory(newCategoryName.trim());
+      }
       setFormData({ ...formData, category: newCategoryName.trim() });
       setNewCategoryName('');
       setIsAddingCategory(false);
+      setIsEditingCategory(false);
+      setEditingCategoryId(null);
     }
   };
 
@@ -368,9 +392,16 @@ const Inventory = ({
 
   const handleAddLocation = async () => {
     if (newLocationName.trim()) {
-      await onAddLocation(newLocationName.trim());
+      if (isEditingLocation && editingLocationId) {
+        await onUpdateLocation(editingLocationId, newLocationName.trim());
+      } else {
+        await onAddLocation(newLocationName.trim());
+      }
+      setStockInData({ ...stockInData, location: newLocationName.trim() });
       setNewLocationName('');
       setIsAddingLocation(false);
+      setIsEditingLocation(false);
+      setEditingLocationId(null);
     }
   };
 
@@ -406,29 +437,55 @@ const Inventory = ({
 
   const handleExportPDF = () => {
     const doc = new jsPDF();
-    const tableColumn = ['ID', 'Nome', 'Categoria', 'Estoque', 'Unidade', 'V. Unitário', 'Mínimo', 'Status'];
-    const tableRows = filteredProducts.map(p => [
-      p.id,
-      p.name,
-      p.category,
-      p.quantity,
-      p.unit,
-      `R$ ${p.cost_price.toFixed(2)}`,
-      p.min_quantity ?? '-',
-      (p.min_quantity !== null && p.quantity <= p.min_quantity) ? 'Estoque Baixo' : 'Normal'
-    ]);
+    
+    const fieldLabels: Record<string, string> = {
+      id: 'ID',
+      code: 'Código',
+      name: 'Nome',
+      category: 'Categoria',
+      quantity: 'Estoque',
+      unit: 'Unidade',
+      cost_price: 'V. Unitário',
+      min_quantity: 'Mínimo',
+      expiry_date: 'Validade',
+      status: 'Status',
+      total_value: 'V. Total'
+    };
+
+    const activeFields = [...selectedPdfFields];
+    if (includeTotalValue && !activeFields.includes('total_value')) {
+      activeFields.push('total_value');
+    }
+
+    const tableColumn = activeFields.map(field => fieldLabels[field] || field);
+    
+    const tableRows = filteredProducts.map(p => {
+      return activeFields.map(field => {
+        if (field === 'cost_price') return `R$ ${p.cost_price.toFixed(2)}`;
+        if (field === 'total_value') return `R$ ${(p.quantity * p.cost_price).toFixed(2)}`;
+        if (field === 'min_quantity') return p.min_quantity ?? '-';
+        if (field === 'expiry_date') return p.expiry_date ? new Date(p.expiry_date).toLocaleDateString('pt-BR') : '-';
+        if (field === 'status') return (p.min_quantity !== null && p.quantity <= p.min_quantity) ? 'Estoque Baixo' : 'Normal';
+        return (p as any)[field] ?? '-';
+      });
+    });
 
     autoTable(doc, {
       head: [tableColumn],
       body: tableRows,
-      startY: 20,
+      startY: 25,
       theme: 'grid',
-      styles: { fontSize: 8, cellPadding: 2 },
+      styles: { fontSize: 7, cellPadding: 2 },
       headStyles: { fillColor: [24, 24, 27], textColor: [255, 255, 255] },
     });
 
+    doc.setFontSize(14);
     doc.text('Relatório de Estoque', 14, 15);
+    doc.setFontSize(10);
+    doc.text(`Gerado em: ${new Date().toLocaleString('pt-BR')}`, 14, 21);
+    
     doc.save(`estoque_${new Date().toISOString().split('T')[0]}.pdf`);
+    setIsPdfOptionsModalOpen(false);
   };
 
   const handleExportMovementsPDF = () => {
@@ -542,9 +599,14 @@ const Inventory = ({
       
       const matchesDate = (!start || movementDate >= start) && (!end || movementDate <= end);
       
-      return matchesSearch && matchesDate;
+      const matchesType = movementTypeFilter === 'ALL' || m.type === movementTypeFilter;
+      
+      const mLoc = m.type === 'IN' ? m.location : null;
+      const matchesLocation = movementLocationFilter === 'ALL' || mLoc === movementLocationFilter;
+      
+      return matchesSearch && matchesDate && matchesType && matchesLocation;
     });
-  }, [movements, searchTerm, startDate, endDate]);
+  }, [movements, searchTerm, startDate, endDate, movementTypeFilter, movementLocationFilter]);
 
   return (
     <>
@@ -587,7 +649,28 @@ const Inventory = ({
               />
             </div>
             {activeSubTab === 'movements' && (
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
+                <select
+                  value={movementTypeFilter}
+                  onChange={(e) => setMovementTypeFilter(e.target.value as any)}
+                  className="px-3 py-2 bg-zinc-50 border border-zinc-200 rounded-xl text-sm focus:ring-2 focus:ring-zinc-900 outline-none dark:bg-zinc-800 dark:border-zinc-700 dark:text-zinc-100 dark:focus:ring-zinc-100"
+                >
+                  <option value="ALL">Todos os Tipos</option>
+                  <option value="IN">Entrada</option>
+                  <option value="OUT">Saída</option>
+                </select>
+
+                <select
+                  value={movementLocationFilter}
+                  onChange={(e) => setMovementLocationFilter(e.target.value)}
+                  className="px-3 py-2 bg-zinc-50 border border-zinc-200 rounded-xl text-sm focus:ring-2 focus:ring-zinc-900 outline-none dark:bg-zinc-800 dark:border-zinc-700 dark:text-zinc-100 dark:focus:ring-zinc-100"
+                >
+                  <option value="ALL">Todas as Localizações</option>
+                  {locations.map(loc => (
+                    <option key={loc.id} value={loc.name}>{loc.name}</option>
+                  ))}
+                </select>
+
                 <input 
                   type="date" 
                   value={startDate}
@@ -601,9 +684,14 @@ const Inventory = ({
                   onChange={(e) => setEndDate(e.target.value)}
                   className="px-3 py-2 bg-zinc-50 border border-zinc-200 rounded-xl text-sm focus:ring-2 focus:ring-zinc-900 outline-none dark:bg-zinc-800 dark:border-zinc-700 dark:text-zinc-100 dark:focus:ring-zinc-100"
                 />
-                {(startDate || endDate) && (
+                {(startDate || endDate || movementTypeFilter !== 'ALL' || movementLocationFilter !== 'ALL') && (
                   <button 
-                    onClick={() => { setStartDate(''); setEndDate(''); }}
+                    onClick={() => { 
+                      setStartDate(''); 
+                      setEndDate(''); 
+                      setMovementTypeFilter('ALL');
+                      setMovementLocationFilter('ALL');
+                    }}
                     className="p-2 text-zinc-400 hover:text-rose-600 dark:text-zinc-500 dark:hover:text-rose-400 transition-colors"
                     title="Limpar filtros"
                   >
@@ -617,7 +705,7 @@ const Inventory = ({
             {activeSubTab === 'products' ? (
               <>
                 <button 
-                  onClick={handleExportPDF}
+                  onClick={() => setIsPdfOptionsModalOpen(true)}
                   className="flex items-center gap-2 px-4 py-2 text-sm font-bold text-zinc-600 bg-zinc-100 rounded-xl hover:bg-zinc-200 transition-colors dark:text-zinc-300 dark:bg-zinc-800 dark:hover:bg-zinc-700"
                 >
                   <FileText size={18} />
@@ -857,7 +945,7 @@ const Inventory = ({
                             left: menuPosition.left,
                             position: 'fixed'
                           }}
-                          className="w-48 bg-white border border-zinc-200 rounded-xl shadow-xl z-[210] overflow-hidden"
+                          className="w-48 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl shadow-xl z-[210] overflow-hidden"
                         >
                           <div className="p-1.5">
                             <button
@@ -867,7 +955,7 @@ const Inventory = ({
                                 setActiveMenuId(null);
                                 setMenuPosition(null);
                               }}
-                              className="flex items-center gap-2 w-full px-3 py-2 text-sm text-zinc-600 hover:bg-zinc-50 hover:text-zinc-900 rounded-lg transition-colors"
+                              className="flex items-center gap-2 w-full px-3 py-2 text-sm text-zinc-600 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-800 hover:text-zinc-900 dark:hover:text-zinc-100 rounded-lg transition-colors"
                             >
                               <Settings size={14} />
                               Estoque Mínimo
@@ -879,19 +967,19 @@ const Inventory = ({
                                 setActiveMenuId(null);
                                 setMenuPosition(null);
                               }}
-                              className="flex items-center gap-2 w-full px-3 py-2 text-sm text-zinc-600 hover:bg-zinc-50 hover:text-zinc-900 rounded-lg transition-colors"
+                              className="flex items-center gap-2 w-full px-3 py-2 text-sm text-zinc-600 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-800 hover:text-zinc-900 dark:hover:text-zinc-100 rounded-lg transition-colors"
                             >
                               <Edit size={14} />
                               Editar
                             </button>
-                            <div className="h-px bg-zinc-100 my-1" />
+                            <div className="h-px bg-zinc-100 dark:bg-zinc-800 my-1" />
                             <button
                               onClick={() => {
                                 onDeleteProduct(p.id);
                                 setActiveMenuId(null);
                                 setMenuPosition(null);
                               }}
-                              className="flex items-center gap-2 w-full px-3 py-2 text-sm text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
+                              className="flex items-center gap-2 w-full px-3 py-2 text-sm text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-500/10 rounded-lg transition-colors"
                             >
                               <Trash2 size={14} />
                               Excluir
@@ -961,12 +1049,16 @@ const Inventory = ({
       {/* Modal Detalhes do Produto */}
       <AnimatePresence>
         {selectedProductForDetail && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+          <div 
+            onClick={() => setSelectedProductForDetail(null)}
+            className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm cursor-pointer"
+          >
             <motion.div
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
-              className="bg-white dark:bg-zinc-900 rounded-2xl shadow-xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col border dark:border-zinc-800"
+              onClick={(e) => e.stopPropagation()}
+              className="bg-white dark:bg-zinc-900 rounded-2xl shadow-xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col border dark:border-zinc-800 cursor-default"
             >
               <div className="px-6 py-4 border-b border-zinc-100 dark:border-zinc-800 flex items-center justify-between flex-shrink-0">
                 <div className="flex items-center gap-3">
@@ -1039,6 +1131,18 @@ const Inventory = ({
                       <p className="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider mb-1">Data de Validade</p>
                       <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
                         {selectedProductForDetail.expiry_date ? new Date(selectedProductForDetail.expiry_date).toLocaleDateString('pt-BR') : 'Não informada'}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider mb-1">Valor Unitário</p>
+                      <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
+                        R$ {selectedProductForDetail.cost_price.toFixed(2)}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider mb-1">Valor Total</p>
+                      <p className="text-sm font-bold text-emerald-600 dark:text-emerald-400">
+                        R$ {(selectedProductForDetail.quantity * selectedProductForDetail.cost_price).toFixed(2)}
                       </p>
                     </div>
                   </div>
@@ -1299,8 +1403,31 @@ const Inventory = ({
                           </select>
                           <button 
                             type="button"
-                            onClick={() => setIsAddingLocation(true)}
+                            onClick={() => {
+                              const selectedLoc = locations.find(l => l.name === stockInData.location);
+                              if (selectedLoc) {
+                                setNewLocationName(selectedLoc.name);
+                                setEditingLocationId(selectedLoc.id);
+                                setIsEditingLocation(true);
+                                setIsAddingLocation(true);
+                              }
+                            }}
+                            disabled={!stockInData.location}
+                            className="px-3 py-2 bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 rounded-lg hover:bg-zinc-200 dark:hover:bg-zinc-700 disabled:opacity-50"
+                            title="Editar local selecionado"
+                          >
+                            <Edit size={16} />
+                          </button>
+                          <button 
+                            type="button"
+                            onClick={() => {
+                              setIsAddingLocation(true);
+                              setIsEditingLocation(false);
+                              setEditingLocationId(null);
+                              setNewLocationName('');
+                            }}
                             className="px-3 py-2 bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 rounded-lg hover:bg-zinc-800 dark:hover:bg-zinc-200"
+                            title="Adicionar novo local"
                           >
                             <Plus size={16} />
                           </button>
@@ -1557,8 +1684,31 @@ const Inventory = ({
                           </select>
                           <button 
                             type="button"
-                            onClick={() => setIsAddingCategory(true)}
+                            onClick={() => {
+                              const selectedCat = categories.find(c => c.name === formData.category);
+                              if (selectedCat) {
+                                setNewCategoryName(selectedCat.name);
+                                setEditingCategoryId(selectedCat.id);
+                                setIsEditingCategory(true);
+                                setIsAddingCategory(true);
+                              }
+                            }}
+                            disabled={!formData.category}
+                            className="px-3 py-2 bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 rounded-lg hover:bg-zinc-200 dark:hover:bg-zinc-700 disabled:opacity-50"
+                            title="Editar categoria selecionada"
+                          >
+                            <Edit size={16} />
+                          </button>
+                          <button 
+                            type="button"
+                            onClick={() => {
+                              setIsAddingCategory(true);
+                              setIsEditingCategory(false);
+                              setEditingCategoryId(null);
+                              setNewCategoryName('');
+                            }}
                             className="px-3 py-2 bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 rounded-lg hover:bg-emerald-800 dark:hover:bg-emerald-700"
+                            title="Adicionar nova categoria"
                           >
                             <Plus size={16} />
                           </button>
@@ -1580,6 +1730,22 @@ const Inventory = ({
                       <option value="kg">Quilo (kg)</option>
                       <option value="cx">Caixa (cx)</option>
                     </select>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase">Valor Unitário (Custo)</label>
+                    <div className="relative">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400 text-sm">R$</span>
+                      <input 
+                        required
+                        type="number" 
+                        step="0.01"
+                        min="0"
+                        value={formData.cost_price}
+                        onChange={e => setFormData({...formData, cost_price: parseFloat(e.target.value) || 0})}
+                        className="w-full pl-9 pr-3 py-2 text-sm border border-zinc-200 dark:border-zinc-800 rounded-lg focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-100 outline-none bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100"
+                      />
+                    </div>
                   </div>
 
                   <div className="space-y-1.5">
@@ -1676,6 +1842,91 @@ const Inventory = ({
         )}
       </AnimatePresence>
 
+      {/* Modal Opções de PDF */}
+      <AnimatePresence>
+        {isPdfOptionsModalOpen && (
+          <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="bg-white dark:bg-zinc-900 rounded-2xl shadow-xl w-full max-w-md max-h-[90vh] overflow-hidden flex flex-col border dark:border-zinc-800"
+            >
+              <div className="px-6 py-4 border-b border-zinc-100 dark:border-zinc-800 flex items-center justify-between flex-shrink-0">
+                <h2 className="text-lg font-bold text-zinc-900 dark:text-zinc-100">Configurar Relatório PDF</h2>
+                <button onClick={() => setIsPdfOptionsModalOpen(false)} className="text-zinc-400 hover:text-zinc-600 dark:text-zinc-500 dark:hover:text-zinc-300">
+                  <X size={20} />
+                </button>
+              </div>
+              <div className="p-6 space-y-6 overflow-y-auto flex-1">
+                <div className="space-y-3">
+                  <label className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">Campos do Relatório</label>
+                  <div className="grid grid-cols-2 gap-3">
+                    {[
+                      { id: 'id', label: 'ID' },
+                      { id: 'code', label: 'Código' },
+                      { id: 'name', label: 'Nome' },
+                      { id: 'category', label: 'Categoria' },
+                      { id: 'quantity', label: 'Estoque' },
+                      { id: 'unit', label: 'Unidade' },
+                      { id: 'cost_price', label: 'V. Unitário' },
+                      { id: 'min_quantity', label: 'Mínimo' },
+                      { id: 'expiry_date', label: 'Validade' },
+                      { id: 'status', label: 'Status' },
+                    ].map((field) => (
+                      <label key={field.id} className="flex items-center gap-2 cursor-pointer group">
+                        <input 
+                          type="checkbox"
+                          checked={selectedPdfFields.includes(field.id)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setSelectedPdfFields([...selectedPdfFields, field.id]);
+                            } else {
+                              setSelectedPdfFields(selectedPdfFields.filter(f => f !== field.id));
+                            }
+                          }}
+                          className="w-4 h-4 rounded border-zinc-300 dark:border-zinc-700 text-zinc-900 dark:text-zinc-100 focus:ring-zinc-900 dark:focus:ring-zinc-100"
+                        />
+                        <span className="text-sm text-zinc-600 dark:text-zinc-400 group-hover:text-zinc-900 dark:group-hover:text-zinc-100 transition-colors">{field.label}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="space-y-3 pt-4 border-t border-zinc-100 dark:border-zinc-800">
+                  <label className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">Opções Adicionais</label>
+                  <label className="flex items-center gap-2 cursor-pointer group">
+                    <input 
+                      type="checkbox"
+                      checked={includeTotalValue}
+                      onChange={(e) => setIncludeTotalValue(e.target.checked)}
+                      className="w-4 h-4 rounded border-zinc-300 dark:border-zinc-700 text-zinc-900 dark:text-zinc-100 focus:ring-zinc-900 dark:focus:ring-zinc-100"
+                    />
+                    <span className="text-sm text-zinc-600 dark:text-zinc-400 group-hover:text-zinc-900 dark:group-hover:text-zinc-100 transition-colors">Incluir Valor Total (Qtd x V. Unit)</span>
+                  </label>
+                </div>
+
+                <div className="flex gap-3 pt-4">
+                  <button 
+                    onClick={() => setIsPdfOptionsModalOpen(false)}
+                    className="flex-1 px-4 py-2 text-sm font-medium text-zinc-600 dark:text-zinc-400 bg-zinc-100 dark:bg-zinc-800 rounded-lg hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors"
+                  >
+                    Cancelar
+                  </button>
+                  <button 
+                    onClick={handleExportPDF}
+                    disabled={selectedPdfFields.length === 0 && !includeTotalValue}
+                    className="flex-1 px-4 py-2 text-sm font-medium text-white bg-zinc-900 dark:bg-zinc-100 dark:text-zinc-900 rounded-lg hover:bg-zinc-800 dark:hover:bg-zinc-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Gerar PDF
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
       {/* Modal Estoque Mínimo */}
       <AnimatePresence>
         {isMinStockModalOpen && editingProduct && (
@@ -1684,14 +1935,14 @@ const Inventory = ({
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
-              className="bg-white rounded-2xl shadow-xl w-full max-w-sm max-h-[90vh] overflow-hidden flex flex-col"
+              className="bg-white dark:bg-zinc-900 rounded-2xl shadow-xl w-full max-w-sm max-h-[90vh] overflow-hidden flex flex-col border dark:border-zinc-800"
             >
-              <div className="px-6 py-4 border-b border-zinc-100 flex items-center justify-between flex-shrink-0">
-                <h2 className="text-lg font-bold text-zinc-900">Estoque Mínimo</h2>
+              <div className="px-6 py-4 border-b border-zinc-100 dark:border-zinc-800 flex items-center justify-between flex-shrink-0">
+                <h2 className="text-lg font-bold text-zinc-900 dark:text-zinc-100">Estoque Mínimo</h2>
                 <button onClick={() => {
                   setIsMinStockModalOpen(false);
                   setEditingProduct(null);
-                }} className="text-zinc-400 hover:text-zinc-600">
+                }} className="text-zinc-400 hover:text-zinc-600 dark:text-zinc-500 dark:hover:text-zinc-300">
                   <X size={20} />
                 </button>
               </div>
@@ -1976,6 +2227,19 @@ export default function App() {
     }
   }, [isDarkMode]);
 
+  useEffect(() => {
+    const lockOrientation = async () => {
+      try {
+        if (screen.orientation && (screen.orientation as any).lock) {
+          await (screen.orientation as any).lock('landscape');
+        }
+      } catch (err) {
+        // This often fails if not in fullscreen or not supported, which is expected
+      }
+    };
+    lockOrientation();
+  }, []);
+
   const [activeTab, setActiveTab] = useState('dashboard');
   const [stats, setStats] = useState<any>(null);
   const [products, setProducts] = useState<Product[]>([]);
@@ -2080,6 +2344,21 @@ export default function App() {
     }
   };
 
+  const updateCategory = async (id: number, name: string) => {
+    try {
+      const res = await fetch(`/api/categories/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name })
+      });
+      if (res.ok) {
+        fetchData();
+      }
+    } catch (err) {
+      console.error('Error updating category:', err);
+    }
+  };
+
   const addSupplier = async (name: string) => {
     try {
       const res = await fetch('/api/suppliers', {
@@ -2107,6 +2386,21 @@ export default function App() {
       }
     } catch (err) {
       console.error('Error adding location:', err);
+    }
+  };
+
+  const updateLocation = async (id: number, name: string) => {
+    try {
+      const res = await fetch(`/api/locations/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name })
+      });
+      if (res.ok) {
+        fetchData();
+      }
+    } catch (err) {
+      console.error('Error updating location:', err);
     }
   };
 
@@ -2193,8 +2487,10 @@ export default function App() {
           onUpdateProduct={handleUpdateProduct}
           onDeleteProduct={handleDeleteProduct}
           onAddCategory={addCategory} 
+          onUpdateCategory={updateCategory}
           onAddSupplier={addSupplier}
           onAddLocation={addLocation}
+          onUpdateLocation={updateLocation}
           onStockIn={handleStockIn}
           onStockOut={handleStockOut}
         />
@@ -2249,7 +2545,33 @@ export default function App() {
   };
 
   return (
-    <div className="flex h-screen bg-zinc-50 font-sans text-zinc-900 dark:bg-zinc-950 dark:text-zinc-100 transition-colors duration-300">
+    <>
+      <div id="portrait-warning">
+        <div className="bg-zinc-800/50 p-6 rounded-3xl border border-zinc-700/50 shadow-2xl backdrop-blur-xl">
+          <div className="w-20 h-20 bg-zinc-100 rounded-2xl flex items-center justify-center mx-auto mb-6 animate-bounce">
+            <RotateCcw className="text-zinc-900" size={40} />
+          </div>
+          <h2 className="text-2xl font-bold mb-3">Gire seu dispositivo</h2>
+          <p className="text-zinc-400 text-sm max-w-[240px] mx-auto leading-relaxed">
+            Esta aplicação foi otimizada para visualização em modo <span className="text-white font-semibold">paisagem (deitado)</span> para oferecer a melhor experiência de gestão.
+          </p>
+        </div>
+      </div>
+
+      <div className="flex h-screen bg-zinc-50 font-sans text-zinc-900 dark:bg-zinc-950 dark:text-zinc-100 transition-colors duration-300">
+      {/* Mobile Overlay */}
+      <AnimatePresence>
+        {isSidebarOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setIsSidebarOpen(false)}
+            className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm lg:hidden"
+          />
+        )}
+      </AnimatePresence>
+
       {/* Sidebar */}
       <aside className={cn(
         "fixed inset-y-0 left-0 z-50 w-64 bg-white border-r border-zinc-200 transition-transform lg:relative lg:translate-x-0 dark:bg-zinc-900 dark:border-zinc-800",
@@ -2268,14 +2590,14 @@ export default function App() {
             </button>
           </div>
 
-          <nav className="flex-1 px-4 space-y-1">
-            <SidebarItem icon={LayoutDashboard} label="Dashboard" active={activeTab === 'dashboard'} onClick={() => setActiveTab('dashboard')} />
-            <SidebarItem icon={ClipboardList} label="Kanban" active={activeTab === 'kanban'} onClick={() => setActiveTab('kanban')} />
-            <SidebarItem icon={FileText} label="Ordem de Produção" active={activeTab === 'production'} onClick={() => setActiveTab('production')} />
-            <SidebarItem icon={Users} label="Clientes" active={activeTab === 'clients'} onClick={() => setActiveTab('clients')} />
-            <SidebarItem icon={Truck} label="Fornecedores" active={activeTab === 'suppliers'} onClick={() => setActiveTab('suppliers')} />
-            <SidebarItem icon={HardDrive} label="Patrimônios" active={activeTab === 'assets'} onClick={() => setActiveTab('assets')} />
-            <SidebarItem icon={Package} label="Estoque" active={activeTab === 'inventory'} onClick={() => setActiveTab('inventory')} />
+          <nav className="flex-1 px-4 space-y-1 overflow-y-auto custom-scrollbar">
+            <SidebarItem icon={LayoutDashboard} label="Painel" active={activeTab === 'dashboard'} onClick={() => { setActiveTab('dashboard'); setIsSidebarOpen(false); }} />
+            <SidebarItem icon={ClipboardList} label="Kanban" active={activeTab === 'kanban'} onClick={() => { setActiveTab('kanban'); setIsSidebarOpen(false); }} />
+            <SidebarItem icon={FileText} label="Ordem de Produção" active={activeTab === 'production'} onClick={() => { setActiveTab('production'); setIsSidebarOpen(false); }} />
+            <SidebarItem icon={Users} label="Clientes" active={activeTab === 'clients'} onClick={() => { setActiveTab('clients'); setIsSidebarOpen(false); }} />
+            <SidebarItem icon={Truck} label="Fornecedores" active={activeTab === 'suppliers'} onClick={() => { setActiveTab('suppliers'); setIsSidebarOpen(false); }} />
+            <SidebarItem icon={HardDrive} label="Patrimônios" active={activeTab === 'assets'} onClick={() => { setActiveTab('assets'); setIsSidebarOpen(false); }} />
+            <SidebarItem icon={Package} label="Estoque" active={activeTab === 'inventory'} onClick={() => { setActiveTab('inventory'); setIsSidebarOpen(false); }} />
           </nav>
 
           <div className="p-4 border-t border-zinc-100 dark:border-zinc-800">
@@ -2299,7 +2621,15 @@ export default function App() {
             <button onClick={() => setIsSidebarOpen(true)} className="lg:hidden text-zinc-400 dark:text-zinc-500">
               <Menu size={20} />
             </button>
-            <h1 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100 capitalize">{activeTab}</h1>
+            <h1 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">
+              {activeTab === 'dashboard' && 'Painel'}
+              {activeTab === 'kanban' && 'Kanban'}
+              {activeTab === 'production' && 'Ordens de Produção'}
+              {activeTab === 'clients' && 'Clientes'}
+              {activeTab === 'suppliers' && 'Fornecedores'}
+              {activeTab === 'assets' && 'Patrimônios'}
+              {activeTab === 'inventory' && 'Estoque'}
+            </h1>
           </div>
           <div className="flex items-center gap-4">
             <button
@@ -2331,5 +2661,6 @@ export default function App() {
         </div>
       </main>
     </div>
+    </>
   );
 }
