@@ -2,6 +2,7 @@ import express from 'express';
 import { createServer as createViteServer } from 'vite';
 import Database from 'better-sqlite3';
 import { WebSocketServer, WebSocket } from 'ws';
+import AdmZip from 'adm-zip';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
@@ -96,6 +97,15 @@ db.exec(`
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT UNIQUE NOT NULL
   );
+
+  CREATE TABLE IF NOT EXISTS audit_logs (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER,
+    action TEXT NOT NULL,
+    details TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id)
+  );
 `);
 
 // Migrations (para bancos antigos que não tinham colunas)
@@ -181,6 +191,7 @@ async function startServer() {
         VALUES (?, ?, ?, ?, ?, ?)
       `).run(name, category, unit, quantity, min_quantity, photo);
 
+      logAction(1, 'CREATE_PRODUCT', `Produto: ${name}`);
       res.json({ id: result.lastInsertRowid });
     } catch (error: any) {
       res.status(500).json({ error: error.message });
@@ -198,6 +209,7 @@ async function startServer() {
         WHERE id = ?
       `).run(name, category, unit, quantity, min_quantity, photo, id);
 
+      logAction(1, 'UPDATE_PRODUCT', `Produto ID: ${id}, Nome: ${name}`);
       broadcast({ type: 'INVENTORY_UPDATED' });
       res.json({ success: true });
     } catch (error: any) {
@@ -215,6 +227,7 @@ async function startServer() {
       }
 
       db.prepare('DELETE FROM products WHERE id = ?').run(id);
+      logAction(1, 'DELETE_PRODUCT', `Produto ID: ${id}`);
       broadcast({ type: 'INVENTORY_UPDATED' });
       res.json({ success: true });
     } catch (error: any) {
@@ -259,6 +272,7 @@ async function startServer() {
     try {
       const { name, contact } = req.body;
       const result = db.prepare('INSERT INTO suppliers (name, contact) VALUES (?, ?)').run(name, contact);
+      logAction(1, 'CREATE_SUPPLIER', `Fornecedor: ${name}`);
       res.json({ id: result.lastInsertRowid, name, contact });
     } catch (error: any) {
       res.status(500).json({ error: error.message });
@@ -277,6 +291,7 @@ async function startServer() {
     try {
       const { name } = req.body;
       const result = db.prepare('INSERT INTO locations (name) VALUES (?)').run(name);
+      logAction(1, 'CREATE_LOCATION', `Local: ${name}`);
       res.json({ id: result.lastInsertRowid, name });
     } catch (error: any) {
       res.status(500).json({ error: error.message });
@@ -288,6 +303,7 @@ async function startServer() {
       const { id } = req.params;
       const { name } = req.body;
       db.prepare('UPDATE locations SET name = ? WHERE id = ?').run(name, id);
+      logAction(1, 'UPDATE_LOCATION', `Local ID: ${id}, Nome: ${name}`);
       res.json({ success: true });
     } catch (error: any) {
       res.status(500).json({ error: error.message });
@@ -314,6 +330,7 @@ async function startServer() {
     try {
       const { name } = req.body;
       const result = db.prepare('INSERT INTO categories (name) VALUES (?)').run(name);
+      logAction(1, 'CREATE_CATEGORY', `Categoria: ${name}`);
       res.json({ id: result.lastInsertRowid, name });
     } catch (error: any) {
       res.status(500).json({ error: error.message });
@@ -325,6 +342,7 @@ async function startServer() {
       const { id } = req.params;
       const { name } = req.body;
       db.prepare('UPDATE categories SET name = ? WHERE id = ?').run(name, id);
+      logAction(1, 'UPDATE_CATEGORY', `Categoria ID: ${id}, Nome: ${name}`);
       res.json({ success: true });
     } catch (error: any) {
       res.status(500).json({ error: error.message });
@@ -335,19 +353,46 @@ async function startServer() {
     const { product_id, quantity, supplier_id, doc_number, issue_date, location, expiry_date, unit_price } = req.body;
 
     const transaction = db.transaction(() => {
+      // Insert movement
       db.prepare(`
         INSERT INTO movements (product_id, type, quantity, supplier_id, doc_number, issue_date, location, expiry_date, unit_price)
         VALUES (?, 'IN', ?, ?, ?, ?, ?, ?, ?)
       `).run(product_id, quantity, supplier_id, doc_number, issue_date, location, expiry_date, unit_price);
 
+      // Calculate new average cost price
+      const avgData = db.prepare(`
+        SELECT AVG(unit_price) as avg_price 
+        FROM movements 
+        WHERE product_id = ? AND type = 'IN' AND unit_price > 0
+      `).get(product_id) as { avg_price: number | null };
+
+      const newAvgPrice = avgData.avg_price || unit_price;
+
+      // Update product with new quantity, expiry date and average cost price
       db.prepare('UPDATE products SET quantity = quantity + ?, expiry_date = ?, cost_price = ? WHERE id = ?')
-        .run(quantity, expiry_date, unit_price, product_id);
+        .run(quantity, expiry_date, newAvgPrice, product_id);
     });
 
     try {
       transaction();
+      logAction(1, 'STOCK_IN', `Produto ID: ${product_id}, Qtd: ${quantity}, Doc: ${doc_number}`);
       broadcast({ type: 'INVENTORY_UPDATED' });
       res.json({ success: true });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.get('/api/financial/entries', (req, res) => {
+    try {
+      const entries = db.prepare(`
+        SELECT m.*, p.name as product_name
+        FROM movements m
+        JOIN products p ON m.product_id = p.id
+        WHERE m.type = 'IN'
+        ORDER BY m.issue_date DESC, m.date DESC
+      `).all();
+      res.json(entries);
     } catch (error: any) {
       res.status(500).json({ error: error.message });
     }
@@ -373,6 +418,7 @@ async function startServer() {
       });
 
       transaction();
+      logAction(1, 'STOCK_OUT', `Produto ID: ${product_id}, Qtd: ${quantity}, Motivo: ${reason}`);
       broadcast({ type: 'INVENTORY_UPDATED' });
       res.json({ success: true });
     } catch (error: any) {
@@ -394,8 +440,44 @@ async function startServer() {
     try {
       const { status } = req.body;
       db.prepare('UPDATE orders SET status = ? WHERE id = ?').run(status, req.params.id);
+      logAction(1, 'UPDATE_ORDER_STATUS', `Ordem ID: ${req.params.id}, Status: ${status}`);
       broadcast({ type: 'ORDER_UPDATED', id: req.params.id, status });
       res.json({ success: true });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.get('/api/backup', (req, res) => {
+    try {
+      const zip = new AdmZip();
+      // Adiciona o arquivo do banco ao ZIP
+      zip.addLocalFile(dbPath);
+      
+      const buffer = zip.toBuffer();
+      const fileName = `backup_skysmart_${new Date().toISOString().split('T')[0]}.zip`;
+      
+      res.set('Content-Type', 'application/zip');
+      res.set('Content-Disposition', `attachment; filename=${fileName}`);
+      res.send(buffer);
+      
+      logAction(1, 'DATABASE_BACKUP', 'Backup do banco de dados realizado');
+    } catch (error: any) {
+      console.error('Error generating backup:', error);
+      res.status(500).json({ error: 'Erro ao gerar backup' });
+    }
+  });
+
+  app.get('/api/audit-logs', (req, res) => {
+    try {
+      const logs = db.prepare(`
+        SELECT al.*, u.name as user_name
+        FROM audit_logs al
+        LEFT JOIN users u ON al.user_id = u.id
+        ORDER BY al.created_at DESC
+        LIMIT 100
+      `).all();
+      res.json(logs);
     } catch (error: any) {
       res.status(500).json({ error: error.message });
     }
@@ -425,6 +507,15 @@ async function startServer() {
     clients.add(ws);
     ws.on('close', () => clients.delete(ws));
   });
+
+  function logAction(userId: number, action: string, details: string) {
+    try {
+      db.prepare('INSERT INTO audit_logs (user_id, action, details) VALUES (?, ?, ?)').run(userId, action, details);
+      broadcast({ type: 'AUDIT_LOG_UPDATED' });
+    } catch (error) {
+      console.error('Error logging action:', error);
+    }
+  }
 
   function broadcast(data: any) {
     const message = JSON.stringify(data);
