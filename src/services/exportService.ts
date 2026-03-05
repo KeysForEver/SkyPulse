@@ -44,7 +44,6 @@ export const exportToPDF = (products: Product[], selectedFields: string[], inclu
     unit: 'Unidade',
     cost_price: 'V. Unitário',
     min_quantity: 'Mínimo',
-    expiry_date: 'Validade',
     status: 'Status',
     total_value: 'V. Total'
   };
@@ -61,7 +60,6 @@ export const exportToPDF = (products: Product[], selectedFields: string[], inclu
       if (field === 'cost_price') return `R$ ${p.cost_price.toFixed(2)}`;
       if (field === 'total_value') return `R$ ${(p.quantity * p.cost_price).toFixed(2)}`;
       if (field === 'min_quantity') return p.min_quantity ?? '-';
-      if (field === 'expiry_date') return p.expiry_date ? new Date(p.expiry_date).toLocaleDateString('pt-BR') : '-';
       if (field === 'status') return (p.min_quantity !== null && p.quantity <= p.min_quantity) ? 'Estoque Baixo' : 'Normal';
       return (p as any)[field] ?? '-';
     });

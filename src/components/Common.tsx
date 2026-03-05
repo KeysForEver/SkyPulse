@@ -17,7 +17,7 @@ export const SidebarItem = ({ icon: Icon, label, active, onClick }: { icon: any,
     )}
   >
     <Icon size={18} />
-    {label}
+    {label.toUpperCase()}
   </button>
 );
 
@@ -25,7 +25,7 @@ export const Card = ({ children, className, title }: { children: React.ReactNode
   <div className={cn("bg-white border border-zinc-200 rounded-xl overflow-hidden shadow-sm dark:bg-zinc-900 dark:border-zinc-800", className)}>
     {title && (
       <div className="px-6 py-4 border-b border-zinc-100 dark:border-zinc-800">
-        <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">{title}</h3>
+        <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">{title.toUpperCase()}</h3>
       </div>
     )}
     <div className="p-6">{children}</div>
@@ -35,7 +35,7 @@ export const Card = ({ children, className, title }: { children: React.ReactNode
 export const StatCard = ({ label, value, icon: Icon, trend, color }: { label: string, value: string | number, icon: any, trend?: string, color: string }) => (
   <Card className="flex flex-col gap-1">
     <div className="flex items-center justify-between">
-      <span className="text-xs font-medium text-zinc-500 uppercase tracking-wider dark:text-zinc-400">{label}</span>
+      <span className="text-xs font-medium text-zinc-500 uppercase tracking-wider dark:text-zinc-400">{label.toUpperCase()}</span>
       <div className={cn("p-2 rounded-lg", color)}>
         <Icon size={16} className="text-white" />
       </div>

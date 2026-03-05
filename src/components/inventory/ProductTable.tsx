@@ -68,17 +68,6 @@ export const ProductTable = ({
               </div>
             </th>
           )}
-          {visibleColumns.includes('expiry_date') && (
-            <th 
-              onClick={() => requestSort('expiry_date')}
-              className="px-6 py-3 text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider cursor-pointer group"
-            >
-              <div className="flex items-center gap-1">
-                Validade
-                {getSortIcon('expiry_date')}
-              </div>
-            </th>
-          )}
           {visibleColumns.includes('min_quantity') && (
             <th 
               onClick={() => requestSort('min_quantity')}
@@ -145,11 +134,6 @@ export const ProductTable = ({
                 )}>
                   {isLowStock && <AlertTriangle size={14} />}
                   {p.quantity} {p.unit}
-                </td>
-              )}
-              {visibleColumns.includes('expiry_date') && (
-                <td className="px-6 py-4 text-sm text-zinc-500 dark:text-zinc-400">
-                  {p.expiry_date ? new Date(p.expiry_date).toLocaleDateString('pt-BR') : '-'}
                 </td>
               )}
               {visibleColumns.includes('min_quantity') && (

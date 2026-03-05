@@ -33,8 +33,8 @@ export const Settings = () => {
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-1">
-        <h2 className="text-2xl font-bold tracking-tight">Configurações</h2>
-        <p className="text-zinc-500 dark:text-zinc-400">Gerencie as preferências e segurança do sistema.</p>
+        <h2 className="text-2xl font-bold tracking-tight uppercase">Configurações</h2>
+        <p className="text-zinc-500 dark:text-zinc-400 uppercase">Gerencie as preferências e segurança do sistema.</p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -44,8 +44,8 @@ export const Settings = () => {
               <DbIcon className="text-zinc-900 dark:text-zinc-100" size={24} />
             </div>
             <div className="flex-1">
-              <h3 className="text-lg font-bold mb-1">Backup do Banco de Dados</h3>
-              <p className="text-sm text-zinc-500 dark:text-zinc-400 mb-6">
+              <h3 className="text-lg font-bold mb-1 uppercase">Backup do Banco de Dados</h3>
+              <p className="text-sm text-zinc-500 dark:text-zinc-400 mb-6 uppercase">
                 Baixe uma cópia completa do banco de dados em formato comprimido (.zip). 
                 Recomendamos realizar backups periódicos para garantir a segurança dos seus dados.
               </p>
@@ -60,7 +60,7 @@ export const Settings = () => {
                 ) : (
                   <Download size={18} />
                 )}
-                {isBackingUp ? 'Gerando Backup...' : 'Baixar Backup (.zip)'}
+                {isBackingUp ? 'GERANDO BACKUP...' : 'BAIXAR BACKUP (.ZIP)'}
               </button>
             </div>
           </div>
@@ -72,12 +72,12 @@ export const Settings = () => {
               <ShieldCheck className="text-emerald-600 dark:text-emerald-400" size={24} />
             </div>
             <div className="flex-1">
-              <h3 className="text-lg font-bold mb-1">Segurança do Sistema</h3>
-              <p className="text-sm text-zinc-500 dark:text-zinc-400 mb-4">
+              <h3 className="text-lg font-bold mb-1 uppercase">Segurança do Sistema</h3>
+              <p className="text-sm text-zinc-500 dark:text-zinc-400 mb-4 uppercase">
                 O sistema utiliza criptografia de ponta a ponta e backups automatizados. 
                 Sua sessão está protegida.
               </p>
-              <div className="flex items-center gap-2 text-xs font-medium text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-500/10 w-fit px-3 py-1 rounded-full">
+              <div className="flex items-center gap-2 text-xs font-medium text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-500/10 w-fit px-3 py-1 rounded-full uppercase">
                 <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
                 Proteção Ativa
               </div>

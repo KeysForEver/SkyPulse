@@ -5,6 +5,9 @@ import { WebSocketServer, WebSocket } from 'ws';
 import AdmZip from 'adm-zip';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import multer from 'multer';
+import fs from 'fs';
+import sharp from 'sharp';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -12,6 +15,14 @@ const __dirname = path.dirname(__filename);
 // Use caminho absoluto para garantir que o DB fique sempre na pasta do projeto
 const dbPath = path.join(__dirname, 'inventory.db');
 const db = new Database(dbPath);
+
+const uploadsDir = path.join(__dirname, 'uploads');
+if (!fs.existsSync(uploadsDir)) {
+  fs.mkdirSync(uploadsDir);
+}
+
+const storage = multer.memoryStorage();
+const upload = multer({ storage });
 
 // Opcional, mas recomendado para performance/confiabilidade em apps web
 try {
@@ -36,8 +47,7 @@ db.exec(`
     cost_price REAL DEFAULT 0,
     quantity REAL DEFAULT 0,
     min_quantity REAL DEFAULT 5,
-    photo TEXT,
-    expiry_date TEXT
+    photo TEXT
   );
 
   CREATE TABLE IF NOT EXISTS clients (
@@ -80,7 +90,6 @@ db.exec(`
     doc_number TEXT,
     issue_date TEXT,
     location TEXT,
-    expiry_date TEXT,
     unit_price REAL,
     reason TEXT,
     destination TEXT,
@@ -111,7 +120,6 @@ db.exec(`
 // Migrations (para bancos antigos que não tinham colunas)
 // Observação: em SQLite não existe "ADD COLUMN IF NOT EXISTS", então usamos try/catch.
 try { db.exec("ALTER TABLE products ADD COLUMN code TEXT UNIQUE"); } catch {}
-try { db.exec("ALTER TABLE products ADD COLUMN expiry_date TEXT"); } catch {}
 
 // Seed initial data if empty
 const userCount = db.prepare('SELECT count(*) as count FROM users').get() as { count: number };
@@ -133,6 +141,21 @@ async function startServer() {
   const PORT = 3000;
 
   app.use(express.json());
+  
+  // Middleware to convert all string inputs to uppercase (except specific fields)
+  app.use((req, res, next) => {
+    if (req.body && typeof req.body === 'object') {
+      const excludeFields = ['photo', 'email', 'issue_date', 'date'];
+      Object.keys(req.body).forEach(key => {
+        if (typeof req.body[key] === 'string' && !excludeFields.includes(key)) {
+          req.body[key] = req.body[key].toUpperCase();
+        }
+      });
+    }
+    next();
+  });
+
+  app.use('/uploads', express.static(uploadsDir));
 
   // API Routes
   app.get('/api/movements', (req, res) => {
@@ -183,36 +206,74 @@ async function startServer() {
     }
   });
 
-  app.post('/api/products', (req, res) => {
+  app.post('/api/products', upload.single('photo'), async (req, res) => {
     try {
-      const { name, category, unit, quantity, min_quantity, photo } = req.body;
-      const result = db.prepare(`
-        INSERT INTO products (name, category, unit, quantity, min_quantity, photo)
-        VALUES (?, ?, ?, ?, ?, ?)
-      `).run(name, category, unit, quantity, min_quantity, photo);
+      const { name, category, unit, quantity, min_quantity, code } = req.body;
+      const upperName = name?.toUpperCase();
+      const upperCategory = category?.toUpperCase();
+      const upperUnit = unit?.toUpperCase();
+      const upperCode = code?.toUpperCase();
+      let photo = null;
 
-      logAction(1, 'CREATE_PRODUCT', `Produto: ${name}`);
+      if (req.file) {
+        const sanitizedName = (upperName || 'product').replace(/[^a-z0-9]/gi, '_').toLowerCase();
+        const filename = `${sanitizedName}_${Date.now()}.webp`;
+        const filepath = path.join(uploadsDir, filename);
+        
+        await sharp(req.file.buffer)
+          .webp({ quality: 80 })
+          .toFile(filepath);
+        
+        photo = `/uploads/${filename}`;
+      }
+
+      const result = db.prepare(`
+        INSERT INTO products (name, category, unit, quantity, min_quantity, photo, code)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+      `).run(upperName, upperCategory, upperUnit, quantity || 0, min_quantity || 5, photo, upperCode);
+
+      logAction(1, 'CREATE_PRODUCT', `Produto: ${upperName}`);
       res.json({ id: result.lastInsertRowid });
     } catch (error: any) {
+      console.error('Error creating product:', error);
       res.status(500).json({ error: error.message });
     }
   });
 
-  app.put('/api/products/:id', (req, res) => {
+  app.put('/api/products/:id', upload.single('photo'), async (req, res) => {
     try {
       const { id } = req.params;
-      const { name, category, unit, quantity, min_quantity, photo } = req.body;
+      const { name, category, unit, quantity, min_quantity, code } = req.body;
+      const upperName = name?.toUpperCase();
+      const upperCategory = category?.toUpperCase();
+      const upperUnit = unit?.toUpperCase();
+      const upperCode = code?.toUpperCase();
+      
+      let photo = req.body.photo; // Keep existing if no new file
+      
+      if (req.file) {
+        const sanitizedName = (upperName || 'product').replace(/[^a-z0-9]/gi, '_').toLowerCase();
+        const filename = `${sanitizedName}_${Date.now()}.webp`;
+        const filepath = path.join(uploadsDir, filename);
+        
+        await sharp(req.file.buffer)
+          .webp({ quality: 80 })
+          .toFile(filepath);
+        
+        photo = `/uploads/${filename}`;
+      }
 
       db.prepare(`
         UPDATE products
-        SET name = ?, category = ?, unit = ?, quantity = ?, min_quantity = ?, photo = ?
+        SET name = ?, category = ?, unit = ?, quantity = ?, min_quantity = ?, photo = ?, code = ?
         WHERE id = ?
-      `).run(name, category, unit, quantity, min_quantity, photo, id);
+      `).run(upperName, upperCategory, upperUnit, quantity, min_quantity, photo, upperCode, id);
 
-      logAction(1, 'UPDATE_PRODUCT', `Produto ID: ${id}, Nome: ${name}`);
+      logAction(1, 'UPDATE_PRODUCT', `Produto ID: ${id}, Nome: ${upperName}`);
       broadcast({ type: 'INVENTORY_UPDATED' });
       res.json({ success: true });
     } catch (error: any) {
+      console.error('Error updating product:', error);
       res.status(500).json({ error: error.message });
     }
   });
@@ -350,14 +411,14 @@ async function startServer() {
   });
 
   app.post('/api/inventory/in', (req, res) => {
-    const { product_id, quantity, supplier_id, doc_number, issue_date, location, expiry_date, unit_price } = req.body;
+    const { product_id, quantity, supplier_id, doc_number, issue_date, location, unit_price } = req.body;
 
     const transaction = db.transaction(() => {
       // Insert movement
       db.prepare(`
-        INSERT INTO movements (product_id, type, quantity, supplier_id, doc_number, issue_date, location, expiry_date, unit_price)
-        VALUES (?, 'IN', ?, ?, ?, ?, ?, ?, ?)
-      `).run(product_id, quantity, supplier_id, doc_number, issue_date, location, expiry_date, unit_price);
+        INSERT INTO movements (product_id, type, quantity, supplier_id, doc_number, issue_date, location, unit_price)
+        VALUES (?, 'IN', ?, ?, ?, ?, ?, ?)
+      `).run(product_id, quantity, supplier_id, doc_number, issue_date, location, unit_price);
 
       // Calculate new average cost price
       const avgData = db.prepare(`
@@ -368,9 +429,9 @@ async function startServer() {
 
       const newAvgPrice = avgData.avg_price || unit_price;
 
-      // Update product with new quantity, expiry date and average cost price
-      db.prepare('UPDATE products SET quantity = quantity + ?, expiry_date = ?, cost_price = ? WHERE id = ?')
-        .run(quantity, expiry_date, newAvgPrice, product_id);
+      // Update product with new quantity and average cost price
+      db.prepare('UPDATE products SET quantity = quantity + ?, cost_price = ? WHERE id = ?')
+        .run(quantity, newAvgPrice, product_id);
     });
 
     try {
@@ -378,6 +439,64 @@ async function startServer() {
       logAction(1, 'STOCK_IN', `Produto ID: ${product_id}, Qtd: ${quantity}, Doc: ${doc_number}`);
       broadcast({ type: 'INVENTORY_UPDATED' });
       res.json({ success: true });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.post('/api/products/import', (req, res) => {
+    try {
+      const { csvData } = req.body;
+      if (!csvData) return res.status(400).json({ error: 'Dados do CSV não fornecidos' });
+
+      const lines = csvData.split('\n');
+      if (lines.length < 2) return res.status(400).json({ error: 'Arquivo CSV vazio ou sem dados' });
+
+      const results: any[] = [];
+      const errors: any[] = [];
+
+      const transaction = db.transaction(() => {
+        for (let i = 1; i < lines.length; i++) {
+          const line = lines[i].trim();
+          if (!line) continue;
+
+          // Split by semicolon as requested
+          const parts = line.split(';').map((p: string) => p.trim());
+          if (parts.length < 3) {
+            errors.push(`Linha ${i + 1}: Formato inválido (esperado: NOME;CATEGORIA;UNIDADE)`);
+            continue;
+          }
+
+          const [name, category, unit] = parts;
+          if (!name) {
+            errors.push(`Linha ${i + 1}: Nome do produto é obrigatório`);
+            continue;
+          }
+
+          // Check/Create category
+          const categoryName = category || 'SEM CATEGORIA';
+          const categoryExists = db.prepare('SELECT id FROM categories WHERE name = ?').get(categoryName) as { id: number } | undefined;
+          if (!categoryExists) {
+            db.prepare('INSERT INTO categories (name) VALUES (?)').run(categoryName);
+          }
+
+          // Generate a unique code
+          const code = `PRD-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
+
+          try {
+            db.prepare('INSERT INTO products (name, category, unit, code, quantity, cost_price) VALUES (?, ?, ?, ?, 0, 0)')
+              .run(name, categoryName, unit || 'un', code);
+            results.push({ name, category: categoryName, unit: unit || 'un' });
+          } catch (err: any) {
+            errors.push(`Linha ${i + 1} (${name}): ${err.message}`);
+          }
+        }
+      });
+
+      transaction();
+      logAction(1, 'IMPORT_PRODUCTS', `Importados ${results.length} produtos via CSV`);
+      broadcast({ type: 'INVENTORY_UPDATED' });
+      res.json({ success: true, imported: results.length, errors });
     } catch (error: any) {
       res.status(500).json({ error: error.message });
     }
@@ -453,6 +572,11 @@ async function startServer() {
       const zip = new AdmZip();
       // Adiciona o arquivo do banco ao ZIP
       zip.addLocalFile(dbPath);
+      
+      // Adiciona a pasta de uploads ao ZIP se ela existir
+      if (fs.existsSync(uploadsDir)) {
+        zip.addLocalFolder(uploadsDir, 'uploads');
+      }
       
       const buffer = zip.toBuffer();
       const fileName = `backup_skysmart_${new Date().toISOString().split('T')[0]}.zip`;

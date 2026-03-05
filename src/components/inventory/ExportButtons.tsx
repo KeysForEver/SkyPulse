@@ -1,11 +1,12 @@
 import React from 'react';
-import { FileText, Download, ArrowUpRight, ArrowDownLeft, Plus } from 'lucide-react';
+import { FileText, Download, ArrowUpRight, ArrowDownLeft, Plus, Upload } from 'lucide-react';
 import { Product, Movement } from '../../types';
 
 interface ExportButtonsProps {
   activeSubTab: 'products' | 'movements';
   onPdfClick: () => void;
   onCsvClick: () => void;
+  onImportCsvClick: () => void;
   onStockOutClick: () => void;
   onStockInClick: () => void;
   onNewProductClick: () => void;
@@ -17,6 +18,7 @@ export const ExportButtons = ({
   activeSubTab,
   onPdfClick,
   onCsvClick,
+  onImportCsvClick,
   onStockOutClick,
   onStockInClick,
   onNewProductClick,
@@ -26,6 +28,14 @@ export const ExportButtons = ({
   if (activeSubTab === 'products') {
     return (
       <>
+        <button 
+          onClick={onImportCsvClick}
+          className="flex items-center gap-2 px-4 py-2 text-sm font-bold text-zinc-600 bg-zinc-100 rounded-xl hover:bg-zinc-200 transition-colors dark:text-zinc-300 dark:bg-zinc-800 dark:hover:bg-zinc-700"
+          title="Importar Produtos via CSV"
+        >
+          <Upload size={18} />
+          Importar
+        </button>
         <button 
           onClick={onPdfClick}
           className="flex items-center gap-2 px-4 py-2 text-sm font-bold text-zinc-600 bg-zinc-100 rounded-xl hover:bg-zinc-200 transition-colors dark:text-zinc-300 dark:bg-zinc-800 dark:hover:bg-zinc-700"

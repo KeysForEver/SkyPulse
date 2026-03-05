@@ -1,5 +1,5 @@
-import React from 'react';
-import { X, Camera, Package, AlertTriangle, Plus, Edit, Trash2, ArrowDownLeft, ArrowUpRight } from 'lucide-react';
+import React, { useState, useRef, useEffect } from 'react';
+import { X, Camera, Package, AlertTriangle, Plus, Edit, Trash2, ArrowDownLeft, ArrowUpRight, Search, ChevronDown } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Product, Supplier, Order, Movement } from '../../types';
 import { Card, cn } from '../Common';
@@ -29,7 +29,7 @@ const Modal = ({ isOpen, onClose, title, children }: ModalProps) => (
           className="relative w-full max-w-2xl bg-white dark:bg-zinc-900 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]"
         >
           <div className="px-6 py-4 border-b border-zinc-100 dark:border-zinc-800 flex items-center justify-between flex-shrink-0">
-            <h2 className="text-lg font-bold text-zinc-900 dark:text-zinc-100">{title}</h2>
+            <h2 className="text-lg font-bold text-zinc-900 dark:text-zinc-100">{title.toUpperCase()}</h2>
             <button onClick={onClose} className="text-zinc-400 hover:text-zinc-600 dark:text-zinc-500 dark:hover:text-zinc-300">
               <X size={20} />
             </button>
@@ -56,7 +56,8 @@ export const ProductModal = ({
   onAddCategory,
   productError,
   fileInputRef,
-  handleFileChange
+  handleFileChange,
+  onClear
 }: any) => (
   <Modal isOpen={isOpen} onClose={onClose} title={editingProduct ? 'Editar Produto' : 'Novo Produto'}>
     <form onSubmit={onSubmit} className="p-6 space-y-6 overflow-y-auto flex-1">
@@ -100,9 +101,9 @@ export const ProductModal = ({
             required
             type="text" 
             value={formData.name}
-            onChange={e => setFormData({...formData, name: e.target.value})}
+            onChange={e => setFormData({...formData, name: e.target.value.toUpperCase()})}
             className="w-full px-3 py-2 text-sm border border-zinc-200 dark:border-zinc-800 rounded-lg focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-100 outline-none bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100"
-            placeholder="Ex: Cabo de Rede Cat6"
+            placeholder="EX: CABO DE REDE CAT6"
           />
         </div>
         <div className="space-y-1.5">
@@ -112,11 +113,11 @@ export const ProductModal = ({
               required
               value={formData.category}
               onChange={e => setFormData({...formData, category: e.target.value})}
-              className="flex-1 px-3 py-2 text-sm border border-zinc-200 dark:border-zinc-800 rounded-lg focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-100 outline-none bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100"
+              className="flex-1 px-3 py-2 text-sm border border-zinc-200 dark:border-zinc-800 rounded-lg focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-100 outline-none bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 uppercase"
             >
-              <option value="">Selecione</option>
+              <option value="">SELECIONE</option>
               {categories.map((c: any) => (
-                <option key={c.id} value={c.name}>{c.name}</option>
+                <option key={c.id} value={c.name}>{c.name.toUpperCase()}</option>
               ))}
             </select>
             <button 
@@ -134,15 +135,25 @@ export const ProductModal = ({
             required
             value={formData.unit}
             onChange={e => setFormData({...formData, unit: e.target.value})}
-            className="w-full px-3 py-2 text-sm border border-zinc-200 dark:border-zinc-800 rounded-lg focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-100 outline-none bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100"
+            className="w-full px-3 py-2 text-sm border border-zinc-200 dark:border-zinc-800 rounded-lg focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-100 outline-none bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 uppercase"
           >
-            <option value="un">Unidade (un)</option>
-            <option value="kg">Quilograma (kg)</option>
-            <option value="m">Metro (m)</option>
-            <option value="l">Litro (l)</option>
-            <option value="cx">Caixa (cx)</option>
-            <option value="par">Par (par)</option>
+            <option value="un">UNIDADE (UN)</option>
+            <option value="kg">QUILOGRAMA (KG)</option>
+            <option value="m">METRO (M)</option>
+            <option value="l">LITRO (L)</option>
+            <option value="cx">CAIXA (CX)</option>
+            <option value="par">PAR (PAR)</option>
           </select>
+        </div>
+        <div className="space-y-1.5 md:col-span-2">
+          <label className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase">Código do Produto</label>
+          <input 
+            type="text" 
+            value={formData.code || ''}
+            onChange={e => setFormData({...formData, code: e.target.value.toUpperCase()})}
+            className="w-full px-3 py-2 text-sm border border-zinc-200 dark:border-zinc-800 rounded-lg focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-100 outline-none bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100"
+            placeholder="EX: SKU-12345"
+          />
         </div>
       </div>
 
@@ -159,22 +170,22 @@ export const ProductModal = ({
               <input 
                 type="text" 
                 value={newCategoryName}
-                onChange={e => setNewCategoryName(e.target.value)}
+                onChange={e => setNewCategoryName(e.target.value.toUpperCase())}
                 className="flex-1 px-3 py-1.5 text-sm border border-zinc-200 dark:border-zinc-800 rounded-lg focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-100 outline-none bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100"
-                placeholder="Nome da categoria"
+                placeholder="NOME DA CATEGORIA"
                 autoFocus
               />
               <button 
                 type="button"
                 onClick={onAddCategory}
-                className="px-4 py-1.5 bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 text-xs font-bold rounded-lg hover:bg-zinc-800 transition-colors"
+                className="px-4 py-1.5 bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 text-xs font-bold rounded-lg hover:bg-zinc-800 transition-colors uppercase"
               >
                 Salvar
               </button>
               <button 
                 type="button"
                 onClick={() => setIsAddingCategory(false)}
-                className="px-4 py-1.5 text-zinc-500 text-xs font-bold rounded-lg hover:bg-zinc-100 transition-colors"
+                className="px-4 py-1.5 text-zinc-500 text-xs font-bold rounded-lg hover:bg-zinc-100 transition-colors uppercase"
               >
                 Cancelar
               </button>
@@ -186,16 +197,23 @@ export const ProductModal = ({
       <div className="flex justify-end gap-3 pt-4 border-t border-zinc-100 dark:border-zinc-800">
         <button 
           type="button"
+          onClick={onClear}
+          className="px-4 py-2 text-sm font-bold text-zinc-400 hover:text-zinc-600 dark:text-zinc-500 dark:hover:text-zinc-300 transition-colors mr-auto uppercase"
+        >
+          Limpar Campos
+        </button>
+        <button 
+          type="button"
           onClick={onClose}
-          className="px-6 py-2 text-sm font-bold text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100 transition-colors"
+          className="px-6 py-2 text-sm font-bold text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100 transition-colors uppercase"
         >
           Cancelar
         </button>
         <button 
           type="submit"
-          className="px-8 py-2 bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 text-sm font-bold rounded-xl hover:bg-zinc-800 transition-all shadow-lg shadow-zinc-900/10"
+          className="px-8 py-2 bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 text-sm font-bold rounded-xl hover:bg-zinc-800 transition-all shadow-lg shadow-zinc-900/10 uppercase"
         >
-          {editingProduct ? 'Atualizar Produto' : 'Criar Produto'}
+          {editingProduct ? 'ATUALIZAR PRODUTO' : 'CRIAR PRODUTO'}
         </button>
       </div>
     </form>
@@ -221,197 +239,270 @@ export const StockInModal = ({
   setNewLocationName,
   onAddLocation,
   products,
-  stockInError
-}: any) => (
-  <Modal isOpen={isOpen} onClose={onClose} title="Entrada de Estoque">
-    <form onSubmit={onSubmit} className="p-6 space-y-4 overflow-y-auto flex-1">
-      {stockInError && (
-        <div className="p-3 bg-rose-50 dark:bg-rose-500/10 border border-rose-100 dark:border-rose-500/20 rounded-lg flex items-center gap-3 text-rose-600 dark:text-rose-400 text-sm">
-          <AlertTriangle size={18} />
-          {stockInError}
-        </div>
-      )}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="space-y-1.5">
-          <label className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase">Fornecedor</label>
-          <div className="flex gap-2">
-            <select 
-              required
-              value={stockInData.supplier_id}
-              onChange={e => setStockInData({...stockInData, supplier_id: e.target.value})}
-              className="flex-1 px-3 py-2 text-sm border border-zinc-200 dark:border-zinc-800 rounded-lg focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-100 outline-none bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100"
-            >
-              <option value="">Selecione</option>
-              {suppliers.map((s: Supplier) => (
-                <option key={s.id} value={s.id}>{s.name}</option>
-              ))}
-            </select>
-            <button 
-              type="button"
-              onClick={() => setIsAddingSupplier(true)}
-              className="p-2 bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 rounded-lg hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors"
-            >
-              <Plus size={18} />
-            </button>
-          </div>
-        </div>
-        <div className="space-y-1.5">
-          <label className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase">Localização</label>
-          <div className="flex gap-2">
-            <select 
-              required
-              value={stockInData.location}
-              onChange={e => setStockInData({...stockInData, location: e.target.value})}
-              className="flex-1 px-3 py-2 text-sm border border-zinc-200 dark:border-zinc-800 rounded-lg focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-100 outline-none bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100"
-            >
-              <option value="">Selecione</option>
-              {locations.map((l: any) => (
-                <option key={l.id} value={l.name}>{l.name}</option>
-              ))}
-            </select>
-            <button 
-              type="button"
-              onClick={() => setIsAddingLocation(true)}
-              className="p-2 bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 rounded-lg hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors"
-            >
-              <Plus size={18} />
-            </button>
-          </div>
-        </div>
-      </div>
+  stockInError,
+  onClear
+}: any) => {
+  const [searchTerm, setSearchTerm] = useState('');
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
-      <AnimatePresence>
-        {(isAddingSupplier || isAddingLocation) && (
-          <motion.div 
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: 'auto', opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            className="p-4 bg-zinc-50 dark:bg-zinc-800/50 rounded-xl border border-zinc-200 dark:border-zinc-800 space-y-3 overflow-hidden"
-          >
-            <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">
-              {isAddingSupplier ? 'Novo Fornecedor' : 'Nova Localização'}
-            </label>
+  const filteredProducts = products.filter((p: Product) => 
+    p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (p.code && p.code.toLowerCase().includes(searchTerm.toLowerCase()))
+  );
+
+  const selectedProduct = products.find((p: Product) => p.id === parseInt(stockInData.product_id));
+
+  useEffect(() => {
+    if (!stockInData.product_id) {
+      setSearchTerm('');
+    }
+  }, [stockInData.product_id]);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  return (
+    <Modal isOpen={isOpen} onClose={onClose} title="Entrada de Estoque">
+      <form onSubmit={onSubmit} className="p-6 space-y-4 overflow-y-auto flex-1">
+        {stockInError && (
+          <div className="p-3 bg-rose-50 dark:bg-rose-500/10 border border-rose-100 dark:border-rose-500/20 rounded-lg flex items-center gap-3 text-rose-600 dark:text-rose-400 text-sm">
+            <AlertTriangle size={18} />
+            {stockInError}
+          </div>
+        )}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="space-y-1.5">
+            <label className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase">Fornecedor</label>
             <div className="flex gap-2">
-              <input 
-                type="text" 
-                value={isAddingSupplier ? newSupplierName : newLocationName}
-                onChange={e => isAddingSupplier ? setNewSupplierName(e.target.value) : setNewLocationName(e.target.value)}
-                className="flex-1 px-3 py-1.5 text-sm border border-zinc-200 dark:border-zinc-800 rounded-lg focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-100 outline-none bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100"
-                placeholder={isAddingSupplier ? "Nome do fornecedor" : "Nome da localização"}
-                autoFocus
-              />
+              <select 
+                required
+                value={stockInData.supplier_id}
+                onChange={e => setStockInData({...stockInData, supplier_id: e.target.value})}
+                className="flex-1 px-3 py-2 text-sm border border-zinc-200 dark:border-zinc-800 rounded-lg focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-100 outline-none bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 uppercase"
+              >
+                <option value="">SELECIONE</option>
+                {suppliers.map((s: Supplier) => (
+                  <option key={s.id} value={s.id}>{s.name.toUpperCase()}</option>
+                ))}
+              </select>
               <button 
                 type="button"
-                onClick={isAddingSupplier ? onAddSupplier : onAddLocation}
-                className="px-4 py-1.5 bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 text-xs font-bold rounded-lg hover:bg-zinc-800 transition-colors"
+                onClick={() => setIsAddingSupplier(true)}
+                className="p-2 bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 rounded-lg hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors"
               >
-                Salvar
-              </button>
-              <button 
-                type="button"
-                onClick={() => { setIsAddingSupplier(false); setIsAddingLocation(false); }}
-                className="px-4 py-1.5 text-zinc-500 text-xs font-bold rounded-lg hover:bg-zinc-100 transition-colors"
-              >
-                Cancelar
+                <Plus size={18} />
               </button>
             </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+          </div>
+          <div className="space-y-1.5">
+            <label className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase">Localização</label>
+            <div className="flex gap-2">
+              <select 
+                required
+                value={stockInData.location}
+                onChange={e => setStockInData({...stockInData, location: e.target.value})}
+                className="flex-1 px-3 py-2 text-sm border border-zinc-200 dark:border-zinc-800 rounded-lg focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-100 outline-none bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 uppercase"
+              >
+                <option value="">SELECIONE</option>
+                {locations.map((l: any) => (
+                  <option key={l.id} value={l.name}>{l.name.toUpperCase()}</option>
+                ))}
+              </select>
+              <button 
+                type="button"
+                onClick={() => setIsAddingLocation(true)}
+                className="p-2 bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 rounded-lg hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors"
+              >
+                <Plus size={18} />
+              </button>
+            </div>
+          </div>
+        </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="space-y-1.5">
-          <label className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase">Documento Fiscal</label>
-          <input 
-            required
-            type="text" 
-            value={stockInData.doc_number}
-            onChange={e => setStockInData({...stockInData, doc_number: e.target.value})}
-            className="w-full px-3 py-2 text-sm border border-zinc-200 dark:border-zinc-800 rounded-lg focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-100 outline-none bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100"
-            placeholder="NF-e, Recibo, etc"
-          />
-        </div>
-        <div className="space-y-1.5">
-          <label className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase">Data de Emissão</label>
-          <input 
-            required
-            type="date" 
-            value={stockInData.issue_date}
-            onChange={e => setStockInData({...stockInData, issue_date: e.target.value})}
-            className="w-full px-3 py-2 text-sm border border-zinc-200 dark:border-zinc-800 rounded-lg focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-100 outline-none bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100"
-          />
-        </div>
-      </div>
+        <AnimatePresence>
+          {(isAddingSupplier || isAddingLocation) && (
+            <motion.div 
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: 'auto', opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              className="p-4 bg-zinc-50 dark:bg-zinc-800/50 rounded-xl border border-zinc-200 dark:border-zinc-800 space-y-3 overflow-hidden"
+            >
+              <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">
+                {isAddingSupplier ? 'NOVO FORNECEDOR' : 'NOVA LOCALIZAÇÃO'}
+              </label>
+              <div className="flex gap-2">
+                <input 
+                  type="text" 
+                  value={isAddingSupplier ? newSupplierName : newLocationName}
+                  onChange={e => isAddingSupplier ? setNewSupplierName(e.target.value.toUpperCase()) : setNewLocationName(e.target.value.toUpperCase())}
+                  className="flex-1 px-3 py-1.5 text-sm border border-zinc-200 dark:border-zinc-800 rounded-lg focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-100 outline-none bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100"
+                  placeholder={isAddingSupplier ? "NOME DO FORNECEDOR" : "NOME DA LOCALIZAÇÃO"}
+                  autoFocus
+                />
+                <button 
+                  type="button"
+                  onClick={isAddingSupplier ? onAddSupplier : onAddLocation}
+                  className="px-4 py-1.5 bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 text-xs font-bold rounded-lg hover:bg-zinc-800 transition-colors uppercase"
+                >
+                  Salvar
+                </button>
+                <button 
+                  type="button"
+                  onClick={() => { setIsAddingSupplier(false); setIsAddingLocation(false); }}
+                  className="px-4 py-1.5 text-zinc-500 text-xs font-bold rounded-lg hover:bg-zinc-100 transition-colors uppercase"
+                >
+                  Cancelar
+                </button>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
-      <div className="space-y-1.5">
-        <label className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase">Produto</label>
-        <select 
-          required
-          value={stockInData.product_id}
-          onChange={e => setStockInData({...stockInData, product_id: e.target.value})}
-          className="w-full px-3 py-2 text-sm border border-zinc-200 dark:border-zinc-800 rounded-lg focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-100 outline-none bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100"
-        >
-          <option value="">Selecione um produto</option>
-          {products.map((p: Product) => (
-            <option key={p.id} value={p.id}>{p.name} (Saldo: {p.quantity})</option>
-          ))}
-        </select>
-      </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="space-y-1.5">
+            <label className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase">Documento Fiscal</label>
+            <input 
+              type="text" 
+              value={stockInData.doc_number}
+              onChange={e => setStockInData({...stockInData, doc_number: e.target.value.toUpperCase()})}
+              className="w-full px-3 py-2 text-sm border border-zinc-200 dark:border-zinc-800 rounded-lg focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-100 outline-none bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100"
+              placeholder="NF-E, RECIBO, ETC"
+            />
+          </div>
+          <div className="space-y-1.5">
+            <label className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase">Data de Emissão</label>
+            <input 
+              required
+              type="date" 
+              value={stockInData.issue_date}
+              onChange={e => setStockInData({...stockInData, issue_date: e.target.value})}
+              className="w-full px-3 py-2 text-sm border border-zinc-200 dark:border-zinc-800 rounded-lg focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-100 outline-none bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100"
+            />
+          </div>
+        </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="space-y-1.5">
-          <label className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase">Quantidade</label>
-          <input 
-            required
-            type="number" 
-            min="0.01"
-            step="0.01"
-            value={stockInData.quantity || ''}
-            onChange={e => setStockInData({...stockInData, quantity: parseFloat(e.target.value) || 0})}
-            className="w-full px-3 py-2 text-sm border border-zinc-200 dark:border-zinc-800 rounded-lg focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-100 outline-none bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100"
-          />
-        </div>
-        <div className="space-y-1.5">
-          <label className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase">V. Unitário (R$)</label>
-          <input 
-            required
-            type="number" 
-            min="0.01"
-            step="0.01"
-            value={stockInData.unit_price || ''}
-            onChange={e => setStockInData({...stockInData, unit_price: parseFloat(e.target.value) || 0})}
-            className="w-full px-3 py-2 text-sm border border-zinc-200 dark:border-zinc-800 rounded-lg focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-100 outline-none bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100"
-          />
-        </div>
-        <div className="space-y-1.5">
-          <label className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase">Data de Validade</label>
-          <input 
-            type="date" 
-            value={stockInData.expiry_date}
-            onChange={e => setStockInData({...stockInData, expiry_date: e.target.value})}
-            className="w-full px-3 py-2 text-sm border border-zinc-200 dark:border-zinc-800 rounded-lg focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-100 outline-none bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100"
-          />
-        </div>
-      </div>
+        <div className="space-y-1.5 relative" ref={dropdownRef}>
+          <label className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase">Produto</label>
+          <div className="relative">
+            <div 
+              className="w-full px-3 py-2 text-sm border border-zinc-200 dark:border-zinc-800 rounded-lg focus-within:ring-2 focus-within:ring-zinc-900 dark:focus-within:ring-zinc-100 outline-none bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 flex items-center gap-2 cursor-pointer"
+              onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+            >
+              <Search size={16} className="text-zinc-400" />
+              <input 
+                type="text"
+                placeholder="Pesquisar produto..."
+                value={isDropdownOpen ? searchTerm : (selectedProduct ? selectedProduct.name : '')}
+                onChange={e => {
+                  setSearchTerm(e.target.value.toUpperCase());
+                  setIsDropdownOpen(true);
+                }}
+                onFocus={() => setIsDropdownOpen(true)}
+                className="flex-1 bg-transparent outline-none text-sm"
+              />
+              <ChevronDown size={16} className={cn("text-zinc-400 transition-transform", isDropdownOpen && "rotate-180")} />
+            </div>
 
-      <div className="flex justify-end gap-3 pt-4 border-t border-zinc-100 dark:border-zinc-800">
-        <button 
-          type="button"
-          onClick={onClose}
-          className="px-6 py-2 text-sm font-bold text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100 transition-colors"
-        >
-          Cancelar
-        </button>
-        <button 
-          type="submit"
-          className="px-8 py-2 bg-emerald-600 text-white text-sm font-bold rounded-xl hover:bg-emerald-700 transition-all shadow-lg shadow-emerald-600/10"
-        >
-          Confirmar Entrada
-        </button>
-      </div>
-    </form>
-  </Modal>
-);
+            <AnimatePresence>
+              {isDropdownOpen && (
+                <motion.div 
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  className="absolute z-[210] left-0 right-0 mt-1 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl shadow-xl max-h-60 overflow-y-auto custom-scrollbar"
+                >
+                  {filteredProducts.length > 0 ? (
+                    filteredProducts.map((p: Product) => (
+                      <button
+                        key={p.id}
+                        type="button"
+                        onClick={() => {
+                          setStockInData({...stockInData, product_id: p.id.toString()});
+                          setSearchTerm('');
+                          setIsDropdownOpen(false);
+                        }}
+                        className={cn(
+                          "w-full px-4 py-2 text-left text-sm hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors flex items-center justify-between",
+                          stockInData.product_id === p.id.toString() && "bg-zinc-50 dark:bg-zinc-800 font-bold"
+                        )}
+                      >
+                        <div className="flex flex-col">
+                          <span className="text-zinc-900 dark:text-zinc-100">{p.name}</span>
+                          {p.code && <span className="text-[10px] text-zinc-400 uppercase tracking-widest">{p.code}</span>}
+                        </div>
+                        <span className="text-xs text-zinc-400 uppercase">Saldo: {p.quantity}</span>
+                      </button>
+                    ))
+                  ) : (
+                    <div className="px-4 py-3 text-sm text-zinc-500 text-center">Nenhum produto encontrado</div>
+                  )}
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+          <input type="hidden" required value={stockInData.product_id} />
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="space-y-1.5">
+            <label className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase">Quantidade</label>
+            <input 
+              required
+              type="number" 
+              min="0.01"
+              step="0.01"
+              value={stockInData.quantity || ''}
+              onChange={e => setStockInData({...stockInData, quantity: parseFloat(e.target.value) || 0})}
+              className="w-full px-3 py-2 text-sm border border-zinc-200 dark:border-zinc-800 rounded-lg focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-100 outline-none bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100"
+            />
+          </div>
+          <div className="space-y-1.5">
+            <label className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase">V. Unitário (R$)</label>
+            <input 
+              type="number" 
+              min="0"
+              step="0.01"
+              value={stockInData.unit_price || ''}
+              onChange={e => setStockInData({...stockInData, unit_price: parseFloat(e.target.value) || 0})}
+              className="w-full px-3 py-2 text-sm border border-zinc-200 dark:border-zinc-800 rounded-lg focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-100 outline-none bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100"
+            />
+          </div>
+        </div>
+
+        <div className="flex justify-end gap-3 pt-4 border-t border-zinc-100 dark:border-zinc-800">
+          <button 
+            type="button"
+            onClick={onClear}
+            className="px-4 py-2 text-sm font-bold text-zinc-400 hover:text-zinc-600 dark:text-zinc-500 dark:hover:text-zinc-300 transition-colors mr-auto uppercase"
+          >
+            Limpar Campos
+          </button>
+          <button 
+            type="button"
+            onClick={onClose}
+            className="px-6 py-2 text-sm font-bold text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100 transition-colors uppercase"
+          >
+            Cancelar
+          </button>
+          <button 
+            type="submit"
+            className="px-8 py-2 bg-emerald-600 text-white text-sm font-bold rounded-xl hover:bg-emerald-700 transition-all shadow-lg shadow-emerald-600/10 uppercase"
+          >
+            Confirmar Entrada
+          </button>
+        </div>
+      </form>
+    </Modal>
+  );
+};
 
 export const StockOutModal = ({
   isOpen,
@@ -422,116 +513,197 @@ export const StockOutModal = ({
   products,
   orders,
   stockOutError,
-  setStockOutError
-}: any) => (
-  <Modal isOpen={isOpen} onClose={onClose} title="Saída de Estoque">
-    <form onSubmit={onSubmit} className="p-6 space-y-4 overflow-y-auto flex-1">
-      {stockOutError && (
-        <div className="p-3 bg-rose-50 dark:bg-rose-500/10 border border-rose-100 dark:border-rose-500/20 rounded-lg flex items-center gap-3 text-rose-600 dark:text-rose-400 text-sm">
-          <AlertTriangle size={18} />
-          {stockOutError}
+  setStockOutError,
+  onClear
+}: any) => {
+  const [searchTerm, setSearchTerm] = useState('');
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  const filteredProducts = products.filter((p: Product) => 
+    p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (p.code && p.code.toLowerCase().includes(searchTerm.toLowerCase()))
+  );
+
+  const selectedProduct = products.find((p: Product) => p.id === parseInt(stockOutData.product_id));
+
+  useEffect(() => {
+    if (!stockOutData.product_id) {
+      setSearchTerm('');
+    }
+  }, [stockOutData.product_id]);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  return (
+    <Modal isOpen={isOpen} onClose={onClose} title="Saída de Estoque">
+      <form onSubmit={onSubmit} className="p-6 space-y-4 overflow-y-auto flex-1">
+        {stockOutError && (
+          <div className="p-3 bg-rose-50 dark:bg-rose-500/10 border border-rose-100 dark:border-rose-500/20 rounded-lg flex items-center gap-3 text-rose-600 dark:text-rose-400 text-sm">
+            <AlertTriangle size={18} />
+            {stockOutError}
+          </div>
+        )}
+        
+        <div className="space-y-1.5 relative" ref={dropdownRef}>
+          <label className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase">
+            Produto {selectedProduct && (
+              <span className="ml-2 text-zinc-400 uppercase">
+                (Saldo: {selectedProduct.quantity > 0 ? selectedProduct.quantity : '-'})
+              </span>
+            )}
+          </label>
+          <div className="relative">
+            <div 
+              className="w-full px-3 py-2 text-sm border border-zinc-200 dark:border-zinc-800 rounded-lg focus-within:ring-2 focus-within:ring-zinc-900 dark:focus-within:ring-zinc-100 outline-none bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 flex items-center gap-2 cursor-pointer"
+              onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+            >
+              <Search size={16} className="text-zinc-400" />
+              <input 
+                type="text"
+                placeholder="Pesquisar produto..."
+                value={isDropdownOpen ? searchTerm : (selectedProduct ? selectedProduct.name : '')}
+                onChange={e => {
+                  setSearchTerm(e.target.value.toUpperCase());
+                  setIsDropdownOpen(true);
+                }}
+                onFocus={() => setIsDropdownOpen(true)}
+                className="flex-1 bg-transparent outline-none text-sm"
+              />
+              <ChevronDown size={16} className={cn("text-zinc-400 transition-transform", isDropdownOpen && "rotate-180")} />
+            </div>
+
+            <AnimatePresence>
+              {isDropdownOpen && (
+                <motion.div 
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  className="absolute z-[210] left-0 right-0 mt-1 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl shadow-xl max-h-60 overflow-y-auto custom-scrollbar"
+                >
+                  {filteredProducts.length > 0 ? (
+                    filteredProducts.map((p: Product) => (
+                      <button
+                        key={p.id}
+                        type="button"
+                        onClick={() => {
+                          setStockOutData({...stockOutData, product_id: p.id.toString()});
+                          setStockOutError(null);
+                          setSearchTerm('');
+                          setIsDropdownOpen(false);
+                        }}
+                        className={cn(
+                          "w-full px-4 py-2 text-left text-sm hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors flex items-center justify-between",
+                          stockOutData.product_id === p.id.toString() && "bg-zinc-50 dark:bg-zinc-800 font-bold"
+                        )}
+                      >
+                        <div className="flex flex-col">
+                          <span className="text-zinc-900 dark:text-zinc-100">{p.name}</span>
+                          {p.code && <span className="text-[10px] text-zinc-400 uppercase tracking-widest">{p.code}</span>}
+                        </div>
+                        <span className="text-xs text-zinc-400">Saldo: {p.quantity > 0 ? p.quantity : '-'}</span>
+                      </button>
+                    ))
+                  ) : (
+                    <div className="px-4 py-3 text-sm text-zinc-500 text-center">Nenhum produto encontrado</div>
+                  )}
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+          <input type="hidden" required value={stockOutData.product_id} />
         </div>
-      )}
-      <div className="space-y-1.5">
-        <label className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase">
-          Produto {stockOutData.product_id && (
-            <span className="ml-2 text-zinc-400">
-              (Saldo: {(() => {
-                const p = products.find((p: Product) => p.id === parseInt(stockOutData.product_id));
-                return (p && p.quantity > 0) ? p.quantity : '-';
-              })()})
-            </span>
-          )}
-        </label>
-        <select 
-          required
-          value={stockOutData.product_id}
-          onChange={e => {
-            setStockOutData({...stockOutData, product_id: e.target.value});
-            setStockOutError(null);
-          }}
-          className="w-full px-3 py-2 text-sm border border-zinc-200 dark:border-zinc-800 rounded-lg focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-100 outline-none bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100"
-        >
-          <option value="">Selecione um produto</option>
-          {products.map((p: Product) => (
-            <option key={p.id} value={p.id}>{p.name} (Saldo: {p.quantity > 0 ? p.quantity : '-'})</option>
-          ))}
-        </select>
-      </div>
-      <div className="space-y-1.5">
-        <label className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase">Quantidade</label>
-        <input 
-          required
-          type="number" 
-          min="0.01"
-          step="0.01"
-          value={stockOutData.quantity || ''}
-          onChange={e => {
-            setStockOutData({...stockOutData, quantity: parseFloat(e.target.value) || 0});
-            setStockOutError(null);
-          }}
-          className="w-full px-3 py-2 text-sm border border-zinc-200 dark:border-zinc-800 rounded-lg focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-100 outline-none bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100"
-        />
-      </div>
-      <div className="space-y-1.5">
-        <label className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase">Motivo da Saída</label>
-        <select 
-          required
-          value={stockOutData.reason}
-          onChange={e => setStockOutData({...stockOutData, reason: e.target.value, destination: ''})}
-          className="w-full px-3 py-2 text-sm border border-zinc-200 dark:border-zinc-800 rounded-lg focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-100 outline-none bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100"
-        >
-          <option value="">Selecione um motivo</option>
-          <option value="venda">Venda</option>
-          <option value="consumo interno">Consumo Interno</option>
-          <option value="devolução">Devolução</option>
-          <option value="perda/dano">Perda/Dano</option>
-        </select>
-      </div>
-      <div className="space-y-1.5">
-        <label className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase">Destino / Ordem de Produção</label>
-        {stockOutData.reason === 'venda' ? (
-          <select
-            required
-            value={stockOutData.destination}
-            onChange={e => setStockOutData({...stockOutData, destination: e.target.value})}
-            className="w-full px-3 py-2 text-sm border border-zinc-200 dark:border-zinc-800 rounded-lg focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-100 outline-none bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100"
-          >
-            <option value="">Selecione uma ordem de produção</option>
-            {orders.map((order: Order) => (
-              <option key={order.id} value={order.title}>{order.title} (#{order.id})</option>
-            ))}
-          </select>
-        ) : (
+
+        <div className="space-y-1.5">
+          <label className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase">Quantidade</label>
           <input 
             required
-            type="text" 
-            value={stockOutData.destination}
-            onChange={e => setStockOutData({...stockOutData, destination: e.target.value})}
+            type="number" 
+            min="0.01"
+            step="0.01"
+            value={stockOutData.quantity || ''}
+            onChange={e => {
+              setStockOutData({...stockOutData, quantity: parseFloat(e.target.value) || 0});
+              setStockOutError(null);
+            }}
             className="w-full px-3 py-2 text-sm border border-zinc-200 dark:border-zinc-800 rounded-lg focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-100 outline-none bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100"
-            placeholder="Ex: Setor de Manutenção"
           />
-        )}
-      </div>
+        </div>
+        <div className="space-y-1.5">
+          <label className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase">Motivo da Saída</label>
+          <select 
+            required
+            value={stockOutData.reason}
+            onChange={e => setStockOutData({...stockOutData, reason: e.target.value, destination: ''})}
+            className="w-full px-3 py-2 text-sm border border-zinc-200 dark:border-zinc-800 rounded-lg focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-100 outline-none bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 uppercase"
+          >
+            <option value="">SELECIONE UM MOTIVO</option>
+            <option value="venda">VENDA</option>
+            <option value="consumo interno">CONSUMO INTERNO</option>
+            <option value="devolução">DEVOLUÇÃO</option>
+            <option value="perda/dano">PERDA/DANO</option>
+          </select>
+        </div>
+        <div className="space-y-1.5">
+          <label className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase">Destino / Ordem de Produção</label>
+          {stockOutData.reason === 'venda' ? (
+            <select
+              required
+              value={stockOutData.destination}
+              onChange={e => setStockOutData({...stockOutData, destination: e.target.value})}
+              className="w-full px-3 py-2 text-sm border border-zinc-200 dark:border-zinc-800 rounded-lg focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-100 outline-none bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 uppercase"
+            >
+              <option value="">SELECIONE UMA ORDEM DE PRODUÇÃO</option>
+              {orders.map((order: Order) => (
+                <option key={order.id} value={order.title}>{order.title.toUpperCase()} (#{order.id})</option>
+              ))}
+            </select>
+          ) : (
+            <input 
+              required
+              type="text" 
+              value={stockOutData.destination}
+              onChange={e => setStockOutData({...stockOutData, destination: e.target.value.toUpperCase()})}
+              className="w-full px-3 py-2 text-sm border border-zinc-200 dark:border-zinc-800 rounded-lg focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-100 outline-none bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100"
+              placeholder="EX: SETOR DE MANUTENÇÃO"
+            />
+          )}
+        </div>
 
-      <div className="flex justify-end gap-3 pt-4 border-t border-zinc-100 dark:border-zinc-800">
-        <button 
-          type="button"
-          onClick={onClose}
-          className="px-6 py-2 text-sm font-bold text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100 transition-colors"
-        >
-          Cancelar
-        </button>
-        <button 
-          type="submit"
-          className="px-8 py-2 bg-rose-600 text-white text-sm font-bold rounded-xl hover:bg-rose-700 transition-all shadow-lg shadow-rose-600/10"
-        >
-          Confirmar Saída
-        </button>
-      </div>
-    </form>
-  </Modal>
-);
+        <div className="flex justify-end gap-3 pt-4 border-t border-zinc-100 dark:border-zinc-800">
+          <button 
+            type="button"
+            onClick={onClear}
+            className="px-4 py-2 text-sm font-bold text-zinc-400 hover:text-zinc-600 dark:text-zinc-500 dark:hover:text-zinc-300 transition-colors mr-auto uppercase"
+          >
+            Limpar Campos
+          </button>
+          <button 
+            type="button"
+            onClick={onClose}
+            className="px-6 py-2 text-sm font-bold text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100 transition-colors uppercase"
+          >
+            Cancelar
+          </button>
+          <button 
+            type="submit"
+            className="px-8 py-2 bg-rose-600 text-white text-sm font-bold rounded-xl hover:bg-rose-700 transition-all shadow-lg shadow-rose-600/10 uppercase"
+          >
+            Confirmar Saída
+          </button>
+        </div>
+      </form>
+    </Modal>
+  );
+};
 
 export const MinStockModal = ({
   isOpen,
@@ -539,7 +711,8 @@ export const MinStockModal = ({
   formData,
   setFormData,
   onSubmit,
-  editingProduct
+  editingProduct,
+  onClear
 }: any) => (
   <Modal isOpen={isOpen} onClose={onClose} title="Estoque Mínimo">
     <form onSubmit={onSubmit} className="p-6 space-y-4">
@@ -552,21 +725,28 @@ export const MinStockModal = ({
           value={formData.min_quantity === null ? '' : formData.min_quantity}
           onChange={e => setFormData({...formData, min_quantity: e.target.value === '' ? null : parseFloat(e.target.value)})}
           className="w-full px-3 py-2 text-sm border border-zinc-200 dark:border-zinc-800 rounded-lg focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-100 outline-none bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100"
-          placeholder="Deixe vazio para remover o limite"
+          placeholder="DEIXE VAZIO PARA REMOVER O LIMITE"
         />
-        <p className="text-[10px] text-zinc-400">Você será alertado quando o estoque for igual ou inferior a este valor.</p>
+        <p className="text-[10px] text-zinc-400 uppercase">Você será alertado quando o estoque for igual ou inferior a este valor.</p>
       </div>
       <div className="flex justify-end gap-3 pt-4 border-t border-zinc-100 dark:border-zinc-800">
         <button 
           type="button"
+          onClick={onClear}
+          className="px-4 py-2 text-sm font-bold text-zinc-400 hover:text-zinc-600 dark:text-zinc-500 dark:hover:text-zinc-300 transition-colors mr-auto uppercase"
+        >
+          Limpar Campos
+        </button>
+        <button 
+          type="button"
           onClick={onClose}
-          className="px-6 py-2 text-sm font-bold text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100 transition-colors"
+          className="px-6 py-2 text-sm font-bold text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100 transition-colors uppercase"
         >
           Cancelar
         </button>
         <button 
           type="submit"
-          className="px-8 py-2 bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 text-sm font-bold rounded-xl hover:bg-zinc-800 transition-all shadow-lg shadow-zinc-900/10"
+          className="px-8 py-2 bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 text-sm font-bold rounded-xl hover:bg-zinc-800 transition-all shadow-lg shadow-zinc-900/10 uppercase"
         >
           Salvar Configuração
         </button>
@@ -583,7 +763,8 @@ export const PdfOptionsModal = ({
   includeTotalValue,
   setIncludeTotalValue,
   onExport,
-  ALL_COLUMNS
+  ALL_COLUMNS,
+  onClear
 }: any) => (
   <Modal isOpen={isOpen} onClose={onClose} title="Opções de Exportação PDF">
     <div className="p-6 space-y-6">
@@ -604,7 +785,7 @@ export const PdfOptionsModal = ({
                 }}
                 className="w-4 h-4 rounded border-zinc-300 dark:border-zinc-700 text-zinc-900 dark:text-zinc-100 focus:ring-zinc-900 dark:focus:ring-zinc-100"
               />
-              <span className="text-sm font-medium text-zinc-700 dark:text-zinc-300">{col.label}</span>
+              <span className="text-sm font-medium text-zinc-700 dark:text-zinc-300 uppercase">{col.label}</span>
             </label>
           ))}
         </div>
@@ -619,21 +800,28 @@ export const PdfOptionsModal = ({
             onChange={(e) => setIncludeTotalValue(e.target.checked)}
             className="w-4 h-4 rounded border-zinc-300 dark:border-zinc-700 text-zinc-900 dark:text-zinc-100 focus:ring-zinc-900 dark:focus:ring-zinc-100"
           />
-          <span className="text-sm font-medium text-zinc-700 dark:text-zinc-300">Incluir Valor Total do Estoque</span>
+          <span className="text-sm font-medium text-zinc-700 dark:text-zinc-300 uppercase">Incluir Valor Total do Estoque</span>
         </label>
       </div>
 
       <div className="flex justify-end gap-3 pt-4 border-t border-zinc-100 dark:border-zinc-800">
         <button 
           type="button"
+          onClick={onClear}
+          className="px-4 py-2 text-sm font-bold text-zinc-400 hover:text-zinc-600 dark:text-zinc-500 dark:hover:text-zinc-300 transition-colors mr-auto uppercase"
+        >
+          Limpar Campos
+        </button>
+        <button 
+          type="button"
           onClick={onClose}
-          className="px-6 py-2 text-sm font-bold text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100 transition-colors"
+          className="px-6 py-2 text-sm font-bold text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100 transition-colors uppercase"
         >
           Cancelar
         </button>
         <button 
           onClick={onExport}
-          className="px-8 py-2 bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 text-sm font-bold rounded-xl hover:bg-zinc-800 transition-all shadow-lg shadow-zinc-900/10"
+          className="px-8 py-2 bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 text-sm font-bold rounded-xl hover:bg-rose-800 transition-all shadow-lg shadow-zinc-900/10 uppercase"
         >
           Gerar PDF
         </button>
@@ -668,7 +856,7 @@ export const ProductDetailModal = ({
         >
           <div className="px-6 py-4 border-b border-zinc-100 dark:border-zinc-800 flex items-center justify-between flex-shrink-0">
             <div>
-              <h2 className="text-lg font-bold text-zinc-900 dark:text-zinc-100">{product.name}</h2>
+              <h2 className="text-lg font-bold text-zinc-900 dark:text-zinc-100 uppercase">{product.name}</h2>
               <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Detalhes do Produto</p>
             </div>
             <button 
@@ -724,12 +912,6 @@ export const ProductDetailModal = ({
                 <div>
                   <p className="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider mb-1">Estoque Mínimo</p>
                   <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100">{product.min_quantity ?? 'Não definido'} {product.min_quantity !== null ? product.unit : ''}</p>
-                </div>
-                <div>
-                  <p className="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider mb-1">Data de Validade</p>
-                  <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
-                    {product.expiry_date ? new Date(product.expiry_date).toLocaleDateString('pt-BR') : 'Não informada'}
-                  </p>
                 </div>
                 <div>
                   <p className="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider mb-1">Valor Unitário (Média)</p>

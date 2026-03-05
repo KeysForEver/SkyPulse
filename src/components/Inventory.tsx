@@ -40,8 +40,8 @@ interface InventoryProps {
   locations: {id: number, name: string}[];
   orders: Order[];
   movements: Movement[];
-  onAddProduct: (p: Partial<Product>) => void;
-  onUpdateProduct: (id: number, p: Partial<Product>) => Promise<void>;
+  onAddProduct: (p: FormData) => void;
+  onUpdateProduct: (id: number, p: FormData) => Promise<void>;
   onDeleteProduct: (id: number) => Promise<void>;
   onAddCategory: (name: string) => Promise<void>;
   onUpdateCategory: (id: number, name: string) => Promise<void>;
@@ -103,16 +103,17 @@ export const Inventory = ({
   const [endDate, setEndDate] = useState('');
   const [movementTypeFilter, setMovementTypeFilter] = useState<'ALL' | 'IN' | 'OUT'>('ALL');
   const [movementLocationFilter, setMovementLocationFilter] = useState<string>('ALL');
-  const [visibleColumns, setVisibleColumns] = useState<string[]>(['id', 'name', 'category', 'quantity', 'expiry_date', 'min_quantity', 'status']);
+  const [visibleColumns, setVisibleColumns] = useState<string[]>(['id', 'name', 'category', 'quantity', 'min_quantity', 'status']);
   const [isColumnSelectorOpen, setIsColumnSelectorOpen] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const importFileInputRef = useRef<HTMLInputElement>(null);
 
   const ALL_COLUMNS = [
     { id: 'id', label: 'ID' },
     { id: 'name', label: 'Produto' },
     { id: 'category', label: 'Categoria' },
     { id: 'quantity', label: 'Estoque' },
-    { id: 'expiry_date', label: 'Validade' },
     { id: 'min_quantity', label: 'Mínimo' },
     { id: 'status', label: 'Status' }
   ];
@@ -154,7 +155,6 @@ export const Inventory = ({
     issue_date: new Date().toISOString().split('T')[0],
     product_id: '',
     location: '',
-    expiry_date: '',
     quantity: 0,
     unit_price: 0
   });
@@ -173,6 +173,7 @@ export const Inventory = ({
         setProductError('A imagem deve ter no máximo 2MB.');
         return;
       }
+      setSelectedFile(file);
       const reader = new FileReader();
       reader.onloadend = () => {
         setFormData({ ...formData, photo: reader.result as string });
@@ -185,13 +186,28 @@ export const Inventory = ({
     e.preventDefault();
     setProductError(null);
 
-    if (editingProduct) {
-      onUpdateProduct(editingProduct.id, formData);
+    const data = new FormData();
+    data.append('name', formData.name);
+    data.append('category', formData.category);
+    data.append('unit', formData.unit);
+    data.append('cost_price', formData.cost_price.toString());
+    if (formData.min_quantity !== null) {
+      data.append('min_quantity', formData.min_quantity.toString());
+    }
+    if (selectedFile) {
+      data.append('photo', selectedFile);
     } else {
-      onAddProduct(formData);
+      data.append('photo', formData.photo);
+    }
+
+    if (editingProduct) {
+      onUpdateProduct(editingProduct.id, data);
+    } else {
+      onAddProduct(data);
     }
     setIsModalOpen(false);
     setEditingProduct(null);
+    setSelectedFile(null);
   };
 
   const resetStockInForm = () => {
@@ -201,7 +217,6 @@ export const Inventory = ({
       issue_date: new Date().toISOString().split('T')[0],
       product_id: '',
       location: '',
-      expiry_date: '',
       quantity: 0,
       unit_price: 0
     });
@@ -212,13 +227,48 @@ export const Inventory = ({
     setNewLocationName('');
   };
 
+  const resetProductForm = () => {
+    if (editingProduct) {
+      setFormData({
+        name: editingProduct.name,
+        category: editingProduct.category,
+        unit: editingProduct.unit,
+        photo: editingProduct.photo || '',
+        cost_price: editingProduct.cost_price,
+        min_quantity: editingProduct.min_quantity
+      });
+    } else {
+      setFormData({
+        name: '',
+        category: '',
+        unit: 'un',
+        photo: '',
+        cost_price: 0,
+        min_quantity: null
+      });
+    }
+    setProductError(null);
+    setSelectedFile(null);
+  };
+
+  const resetStockOutForm = () => {
+    setStockOutData({
+      product_id: '',
+      quantity: 0,
+      reason: '',
+      destination: ''
+    });
+    setStockOutError(null);
+  };
+
+  const resetPdfOptions = () => {
+    setSelectedPdfFields(['id', 'name', 'category', 'quantity', 'unit', 'cost_price', 'status']);
+    setIncludeTotalValue(false);
+  };
+
   const handleStockInSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setStockInError(null);
-    if (stockInData.unit_price <= 0) {
-      setStockInError('O valor unitário deve ser um número positivo.');
-      return;
-    }
     onStockIn(stockInData);
     setIsStockInModalOpen(false);
     resetStockInForm();
@@ -278,6 +328,36 @@ export const Inventory = ({
       setIsEditingLocation(false);
       setEditingLocationId(null);
     }
+  };
+
+  const handleImportCsv = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = async (event) => {
+      const csvData = event.target?.result as string;
+      try {
+        const response = await fetch('/api/products/import', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ csvData })
+        });
+
+        const result = await response.json();
+        if (result.success) {
+          alert(`Importação concluída! ${result.imported} produtos importados.${result.errors.length > 0 ? '\n\nErros:\n' + result.errors.join('\n') : ''}`);
+        } else {
+          alert(`Erro na importação: ${result.error}`);
+        }
+      } catch (error) {
+        console.error('Erro ao importar CSV:', error);
+        alert('Erro ao importar arquivo CSV.');
+      } finally {
+        if (importFileInputRef.current) importFileInputRef.current.value = '';
+      }
+    };
+    reader.readAsText(file);
   };
 
   const filteredProducts = useMemo(() => {
@@ -389,7 +469,7 @@ export const Inventory = ({
         <button 
           onClick={() => setActiveSubTab('products')}
           className={cn(
-            "px-4 py-2 text-sm font-bold rounded-lg transition-colors",
+            "px-4 py-2 text-sm font-bold rounded-lg transition-colors uppercase",
             activeSubTab === 'products' 
               ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900" 
               : "text-zinc-500 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-800"
@@ -400,7 +480,7 @@ export const Inventory = ({
         <button 
           onClick={() => setActiveSubTab('movements')}
           className={cn(
-            "px-4 py-2 text-sm font-bold rounded-lg transition-colors",
+            "px-4 py-2 text-sm font-bold rounded-lg transition-colors uppercase",
             activeSubTab === 'movements' 
               ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900" 
               : "text-zinc-500 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-800"
@@ -431,7 +511,7 @@ export const Inventory = ({
               <div className="relative">
                 <button 
                   onClick={() => setIsColumnSelectorOpen(!isColumnSelectorOpen)}
-                  className="flex items-center gap-2 px-4 py-2 text-sm font-bold text-zinc-600 bg-zinc-100 rounded-xl hover:bg-zinc-200 transition-colors dark:text-zinc-300 dark:bg-zinc-800 dark:hover:bg-zinc-700"
+                  className="flex items-center gap-2 px-4 py-2 text-sm font-bold text-zinc-600 bg-zinc-100 rounded-xl hover:bg-zinc-200 transition-colors dark:text-zinc-300 dark:bg-zinc-800 dark:hover:bg-zinc-700 uppercase"
                 >
                   <Settings size={18} />
                   Colunas
@@ -477,11 +557,19 @@ export const Inventory = ({
               activeSubTab={activeSubTab}
               onPdfClick={() => setIsPdfOptionsModalOpen(true)}
               onCsvClick={() => exportToCSV(filteredProducts)}
+              onImportCsvClick={() => importFileInputRef.current?.click()}
               onStockOutClick={() => setIsStockOutModalOpen(true)}
               onStockInClick={() => { resetStockInForm(); setIsStockInModalOpen(true); }}
               onNewProductClick={() => { setEditingProduct(null); setIsModalOpen(true); }}
               onExportMovementsPdf={() => exportMovementsToPDF(filteredMovements)}
               onExportMovementsCsv={() => exportMovementsToCSV(filteredMovements)}
+            />
+            <input 
+              type="file" 
+              ref={importFileInputRef} 
+              onChange={handleImportCsv} 
+              accept=".csv" 
+              className="hidden" 
             />
           </div>
         </div>
@@ -577,6 +665,7 @@ export const Inventory = ({
         productError={productError}
         fileInputRef={fileInputRef}
         handleFileChange={handleFileChange}
+        onClear={resetProductForm}
       />
 
       <StockInModal 
@@ -599,6 +688,7 @@ export const Inventory = ({
         onAddLocation={handleAddLocation}
         products={products}
         stockInError={stockInError}
+        onClear={resetStockInForm}
       />
 
       <StockOutModal 
@@ -611,6 +701,7 @@ export const Inventory = ({
         orders={orders}
         stockOutError={stockOutError}
         setStockOutError={setStockOutError}
+        onClear={resetStockOutForm}
       />
 
       <MinStockModal 
@@ -620,6 +711,7 @@ export const Inventory = ({
         setFormData={setFormData}
         onSubmit={handleSubmit}
         editingProduct={editingProduct}
+        onClear={resetProductForm}
       />
 
       <PdfOptionsModal 
@@ -631,6 +723,7 @@ export const Inventory = ({
         setIncludeTotalValue={setIncludeTotalValue}
         onExport={() => exportToPDF(filteredProducts, selectedPdfFields, includeTotalValue)}
         ALL_COLUMNS={ALL_COLUMNS}
+        onClear={resetPdfOptions}
       />
 
       <ProductDetailModal 

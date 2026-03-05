@@ -136,12 +136,11 @@ export default function App() {
     }
   };
 
-  const addProduct = async (productData: Partial<Product>) => {
+  const addProduct = async (formData: FormData) => {
     try {
       const res = await fetch('/api/products', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...productData, quantity: 0 })
+        body: formData
       });
       if (res.ok) {
         fetchData();
@@ -259,12 +258,11 @@ export default function App() {
     }
   };
 
-  const handleUpdateProduct = async (id: number, data: any) => {
+  const handleUpdateProduct = async (id: number, formData: FormData) => {
     try {
       const res = await fetch(`/api/products/${id}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data)
+        body: formData
       });
       if (res.ok) {
         fetchData();
@@ -319,52 +317,52 @@ export default function App() {
       );
       case 'production': return (
         <GenericList 
-          title="Ordens de Produção" 
+          title="ORDENS DE PRODUÇÃO" 
           items={orders} 
           columns={[
             { key: 'id', label: 'ID', mono: true },
-            { key: 'title', label: 'Título' },
-            { key: 'status', label: 'Status' },
-            { key: 'client_name', label: 'Cliente' }
+            { key: 'title', label: 'TÍTULO' },
+            { key: 'status', label: 'STATUS' },
+            { key: 'client_name', label: 'CLIENTE' }
           ]} 
         />
       );
       case 'kanban': return <Kanban orders={orders} onUpdateStatus={updateOrderStatus} />;
       case 'clients': return (
         <GenericList 
-          title="Clientes" 
+          title="CLIENTES" 
           items={clients} 
           columns={[
-            { key: 'name', label: 'Nome' },
-            { key: 'email', label: 'E-mail' },
-            { key: 'phone', label: 'Telefone' }
+            { key: 'name', label: 'NOME' },
+            { key: 'email', label: 'E-MAIL' },
+            { key: 'phone', label: 'TELEFONE' }
           ]} 
         />
       );
       case 'suppliers': return (
         <GenericList 
-          title="Fornecedores" 
+          title="FORNECEDORES" 
           items={suppliers} 
           columns={[
-            { key: 'name', label: 'Nome' },
-            { key: 'contact', label: 'Contato' }
+            { key: 'name', label: 'NOME' },
+            { key: 'contact', label: 'CONTATO' }
           ]} 
         />
       );
       case 'assets': return (
         <GenericList 
-          title="Patrimônios" 
+          title="PATRIMÔNIOS" 
           items={assets} 
           columns={[
-            { key: 'name', label: 'Nome' },
-            { key: 'code', label: 'Código', mono: true },
-            { key: 'status', label: 'Status' }
+            { key: 'name', label: 'NOME' },
+            { key: 'code', label: 'CÓDIGO', mono: true },
+            { key: 'status', label: 'STATUS' }
           ]} 
         />
       );
       case 'financial': return (
         <GenericList 
-          title="Financeiro (Entradas de Estoque)" 
+          title="FINANCEIRO (ENTRADAS DE ESTOQUE)" 
           showAddButton={false}
           items={financialEntries.map(e => ({
             ...e,
@@ -373,28 +371,29 @@ export default function App() {
             issue_date_fmt: e.issue_date ? new Date(e.issue_date).toLocaleDateString('pt-BR') : '-'
           }))} 
           columns={[
-            { key: 'issue_date_fmt', label: 'Data Emissão' },
-            { key: 'doc_number', label: 'Doc. Fiscal' },
-            { key: 'product_name', label: 'Produto' },
-            { key: 'quantity', label: 'Quantidade' },
-            { key: 'unit_price_fmt', label: 'V. Unitário' },
-            { key: 'total_value', label: 'V. Total' }
+            { key: 'issue_date_fmt', label: 'DATA EMISSÃO' },
+            { key: 'doc_number', label: 'DOC. FISCAL' },
+            { key: 'product_name', label: 'PRODUTO' },
+            { key: 'quantity', label: 'QUANTIDADE' },
+            { key: 'unit_price_fmt', label: 'V. UNITÁRIO' },
+            { key: 'total_value', label: 'V. TOTAL' }
           ]} 
         />
       );
       case 'audit': return (
         <GenericList 
-          title="Histórico de Ações no Sistema" 
+          title="HISTÓRICO DE AÇÕES NO SISTEMA" 
           showAddButton={false}
+          showActions={false}
           items={auditLogs.map(l => ({
             ...l,
             created_at_fmt: new Date(l.created_at).toLocaleString('pt-BR')
           }))} 
           columns={[
-            { key: 'created_at_fmt', label: 'Data/Hora' },
-            { key: 'user_name', label: 'Usuário' },
-            { key: 'action', label: 'Ação' },
-            { key: 'details', label: 'Detalhes' }
+            { key: 'created_at_fmt', label: 'DATA/HORA' },
+            { key: 'user_name', label: 'USUÁRIO' },
+            { key: 'action', label: 'AÇÃO' },
+            { key: 'details', label: 'DETALHES' }
           ]} 
         />
       );
@@ -410,8 +409,8 @@ export default function App() {
           <div className="w-20 h-20 bg-zinc-100 rounded-2xl flex items-center justify-center mx-auto mb-6 animate-bounce">
             <RotateCcw className="text-zinc-900" size={40} />
           </div>
-          <h2 className="text-2xl font-bold mb-3">Gire seu dispositivo</h2>
-          <p className="text-zinc-400 text-sm max-w-[240px] mx-auto leading-relaxed">
+          <h2 className="text-2xl font-bold mb-3 uppercase">Gire seu dispositivo</h2>
+          <p className="text-zinc-400 text-sm max-w-[240px] mx-auto leading-relaxed uppercase">
             Esta aplicação foi otimizada para visualização em modo <span className="text-white font-semibold">paisagem (deitado)</span> para oferecer a melhor experiência de gestão.
           </p>
         </div>
@@ -468,7 +467,7 @@ export default function App() {
                 AD
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100 truncate">Administrador</p>
+                <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100 truncate uppercase">Administrador</p>
                 <p className="text-xs text-zinc-500 dark:text-zinc-400 truncate">admin@pro.com</p>
               </div>
             </div>
@@ -484,16 +483,16 @@ export default function App() {
               <Menu size={20} />
             </button>
             <h1 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">
-              {activeTab === 'dashboard' && 'Painel'}
-              {activeTab === 'kanban' && 'Kanban'}
-              {activeTab === 'production' && 'Ordens de Produção'}
-              {activeTab === 'clients' && 'Clientes'}
-              {activeTab === 'suppliers' && 'Fornecedores'}
-              {activeTab === 'assets' && 'Patrimônios'}
-              {activeTab === 'inventory' && 'Estoque'}
-              {activeTab === 'financial' && 'Financeiro'}
-              {activeTab === 'settings' && 'Configurações'}
-              {activeTab === 'audit' && 'Histórico de Ações'}
+              {activeTab === 'dashboard' && 'PAINEL'}
+              {activeTab === 'kanban' && 'KANBAN'}
+              {activeTab === 'production' && 'ORDENS DE PRODUÇÃO'}
+              {activeTab === 'clients' && 'CLIENTES'}
+              {activeTab === 'suppliers' && 'FORNECEDORES'}
+              {activeTab === 'assets' && 'PATRIMÔNIOS'}
+              {activeTab === 'inventory' && 'ESTOQUE'}
+              {activeTab === 'financial' && 'FINANCEIRO'}
+              {activeTab === 'settings' && 'CONFIGURAÇÕES'}
+              {activeTab === 'audit' && 'HISTÓRICO DE AÇÕES'}
             </h1>
           </div>
           <div className="flex items-center gap-4">
@@ -504,7 +503,7 @@ export default function App() {
             >
               {isDarkMode ? <Sun size={20} /> : <Moon size={20} />}
             </button>
-            <div className="hidden md:flex items-center gap-2 px-3 py-1.5 bg-zinc-100 dark:bg-zinc-800 rounded-full text-xs font-medium text-zinc-600 dark:text-zinc-400">
+            <div className="hidden md:flex items-center gap-2 px-3 py-1.5 bg-zinc-100 dark:bg-zinc-800 rounded-full text-xs font-medium text-zinc-600 dark:text-zinc-400 uppercase">
               <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
               Sistema Online
             </div>

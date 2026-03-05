@@ -17,7 +17,6 @@ export interface Product {
   quantity: number;
   min_quantity: number | null;
   photo?: string;
-  expiry_date?: string;
 }
 
 export interface Client {
@@ -64,7 +63,6 @@ export interface Movement {
   doc_number?: string;
   issue_date?: string;
   location?: string;
-  expiry_date?: string;
   unit_price?: number;
   reason?: string;
   destination?: string;

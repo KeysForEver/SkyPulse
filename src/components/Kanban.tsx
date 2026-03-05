@@ -53,10 +53,10 @@ export const Kanban = ({ orders, onUpdateStatus }: KanbanProps) => {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400 dark:text-zinc-500" size={16} />
           <input 
             type="text" 
-            placeholder="Buscar ordens..." 
+            placeholder="BUSCAR ORDENS..." 
             value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 text-sm border border-zinc-200 dark:border-zinc-800 rounded-lg focus:outline-none focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-100 focus:border-transparent bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100"
+            onChange={(e) => setSearchTerm(e.target.value.toUpperCase())}
+            className="w-full pl-10 pr-4 py-2 text-sm border border-zinc-200 dark:border-zinc-800 rounded-lg focus:outline-none focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-100 focus:border-transparent bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 uppercase"
           />
         </div>
       </div>
@@ -95,14 +95,14 @@ export const Kanban = ({ orders, onUpdateStatus }: KanbanProps) => {
                     <MoreVertical size={14} />
                   </button>
                 </div>
-                <h4 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100 mb-1">{order.title}</h4>
-                <p className="text-xs text-zinc-500 dark:text-zinc-400 mb-3 line-clamp-2">{order.description || 'Sem descrição'}</p>
+                <h4 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100 mb-1 uppercase">{order.title}</h4>
+                <p className="text-xs text-zinc-500 dark:text-zinc-400 mb-3 line-clamp-2 uppercase">{order.description || 'SEM DESCRIÇÃO'}</p>
                 <div className="flex items-center justify-between pt-3 border-t border-zinc-50 dark:border-zinc-800">
                   <div className="flex items-center gap-1.5">
                     <div className="w-5 h-5 rounded-full bg-zinc-900 dark:bg-zinc-100 flex items-center justify-center text-[8px] text-white dark:text-zinc-900 font-bold">
                       {order.client_name?.charAt(0) || 'C'}
                     </div>
-                    <span className="text-[10px] font-medium text-zinc-600 dark:text-zinc-400">{order.client_name}</span>
+                    <span className="text-[10px] font-medium text-zinc-600 dark:text-zinc-400 uppercase">{order.client_name}</span>
                   </div>
                   <div className="flex gap-1">
                     {KANBAN_COLUMNS.indexOf(col) < KANBAN_COLUMNS.length - 1 && (
