@@ -24,7 +24,13 @@ export const MovementTable = ({ movements }: MovementTableProps) => {
         {movements.map((m) => (
           <tr key={m.id} className="hover:bg-zinc-50/50 dark:hover:bg-zinc-800/50 transition-colors">
             <td className="px-6 py-4 text-sm text-zinc-500 dark:text-zinc-400">
-              {new Date(m.date).toLocaleString('pt-BR')}
+              {new Date(m.date).toLocaleString('pt-BR', { 
+                day: '2-digit', 
+                month: '2-digit', 
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+              })}
             </td>
             <td className="px-6 py-4">
               <span className={cn(

@@ -76,7 +76,7 @@ export const Inventory = ({
   const [isStockOutModalOpen, setIsStockOutModalOpen] = useState(false);
   const [isMinStockModalOpen, setIsMinStockModalOpen] = useState(false);
   const [isPdfOptionsModalOpen, setIsPdfOptionsModalOpen] = useState(false);
-  const [selectedPdfFields, setSelectedPdfFields] = useState<string[]>(['id', 'name', 'category', 'quantity', 'unit', 'cost_price', 'status']);
+  const [selectedPdfFields, setSelectedPdfFields] = useState<string[]>(['name', 'category', 'quantity', 'unit', 'cost_price', 'status']);
   const [includeTotalValue, setIncludeTotalValue] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [activeMenuId, setActiveMenuId] = useState<number | null>(null);
@@ -103,7 +103,7 @@ export const Inventory = ({
   const [endDate, setEndDate] = useState('');
   const [movementTypeFilter, setMovementTypeFilter] = useState<'ALL' | 'IN' | 'OUT'>('ALL');
   const [movementLocationFilter, setMovementLocationFilter] = useState<string>('ALL');
-  const [visibleColumns, setVisibleColumns] = useState<string[]>(['id', 'name', 'category', 'quantity', 'min_quantity', 'status']);
+  const [visibleColumns, setVisibleColumns] = useState<string[]>(['name', 'category', 'quantity', 'total_value', 'min_quantity', 'status']);
   const [isColumnSelectorOpen, setIsColumnSelectorOpen] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -114,6 +114,7 @@ export const Inventory = ({
     { id: 'name', label: 'Produto' },
     { id: 'category', label: 'Categoria' },
     { id: 'quantity', label: 'Estoque' },
+    { id: 'total_value', label: 'Valor Total' },
     { id: 'min_quantity', label: 'Mínimo' },
     { id: 'status', label: 'Status' }
   ];
@@ -191,9 +192,13 @@ export const Inventory = ({
     data.append('category', formData.category);
     data.append('unit', formData.unit);
     data.append('cost_price', formData.cost_price.toString());
-    if (formData.min_quantity !== null) {
+    
+    if (formData.min_quantity !== null && formData.min_quantity !== undefined) {
       data.append('min_quantity', formData.min_quantity.toString());
+    } else {
+      data.append('min_quantity', '');
     }
+
     if (selectedFile) {
       data.append('photo', selectedFile);
     } else {
@@ -206,6 +211,7 @@ export const Inventory = ({
       onAddProduct(data);
     }
     setIsModalOpen(false);
+    setIsMinStockModalOpen(false);
     setEditingProduct(null);
     setSelectedFile(null);
   };
@@ -721,7 +727,10 @@ export const Inventory = ({
         setSelectedPdfFields={setSelectedPdfFields}
         includeTotalValue={includeTotalValue}
         setIncludeTotalValue={setIncludeTotalValue}
-        onExport={() => exportToPDF(filteredProducts, selectedPdfFields, includeTotalValue)}
+        onExport={() => {
+          exportToPDF(filteredProducts, selectedPdfFields, includeTotalValue);
+          setIsPdfOptionsModalOpen(false);
+        }}
         ALL_COLUMNS={ALL_COLUMNS}
         onClear={resetPdfOptions}
       />

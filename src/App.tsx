@@ -368,10 +368,12 @@ export default function App() {
             ...e,
             total_value: `R$ ${(e.quantity * e.unit_price).toFixed(2)}`,
             unit_price_fmt: `R$ ${e.unit_price.toFixed(2)}`,
-            issue_date_fmt: e.issue_date ? new Date(e.issue_date).toLocaleDateString('pt-BR') : '-'
+            issue_date_fmt: e.issue_date ? new Date(e.issue_date).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '-',
+            date_fmt: new Date(e.date).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })
           }))} 
           columns={[
             { key: 'issue_date_fmt', label: 'DATA EMISSÃO' },
+            { key: 'date_fmt', label: 'DATA MOVIMENTO' },
             { key: 'doc_number', label: 'DOC. FISCAL' },
             { key: 'product_name', label: 'PRODUTO' },
             { key: 'quantity', label: 'QUANTIDADE' },
@@ -387,7 +389,7 @@ export default function App() {
           showActions={false}
           items={auditLogs.map(l => ({
             ...l,
-            created_at_fmt: new Date(l.created_at).toLocaleString('pt-BR')
+            created_at_fmt: new Date(l.created_at).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })
           }))} 
           columns={[
             { key: 'created_at_fmt', label: 'DATA/HORA' },

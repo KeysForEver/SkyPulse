@@ -68,6 +68,11 @@ export const ProductTable = ({
               </div>
             </th>
           )}
+          {visibleColumns.includes('total_value') && (
+            <th className="px-6 py-3 text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
+              Valor Total
+            </th>
+          )}
           {visibleColumns.includes('min_quantity') && (
             <th 
               onClick={() => requestSort('min_quantity')}
@@ -134,6 +139,11 @@ export const ProductTable = ({
                 )}>
                   {isLowStock && <AlertTriangle size={14} />}
                   {p.quantity} {p.unit}
+                </td>
+              )}
+              {visibleColumns.includes('total_value') && (
+                <td className="px-6 py-4 text-sm font-bold text-zinc-900 dark:text-zinc-100">
+                  R$ {(p.quantity * p.cost_price).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </td>
               )}
               {visibleColumns.includes('min_quantity') && (

@@ -37,7 +37,7 @@ export const Settings = () => {
         <p className="text-zinc-500 dark:text-zinc-400 uppercase">Gerencie as preferências e segurança do sistema.</p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="max-w-2xl">
         <Card className="p-6">
           <div className="flex items-start gap-4">
             <div className="w-12 h-12 bg-zinc-100 dark:bg-zinc-800 rounded-2xl flex items-center justify-center flex-shrink-0">
@@ -47,7 +47,6 @@ export const Settings = () => {
               <h3 className="text-lg font-bold mb-1 uppercase">Backup do Banco de Dados</h3>
               <p className="text-sm text-zinc-500 dark:text-zinc-400 mb-6 uppercase">
                 Baixe uma cópia completa do banco de dados em formato comprimido (.zip). 
-                Recomendamos realizar backups periódicos para garantir a segurança dos seus dados.
               </p>
               
               <button
@@ -62,25 +61,6 @@ export const Settings = () => {
                 )}
                 {isBackingUp ? 'GERANDO BACKUP...' : 'BAIXAR BACKUP (.ZIP)'}
               </button>
-            </div>
-          </div>
-        </Card>
-
-        <Card className="p-6">
-          <div className="flex items-start gap-4">
-            <div className="w-12 h-12 bg-emerald-50 dark:bg-emerald-500/10 rounded-2xl flex items-center justify-center flex-shrink-0">
-              <ShieldCheck className="text-emerald-600 dark:text-emerald-400" size={24} />
-            </div>
-            <div className="flex-1">
-              <h3 className="text-lg font-bold mb-1 uppercase">Segurança do Sistema</h3>
-              <p className="text-sm text-zinc-500 dark:text-zinc-400 mb-4 uppercase">
-                O sistema utiliza criptografia de ponta a ponta e backups automatizados. 
-                Sua sessão está protegida.
-              </p>
-              <div className="flex items-center gap-2 text-xs font-medium text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-500/10 w-fit px-3 py-1 rounded-full uppercase">
-                <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                Proteção Ativa
-              </div>
             </div>
           </div>
         </Card>

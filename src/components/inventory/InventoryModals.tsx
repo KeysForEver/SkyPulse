@@ -26,7 +26,7 @@ const Modal = ({ isOpen, onClose, title, children }: ModalProps) => (
           initial={{ opacity: 0, scale: 0.95, y: 20 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.95, y: 20 }}
-          className="relative w-full max-w-2xl bg-white dark:bg-zinc-900 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]"
+          className="relative w-full md:w-[66.666667%] max-w-5xl bg-white dark:bg-zinc-900 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]"
         >
           <div className="px-6 py-4 border-b border-zinc-100 dark:border-zinc-800 flex items-center justify-between flex-shrink-0">
             <h2 className="text-lg font-bold text-zinc-900 dark:text-zinc-100">{title.toUpperCase()}</h2>
@@ -146,13 +146,15 @@ export const ProductModal = ({
           </select>
         </div>
         <div className="space-y-1.5 md:col-span-2">
-          <label className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase">Código do Produto</label>
+          <label className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase">Estoque Mínimo (Opcional)</label>
           <input 
-            type="text" 
-            value={formData.code || ''}
-            onChange={e => setFormData({...formData, code: e.target.value.toUpperCase()})}
+            type="number" 
+            min="0"
+            step="0.01"
+            value={formData.min_quantity === null ? '' : formData.min_quantity}
+            onChange={e => setFormData({...formData, min_quantity: e.target.value === '' ? null : parseFloat(e.target.value)})}
             className="w-full px-3 py-2 text-sm border border-zinc-200 dark:border-zinc-800 rounded-lg focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-100 outline-none bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100"
-            placeholder="EX: SKU-12345"
+            placeholder="DEIXE VAZIO PARA NÃO DEFINIR MÍNIMO"
           />
         </div>
       </div>
@@ -247,8 +249,7 @@ export const StockInModal = ({
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   const filteredProducts = products.filter((p: Product) => 
-    p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (p.code && p.code.toLowerCase().includes(searchTerm.toLowerCase()))
+    p.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const selectedProduct = products.find((p: Product) => p.id === parseInt(stockInData.product_id));
@@ -436,7 +437,6 @@ export const StockInModal = ({
                       >
                         <div className="flex flex-col">
                           <span className="text-zinc-900 dark:text-zinc-100">{p.name}</span>
-                          {p.code && <span className="text-[10px] text-zinc-400 uppercase tracking-widest">{p.code}</span>}
                         </div>
                         <span className="text-xs text-zinc-400 uppercase">Saldo: {p.quantity}</span>
                       </button>
@@ -521,8 +521,7 @@ export const StockOutModal = ({
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   const filteredProducts = products.filter((p: Product) => 
-    p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (p.code && p.code.toLowerCase().includes(searchTerm.toLowerCase()))
+    p.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const selectedProduct = products.find((p: Product) => p.id === parseInt(stockOutData.product_id));
@@ -607,7 +606,6 @@ export const StockOutModal = ({
                       >
                         <div className="flex flex-col">
                           <span className="text-zinc-900 dark:text-zinc-100">{p.name}</span>
-                          {p.code && <span className="text-[10px] text-zinc-400 uppercase tracking-widest">{p.code}</span>}
                         </div>
                         <span className="text-xs text-zinc-400">Saldo: {p.quantity > 0 ? p.quantity : '-'}</span>
                       </button>
@@ -852,7 +850,7 @@ export const ProductDetailModal = ({
           animate={{ x: 0 }}
           exit={{ x: '100%' }}
           transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-          className="relative w-full max-w-2xl h-full bg-white dark:bg-zinc-900 shadow-2xl flex flex-col"
+          className="relative w-full md:w-[66.666667%] max-w-5xl h-full bg-white dark:bg-zinc-900 shadow-2xl flex flex-col"
         >
           <div className="px-6 py-4 border-b border-zinc-100 dark:border-zinc-800 flex items-center justify-between flex-shrink-0">
             <div>

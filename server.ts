@@ -40,13 +40,12 @@ db.exec(`
 
   CREATE TABLE IF NOT EXISTS products (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    code TEXT UNIQUE,
     name TEXT NOT NULL,
     category TEXT,
     unit TEXT DEFAULT 'un',
     cost_price REAL DEFAULT 0,
     quantity REAL DEFAULT 0,
-    min_quantity REAL DEFAULT 5,
+    min_quantity REAL,
     photo TEXT
   );
 
@@ -119,7 +118,7 @@ db.exec(`
 
 // Migrations (para bancos antigos que não tinham colunas)
 // Observação: em SQLite não existe "ADD COLUMN IF NOT EXISTS", então usamos try/catch.
-try { db.exec("ALTER TABLE products ADD COLUMN code TEXT UNIQUE"); } catch {}
+// try { db.exec("ALTER TABLE products ADD COLUMN code TEXT UNIQUE"); } catch {}
 
 // Seed initial data if empty
 const userCount = db.prepare('SELECT count(*) as count FROM users').get() as { count: number };
@@ -161,7 +160,7 @@ async function startServer() {
   app.get('/api/movements', (req, res) => {
     try {
       const movements = db.prepare(`
-        SELECT m.*, p.name as product_name, s.name as supplier_name
+        SELECT m.*, strftime('%Y-%m-%dT%H:%M:%SZ', m.date) as date, p.name as product_name, s.name as supplier_name
         FROM movements m
         JOIN products p ON m.product_id = p.id
         LEFT JOIN suppliers s ON m.supplier_id = s.id
@@ -179,10 +178,10 @@ async function startServer() {
       const lowStock = db.prepare('SELECT count(*) as count FROM products WHERE quantity <= min_quantity').get() as any;
       const activeOrders = db.prepare("SELECT count(*) as count FROM orders WHERE status != 'Finalização'").get() as any;
       const recentMovements = db.prepare(`
-        SELECT m.*, p.name as product_name
+        SELECT m.*, strftime('%Y-%m-%dT%H:%M:%SZ', m.date) as date, p.name as product_name
         FROM movements m
         JOIN products p ON m.product_id = p.id
-        ORDER BY date DESC
+        ORDER BY m.date DESC
         LIMIT 5
       `).all();
 
@@ -208,11 +207,10 @@ async function startServer() {
 
   app.post('/api/products', upload.single('photo'), async (req, res) => {
     try {
-      const { name, category, unit, quantity, min_quantity, code } = req.body;
+      const { name, category, unit, quantity, min_quantity } = req.body;
       const upperName = name?.toUpperCase();
       const upperCategory = category?.toUpperCase();
       const upperUnit = unit?.toUpperCase();
-      const upperCode = code?.toUpperCase();
       let photo = null;
 
       if (req.file) {
@@ -228,9 +226,9 @@ async function startServer() {
       }
 
       const result = db.prepare(`
-        INSERT INTO products (name, category, unit, quantity, min_quantity, photo, code)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
-      `).run(upperName, upperCategory, upperUnit, quantity || 0, min_quantity || 5, photo, upperCode);
+        INSERT INTO products (name, category, unit, quantity, min_quantity, photo)
+        VALUES (?, ?, ?, ?, ?, ?)
+      `).run(upperName, upperCategory, upperUnit, quantity || 0, min_quantity === '' || min_quantity === undefined ? null : min_quantity, photo);
 
       logAction(1, 'CREATE_PRODUCT', `Produto: ${upperName}`);
       res.json({ id: result.lastInsertRowid });
@@ -243,11 +241,10 @@ async function startServer() {
   app.put('/api/products/:id', upload.single('photo'), async (req, res) => {
     try {
       const { id } = req.params;
-      const { name, category, unit, quantity, min_quantity, code } = req.body;
+      const { name, category, unit, quantity, min_quantity } = req.body;
       const upperName = name?.toUpperCase();
       const upperCategory = category?.toUpperCase();
       const upperUnit = unit?.toUpperCase();
-      const upperCode = code?.toUpperCase();
       
       let photo = req.body.photo; // Keep existing if no new file
       
@@ -265,9 +262,9 @@ async function startServer() {
 
       db.prepare(`
         UPDATE products
-        SET name = ?, category = ?, unit = ?, quantity = ?, min_quantity = ?, photo = ?, code = ?
+        SET name = ?, category = ?, unit = ?, quantity = ?, min_quantity = ?, photo = ?
         WHERE id = ?
-      `).run(upperName, upperCategory, upperUnit, quantity, min_quantity, photo, upperCode, id);
+      `).run(upperName, upperCategory, upperUnit, quantity, min_quantity === '' || min_quantity === undefined ? null : min_quantity, photo, id);
 
       logAction(1, 'UPDATE_PRODUCT', `Produto ID: ${id}, Nome: ${upperName}`);
       broadcast({ type: 'INVENTORY_UPDATED' });
@@ -300,7 +297,7 @@ async function startServer() {
     try {
       const { id } = req.params;
       const movements = db.prepare(`
-        SELECT m.*, s.name as supplier_name
+        SELECT m.*, strftime('%Y-%m-%dT%H:%M:%SZ', m.date) as date, s.name as supplier_name
         FROM movements m
         LEFT JOIN suppliers s ON m.supplier_id = s.id
         WHERE m.product_id = ?
@@ -480,12 +477,9 @@ async function startServer() {
             db.prepare('INSERT INTO categories (name) VALUES (?)').run(categoryName);
           }
 
-          // Generate a unique code
-          const code = `PRD-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
-
           try {
-            db.prepare('INSERT INTO products (name, category, unit, code, quantity, cost_price) VALUES (?, ?, ?, ?, 0, 0)')
-              .run(name, categoryName, unit || 'un', code);
+            db.prepare('INSERT INTO products (name, category, unit, quantity, cost_price, min_quantity) VALUES (?, ?, ?, 0, 0, NULL)')
+              .run(name, categoryName, unit || 'un');
             results.push({ name, category: categoryName, unit: unit || 'un' });
           } catch (err: any) {
             errors.push(`Linha ${i + 1} (${name}): ${err.message}`);
@@ -505,7 +499,7 @@ async function startServer() {
   app.get('/api/financial/entries', (req, res) => {
     try {
       const entries = db.prepare(`
-        SELECT m.*, p.name as product_name
+        SELECT m.*, strftime('%Y-%m-%dT%H:%M:%SZ', m.date) as date, p.name as product_name
         FROM movements m
         JOIN products p ON m.product_id = p.id
         WHERE m.type = 'IN'
@@ -548,7 +542,7 @@ async function startServer() {
   app.get('/api/orders', (req, res) => {
     try {
       res.json(
-        db.prepare('SELECT o.*, c.name as client_name FROM orders o LEFT JOIN clients c ON o.client_id = c.id').all()
+        db.prepare("SELECT o.*, strftime('%Y-%m-%dT%H:%M:%SZ', o.created_at) as created_at, c.name as client_name FROM orders o LEFT JOIN clients c ON o.client_id = c.id").all()
       );
     } catch (error: any) {
       res.status(500).json({ error: error.message });
@@ -595,7 +589,7 @@ async function startServer() {
   app.get('/api/audit-logs', (req, res) => {
     try {
       const logs = db.prepare(`
-        SELECT al.*, u.name as user_name
+        SELECT al.*, strftime('%Y-%m-%dT%H:%M:%SZ', al.created_at) as created_at, u.name as user_name
         FROM audit_logs al
         LEFT JOIN users u ON al.user_id = u.id
         ORDER BY al.created_at DESC

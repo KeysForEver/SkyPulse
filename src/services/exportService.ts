@@ -37,7 +37,6 @@ export const exportToPDF = (products: Product[], selectedFields: string[], inclu
   
   const fieldLabels: Record<string, string> = {
     id: 'ID',
-    code: 'Código',
     name: 'Nome',
     category: 'Categoria',
     quantity: 'Estoque',
