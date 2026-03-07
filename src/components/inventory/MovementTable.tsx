@@ -1,5 +1,5 @@
 import React from 'react';
-import { ArrowDownLeft, ArrowUpRight } from 'lucide-react';
+import { ArrowDownLeft, ArrowUpRight, FileText } from 'lucide-react';
 import { Movement } from '../../types';
 import { cn } from '../Common';
 
@@ -49,7 +49,27 @@ export const MovementTable = ({ movements }: MovementTableProps) => {
               {m.type === 'IN' ? (m.supplier_name || m.location || '-') : (m.destination || '-')}
             </td>
             <td className="px-6 py-4 text-sm text-zinc-500 dark:text-zinc-400">
-              {m.type === 'IN' ? (m.doc_number || '-') : (m.reason || '-')}
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex flex-col gap-0.5">
+                  <span>{m.type === 'IN' ? (m.doc_number || '-') : (m.reason || '-')}</span>
+                  {m.xml && <span className="text-[10px] text-zinc-400 dark:text-zinc-600 font-mono truncate max-w-[150px]" title={m.xml}>XML: {m.xml}</span>}
+                </div>
+                {m.invoice_pdf && (
+                  <button 
+                    onClick={() => {
+                      const link = document.createElement('a');
+                      link.href = m.invoice_pdf!;
+                      link.target = '_blank';
+                      link.download = `NF-${m.doc_number || m.id}.pdf`;
+                      link.click();
+                    }}
+                    className="p-1.5 text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg transition-colors"
+                    title="Ver Nota Fiscal (PDF)"
+                  >
+                    <FileText size={16} />
+                  </button>
+                )}
+              </div>
             </td>
           </tr>
         ))}

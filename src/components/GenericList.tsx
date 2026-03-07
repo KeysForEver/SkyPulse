@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Search, Plus, MoreVertical } from 'lucide-react';
+import { Search, Plus, Trash2 } from 'lucide-react';
 import { Card, cn } from './Common';
 
 interface Column {
@@ -14,10 +14,23 @@ interface GenericListProps {
   columns: Column[];
   showAddButton?: boolean;
   showActions?: boolean;
+  onAdd?: () => void;
+  onEdit?: (item: any) => void;
+  onDelete?: (id: number) => void;
 }
 
-export const GenericList = ({ title, items, columns, showAddButton = true, showActions = true }: GenericListProps) => {
+export const GenericList = ({ 
+  title, 
+  items, 
+  columns, 
+  showAddButton = true, 
+  showActions = true,
+  onAdd,
+  onEdit,
+  onDelete
+}: GenericListProps) => {
   const [searchTerm, setSearchTerm] = useState('');
+  const [activeMenuId, setActiveMenuId] = useState<number | null>(null);
 
   const filteredItems = useMemo(() => {
     return items.filter(item => 
@@ -43,8 +56,11 @@ export const GenericList = ({ title, items, columns, showAddButton = true, showA
             />
           </div>
         </div>
-        {showAddButton && (
-          <button className="flex items-center gap-2 px-4 py-2 bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 text-sm font-medium rounded-lg hover:bg-zinc-800 dark:hover:bg-zinc-200 transition-colors uppercase">
+        {showAddButton && onAdd && (
+          <button 
+            onClick={onAdd}
+            className="flex items-center gap-2 px-4 py-2 bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 text-sm font-medium rounded-lg hover:bg-zinc-800 dark:hover:bg-zinc-200 transition-colors uppercase"
+          >
             <Plus size={16} />
             Novo
           </button>
@@ -62,17 +78,34 @@ export const GenericList = ({ title, items, columns, showAddButton = true, showA
           </thead>
           <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800">
             {filteredItems.map((item, idx) => (
-              <tr key={idx} className="hover:bg-zinc-50/50 dark:hover:bg-zinc-800/50 transition-colors">
+              <tr key={idx} className="hover:bg-zinc-50/50 dark:hover:bg-zinc-800/50 transition-colors group">
                 {columns.map(col => (
                   <td key={col.key} className={cn("px-6 py-4 text-sm", col.mono ? "font-mono text-zinc-500 dark:text-zinc-400" : "text-zinc-900 dark:text-zinc-100")}>
                     {item[col.key]}
                   </td>
                 ))}
                 {showActions && (
-                  <td className="px-6 py-4 text-right">
-                    <button className="text-zinc-400 hover:text-zinc-900 dark:text-zinc-500 dark:hover:text-zinc-100">
-                      <MoreVertical size={16} />
-                    </button>
+                  <td className="px-6 py-4 text-right relative">
+                    <div className="flex items-center justify-end gap-2">
+                      {onEdit && (
+                        <button 
+                          onClick={() => onEdit(item)}
+                          className="p-1.5 text-zinc-400 hover:text-zinc-900 dark:text-zinc-500 dark:hover:text-zinc-100 transition-colors"
+                          title="Editar"
+                        >
+                          <Plus className="rotate-45" size={14} /> {/* Using Plus rotated as a simple edit icon or just use lucide Edit if available */}
+                        </button>
+                      )}
+                      {onDelete && (
+                        <button 
+                          onClick={() => onDelete(item.id)}
+                          className="p-1.5 text-zinc-400 hover:text-rose-600 dark:text-zinc-500 dark:hover:text-rose-400 transition-colors"
+                          title="Excluir"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      )}
+                    </div>
                   </td>
                 )}
               </tr>

@@ -23,6 +23,7 @@ import { Kanban } from './components/Kanban';
 import { GenericList } from './components/GenericList';
 import { Settings as SettingsView } from './components/Settings';
 import { SidebarItem, cn } from './components/Common';
+import { OrderModal } from './components/OrderModal';
 
 // --- Main App ---
 
@@ -59,6 +60,7 @@ export default function App() {
   }, []);
 
   const [activeTab, setActiveTab] = useState('dashboard');
+  const [inventorySearchTerm, setInventorySearchTerm] = useState('');
   const [stats, setStats] = useState<any>(null);
   const [products, setProducts] = useState<Product[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
@@ -71,6 +73,8 @@ export default function App() {
   const [financialEntries, setFinancialEntries] = useState<any[]>([]);
   const [auditLogs, setAuditLogs] = useState<any[]>([]);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [isOrderModalOpen, setIsOrderModalOpen] = useState(false);
+  const [editingOrder, setEditingOrder] = useState<Order | null>(null);
 
   useEffect(() => {
     fetchData();
@@ -133,6 +137,50 @@ export default function App() {
       fetchData();
     } catch (err) {
       console.error('Error updating order:', err);
+    }
+  };
+
+  const addOrder = async (data: any) => {
+    try {
+      const res = await fetch('/api/orders', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      });
+      if (res.ok) {
+        fetchData();
+      }
+    } catch (err) {
+      console.error('Error adding order:', err);
+    }
+  };
+
+  const updateOrder = async (id: number, data: any) => {
+    try {
+      const res = await fetch(`/api/orders/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      });
+      if (res.ok) {
+        fetchData();
+      }
+    } catch (err) {
+      console.error('Error updating order:', err);
+    }
+  };
+
+  const deleteOrder = async (id: number) => {
+    if (!confirm('Tem certeza que deseja excluir esta ordem de produção?')) return;
+    try {
+      const res = await fetch(`/api/orders/${id}`, {
+        method: 'DELETE'
+      });
+      if (res.ok) {
+        fetchData();
+      }
+    } catch (err) {
+      console.error('Error deleting order:', err);
     }
   };
 
@@ -294,7 +342,16 @@ export default function App() {
 
   const renderContent = () => {
     switch (activeTab) {
-      case 'dashboard': return <Dashboard stats={stats} isDarkMode={isDarkMode} />;
+      case 'dashboard': return (
+        <Dashboard 
+          stats={stats} 
+          isDarkMode={isDarkMode} 
+          onNavigate={(tab, search) => {
+            setActiveTab(tab);
+            if (search !== undefined) setInventorySearchTerm(search);
+          }} 
+        />
+      );
       case 'inventory': return (
         <Inventory 
           products={products} 
@@ -313,6 +370,8 @@ export default function App() {
           onUpdateLocation={updateLocation}
           onStockIn={handleStockIn}
           onStockOut={handleStockOut}
+          initialSearchTerm={inventorySearchTerm}
+          onSearchTermChange={setInventorySearchTerm}
         />
       );
       case 'production': return (
@@ -325,9 +384,32 @@ export default function App() {
             { key: 'status', label: 'STATUS' },
             { key: 'client_name', label: 'CLIENTE' }
           ]} 
+          onAdd={() => {
+            setEditingOrder(null);
+            setIsOrderModalOpen(true);
+          }}
+          onEdit={(order) => {
+            setEditingOrder(order);
+            setIsOrderModalOpen(true);
+          }}
+          onDelete={deleteOrder}
         />
       );
-      case 'kanban': return <Kanban orders={orders} onUpdateStatus={updateOrderStatus} />;
+      case 'kanban': return (
+        <Kanban 
+          orders={orders} 
+          onUpdateStatus={updateOrderStatus} 
+          onEdit={(order) => {
+            setEditingOrder(order);
+            setIsOrderModalOpen(true);
+          }}
+          onDelete={deleteOrder}
+          onAdd={() => {
+            setEditingOrder(null);
+            setIsOrderModalOpen(true);
+          }}
+        />
+      );
       case 'clients': return (
         <GenericList 
           title="CLIENTES" 
@@ -526,6 +608,23 @@ export default function App() {
           </AnimatePresence>
         </div>
       </main>
+
+      <OrderModal 
+        isOpen={isOrderModalOpen}
+        onClose={() => {
+          setIsOrderModalOpen(false);
+          setEditingOrder(null);
+        }}
+        onSubmit={(data) => {
+          if (editingOrder) {
+            updateOrder(editingOrder.id, data);
+          } else {
+            addOrder(data);
+          }
+        }}
+        editingOrder={editingOrder}
+        clients={clients}
+      />
     </div>
     </>
   );

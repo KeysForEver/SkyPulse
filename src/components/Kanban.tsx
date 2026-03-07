@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
-import { Search, MoreVertical, ChevronRight } from 'lucide-react';
-import { motion } from 'motion/react';
+import { Search, MoreVertical, ChevronRight, Plus, Edit, Trash2 } from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
 import { Order, OrderStatus } from '../types';
 import { KANBAN_COLUMNS } from '../constants';
 import { cn } from './Common';
@@ -8,11 +8,16 @@ import { cn } from './Common';
 interface KanbanProps {
   orders: Order[];
   onUpdateStatus: (id: number, status: OrderStatus) => void;
+  onEdit: (order: Order) => void;
+  onDelete: (id: number) => void;
+  onAdd: () => void;
 }
 
-export const Kanban = ({ orders, onUpdateStatus }: KanbanProps) => {
+export const Kanban = ({ orders, onUpdateStatus, onEdit, onDelete, onAdd }: KanbanProps) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [draggedOverColumn, setDraggedOverColumn] = useState<string | null>(null);
+  const [activeMenuId, setActiveMenuId] = useState<number | null>(null);
+  const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0 });
 
   const filteredOrders = useMemo(() => {
     return orders.filter(o => 
@@ -46,9 +51,20 @@ export const Kanban = ({ orders, onUpdateStatus }: KanbanProps) => {
     }
   };
 
+  const openMenu = (e: React.MouseEvent, orderId: number) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const rect = e.currentTarget.getBoundingClientRect();
+    setMenuPosition({
+      top: rect.bottom + window.scrollY,
+      left: rect.right - 160 + window.scrollX
+    });
+    setActiveMenuId(orderId);
+  };
+
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-4">
         <div className="relative flex-1 max-w-md">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400 dark:text-zinc-500" size={16} />
           <input 
@@ -59,6 +75,13 @@ export const Kanban = ({ orders, onUpdateStatus }: KanbanProps) => {
             className="w-full pl-10 pr-4 py-2 text-sm border border-zinc-200 dark:border-zinc-800 rounded-lg focus:outline-none focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-100 focus:border-transparent bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 uppercase"
           />
         </div>
+        <button 
+          onClick={onAdd}
+          className="flex items-center gap-2 px-4 py-2 bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 text-sm font-bold rounded-xl hover:bg-zinc-800 transition-all shadow-lg shadow-zinc-900/10 uppercase"
+        >
+          <Plus size={18} />
+          Nova Ordem
+        </button>
       </div>
       <div className="flex gap-4 overflow-x-auto pb-4 min-h-[calc(100vh-12rem)]">
         {KANBAN_COLUMNS.map((col) => (
@@ -91,7 +114,10 @@ export const Kanban = ({ orders, onUpdateStatus }: KanbanProps) => {
               >
                 <div className="flex justify-between items-start mb-2">
                   <span className="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase">#{order.id}</span>
-                  <button className="text-zinc-300 hover:text-zinc-600 dark:text-zinc-600 dark:hover:text-zinc-300">
+                  <button 
+                    onClick={(e) => openMenu(e, order.id)}
+                    className="text-zinc-300 hover:text-zinc-600 dark:text-zinc-600 dark:hover:text-zinc-300"
+                  >
                     <MoreVertical size={14} />
                   </button>
                 </div>
@@ -121,6 +147,49 @@ export const Kanban = ({ orders, onUpdateStatus }: KanbanProps) => {
         </div>
       ))}
       </div>
+
+      <AnimatePresence>
+        {activeMenuId && (
+          <>
+            <div 
+              className="fixed inset-0 z-[150]" 
+              onClick={() => setActiveMenuId(null)} 
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              style={{ top: menuPosition.top, left: menuPosition.left }}
+              className="absolute w-40 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl shadow-xl z-[160] overflow-hidden p-1"
+            >
+              <button 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  const order = orders.find(o => o.id === activeMenuId);
+                  if (order) onEdit(order);
+                  setActiveMenuId(null);
+                }}
+                className="flex items-center gap-2 w-full px-3 py-2 text-xs font-medium text-zinc-600 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-800 hover:text-zinc-900 dark:hover:text-zinc-100 rounded-lg transition-colors"
+              >
+                <Edit size={14} />
+                Editar Ordem
+              </button>
+              <div className="h-px bg-zinc-100 dark:bg-zinc-800 my-1" />
+              <button 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onDelete(activeMenuId);
+                  setActiveMenuId(null);
+                }}
+                className="flex items-center gap-2 w-full px-3 py-2 text-xs font-medium text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-500/10 rounded-lg transition-colors"
+              >
+                <Trash2 size={14} />
+                Excluir Ordem
+              </button>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
     </div>
   );
 };

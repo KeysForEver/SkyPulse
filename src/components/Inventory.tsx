@@ -22,7 +22,6 @@ import {
   ProductModal, 
   StockInModal, 
   StockOutModal, 
-  MinStockModal, 
   PdfOptionsModal, 
   ProductDetailModal 
 } from './inventory/InventoryModals';
@@ -50,6 +49,8 @@ interface InventoryProps {
   onUpdateLocation: (id: number, name: string) => Promise<void>;
   onStockIn: (data: any) => Promise<void>;
   onStockOut: (data: any) => Promise<void>;
+  initialSearchTerm?: string;
+  onSearchTermChange?: (val: string) => void;
 }
 
 export const Inventory = ({ 
@@ -68,13 +69,14 @@ export const Inventory = ({
   onAddLocation,
   onUpdateLocation,
   onStockIn,
-  onStockOut 
+  onStockOut,
+  initialSearchTerm = '',
+  onSearchTermChange
 }: InventoryProps) => {
   const [activeSubTab, setActiveSubTab] = useState<'products' | 'movements'>('products');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isStockInModalOpen, setIsStockInModalOpen] = useState(false);
   const [isStockOutModalOpen, setIsStockOutModalOpen] = useState(false);
-  const [isMinStockModalOpen, setIsMinStockModalOpen] = useState(false);
   const [isPdfOptionsModalOpen, setIsPdfOptionsModalOpen] = useState(false);
   const [selectedPdfFields, setSelectedPdfFields] = useState<string[]>(['name', 'category', 'quantity', 'unit', 'cost_price', 'status']);
   const [includeTotalValue, setIncludeTotalValue] = useState(false);
@@ -94,7 +96,16 @@ export const Inventory = ({
   const [newCategoryName, setNewCategoryName] = useState('');
   const [newSupplierName, setNewSupplierName] = useState('');
   const [newLocationName, setNewLocationName] = useState('');
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchTerm, setSearchTerm] = useState(initialSearchTerm);
+
+  useEffect(() => {
+    setSearchTerm(initialSearchTerm);
+  }, [initialSearchTerm]);
+
+  const handleSearchChange = (val: string) => {
+    setSearchTerm(val);
+    if (onSearchTermChange) onSearchTermChange(val);
+  };
   const [sortConfig, setSortConfig] = useState<{ key: keyof Product | 'status'; direction: 'asc' | 'desc' } | null>(null);
   const [selectedProductForDetail, setSelectedProductForDetail] = useState<Product | null>(null);
   const [productMovements, setProductMovements] = useState<Movement[]>([]);
@@ -157,7 +168,9 @@ export const Inventory = ({
     product_id: '',
     location: '',
     quantity: 0,
-    unit_price: 0
+    unit_price: 0,
+    xml: '',
+    invoice_pdf: ''
   });
 
   const [stockOutData, setStockOutData] = useState({
@@ -211,7 +224,6 @@ export const Inventory = ({
       onAddProduct(data);
     }
     setIsModalOpen(false);
-    setIsMinStockModalOpen(false);
     setEditingProduct(null);
     setSelectedFile(null);
   };
@@ -224,7 +236,9 @@ export const Inventory = ({
       product_id: '',
       location: '',
       quantity: 0,
-      unit_price: 0
+      unit_price: 0,
+      xml: '',
+      invoice_pdf: ''
     });
     setIsAddingSupplier(false);
     setIsAddingLocation(false);
@@ -367,11 +381,17 @@ export const Inventory = ({
   };
 
   const filteredProducts = useMemo(() => {
-    let result = products.filter(p => 
-      p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      p.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      p.id.toString().includes(searchTerm)
-    );
+    let result = products;
+
+    if (searchTerm === 'ESTOQUE BAIXO') {
+      result = result.filter(p => p.min_quantity !== null && p.quantity <= p.min_quantity);
+    } else {
+      result = result.filter(p => 
+        p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        p.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        p.id.toString().includes(searchTerm)
+      );
+    }
 
     if (sortConfig) {
       result.sort((a, b) => {
@@ -501,7 +521,7 @@ export const Inventory = ({
           <InventoryFilters 
             activeSubTab={activeSubTab}
             searchTerm={searchTerm}
-            setSearchTerm={setSearchTerm}
+            setSearchTerm={handleSearchChange}
             movementTypeFilter={movementTypeFilter}
             setMovementTypeFilter={setMovementTypeFilter}
             movementLocationFilter={movementLocationFilter}
@@ -512,7 +532,7 @@ export const Inventory = ({
             endDate={endDate}
             setEndDate={setEndDate}
           />
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 overflow-x-auto w-full md:w-auto no-scrollbar py-1 -mx-2 px-2 md:mx-0 md:px-0">
             {activeSubTab === 'products' && (
               <div className="relative">
                 <button 
@@ -609,37 +629,6 @@ export const Inventory = ({
               <button 
                 onClick={(e) => {
                   e.stopPropagation();
-                  const p = products.find(p => p.id === activeMenuId);
-                  if (p) {
-                    setEditingProduct(p);
-                    setIsModalOpen(true);
-                  }
-                  setActiveMenuId(null);
-                }}
-                className="flex items-center gap-2 w-full px-3 py-2 text-xs font-medium text-zinc-600 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-800 hover:text-zinc-900 dark:hover:text-zinc-100 rounded-lg transition-colors"
-              >
-                <Edit size={14} />
-                Editar Produto
-              </button>
-              <button 
-                onClick={(e) => {
-                  e.stopPropagation();
-                  const p = products.find(p => p.id === activeMenuId);
-                  if (p) {
-                    setEditingProduct(p);
-                    setIsMinStockModalOpen(true);
-                  }
-                  setActiveMenuId(null);
-                }}
-                className="flex items-center gap-2 w-full px-3 py-2 text-xs font-medium text-zinc-600 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-800 hover:text-zinc-900 dark:hover:text-zinc-100 rounded-lg transition-colors"
-              >
-                <AlertTriangle size={14} />
-                Estoque Mínimo
-              </button>
-              <div className="h-px bg-zinc-100 dark:bg-zinc-800 my-1" />
-              <button 
-                onClick={(e) => {
-                  e.stopPropagation();
                   if (confirm('Tem certeza que deseja excluir este produto?')) {
                     onDeleteProduct(activeMenuId);
                   }
@@ -710,16 +699,6 @@ export const Inventory = ({
         onClear={resetStockOutForm}
       />
 
-      <MinStockModal 
-        isOpen={isMinStockModalOpen}
-        onClose={() => setIsMinStockModalOpen(false)}
-        formData={formData}
-        setFormData={setFormData}
-        onSubmit={handleSubmit}
-        editingProduct={editingProduct}
-        onClear={resetProductForm}
-      />
-
       <PdfOptionsModal 
         isOpen={isPdfOptionsModalOpen}
         onClose={() => setIsPdfOptionsModalOpen(false)}
@@ -741,6 +720,11 @@ export const Inventory = ({
         product={selectedProductForDetail}
         movements={productMovements}
         isLoading={isLoadingMovements}
+        onEdit={(p: any) => {
+          setEditingProduct(p);
+          setIsModalOpen(true);
+          setSelectedProductForDetail(null);
+        }}
       />
     </>
   );

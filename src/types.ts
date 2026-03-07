@@ -65,4 +65,6 @@ export interface Movement {
   unit_price?: number;
   reason?: string;
   destination?: string;
+  xml?: string;
+  invoice_pdf?: string;
 }

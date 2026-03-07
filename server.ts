@@ -92,6 +92,8 @@ db.exec(`
     unit_price REAL,
     reason TEXT,
     destination TEXT,
+    xml TEXT,
+    invoice_pdf TEXT,
     FOREIGN KEY (product_id) REFERENCES products(id),
     FOREIGN KEY (supplier_id) REFERENCES suppliers(id)
   );
@@ -177,6 +179,28 @@ async function startServer() {
       const totalProducts = db.prepare('SELECT count(*) as count FROM products').get() as any;
       const lowStock = db.prepare('SELECT count(*) as count FROM products WHERE quantity <= min_quantity').get() as any;
       const activeOrders = db.prepare("SELECT count(*) as count FROM orders WHERE status != 'Finalização'").get() as any;
+      
+      const stockByCategory = db.prepare(`
+        SELECT category, SUM(quantity * cost_price) as total_value
+        FROM products
+        GROUP BY category
+        ORDER BY total_value DESC
+      `).all();
+
+      const topProducts = db.prepare(`
+        SELECT name, quantity
+        FROM products
+        ORDER BY quantity DESC
+        LIMIT 5
+      `).all();
+
+      const stockStatus = db.prepare(`
+        SELECT 
+          SUM(CASE WHEN quantity <= min_quantity THEN 1 ELSE 0 END) as low_stock,
+          SUM(CASE WHEN quantity > min_quantity OR min_quantity IS NULL THEN 1 ELSE 0 END) as normal_stock
+        FROM products
+      `).get() as any;
+
       const recentMovements = db.prepare(`
         SELECT m.*, strftime('%Y-%m-%dT%H:%M:%SZ', m.date) as date, p.name as product_name
         FROM movements m
@@ -189,6 +213,12 @@ async function startServer() {
         totalProducts: totalProducts.count,
         lowStock: lowStock.count,
         activeOrders: activeOrders.count,
+        stockByCategory,
+        topProducts,
+        stockStatus: [
+          { name: 'Estoque Baixo', value: stockStatus.low_stock || 0 },
+          { name: 'Normal', value: stockStatus.normal_stock || 0 }
+        ],
         recentMovements
       });
     } catch (error: any) {
@@ -408,14 +438,14 @@ async function startServer() {
   });
 
   app.post('/api/inventory/in', (req, res) => {
-    const { product_id, quantity, supplier_id, doc_number, issue_date, location, unit_price } = req.body;
+    const { product_id, quantity, supplier_id, doc_number, issue_date, location, unit_price, xml, invoice_pdf } = req.body;
 
     const transaction = db.transaction(() => {
       // Insert movement
       db.prepare(`
-        INSERT INTO movements (product_id, type, quantity, supplier_id, doc_number, issue_date, location, unit_price)
-        VALUES (?, 'IN', ?, ?, ?, ?, ?, ?)
-      `).run(product_id, quantity, supplier_id, doc_number, issue_date, location, unit_price);
+        INSERT INTO movements (product_id, type, quantity, supplier_id, doc_number, issue_date, location, unit_price, xml, invoice_pdf)
+        VALUES (?, 'IN', ?, ?, ?, ?, ?, ?, ?, ?)
+      `).run(product_id, quantity, supplier_id, doc_number, issue_date, location, unit_price, xml, invoice_pdf);
 
       // Calculate new average cost price
       const avgData = db.prepare(`
@@ -544,6 +574,50 @@ async function startServer() {
       res.json(
         db.prepare("SELECT o.*, strftime('%Y-%m-%dT%H:%M:%SZ', o.created_at) as created_at, c.name as client_name FROM orders o LEFT JOIN clients c ON o.client_id = c.id").all()
       );
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.post('/api/orders', (req, res) => {
+    try {
+      const { title, description, client_id, status } = req.body;
+      const result = db.prepare(`
+        INSERT INTO orders (title, description, client_id, status)
+        VALUES (?, ?, ?, ?)
+      `).run(title, description, client_id, status || 'Ordens de Produção');
+      
+      logAction(1, 'CREATE_ORDER', `Ordem: ${title}`);
+      broadcast({ type: 'ORDER_UPDATED' });
+      res.json({ id: result.lastInsertRowid });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.put('/api/orders/:id', (req, res) => {
+    try {
+      const { title, description, client_id, status } = req.body;
+      db.prepare(`
+        UPDATE orders
+        SET title = ?, description = ?, client_id = ?, status = ?
+        WHERE id = ?
+      `).run(title, description, client_id, status, req.params.id);
+      
+      logAction(1, 'UPDATE_ORDER', `Ordem ID: ${req.params.id}`);
+      broadcast({ type: 'ORDER_UPDATED' });
+      res.json({ success: true });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.delete('/api/orders/:id', (req, res) => {
+    try {
+      db.prepare('DELETE FROM orders WHERE id = ?').run(req.params.id);
+      logAction(1, 'DELETE_ORDER', `Ordem ID: ${req.params.id}`);
+      broadcast({ type: 'ORDER_UPDATED' });
+      res.json({ success: true });
     } catch (error: any) {
       res.status(500).json({ error: error.message });
     }

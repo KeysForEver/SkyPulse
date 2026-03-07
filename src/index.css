@@ -61,3 +61,12 @@
   @apply bg-zinc-200 dark:bg-zinc-800;
 }
 
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+

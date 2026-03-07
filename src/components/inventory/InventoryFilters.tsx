@@ -39,8 +39,16 @@ export const InventoryFilters = ({
           placeholder={activeSubTab === 'products' ? "BUSCAR PRODUTOS..." : "BUSCAR MOVIMENTAÇÕES..."}
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value.toUpperCase())}
-          className="w-full pl-10 pr-4 py-2 bg-zinc-50 border border-zinc-200 rounded-xl text-sm focus:ring-2 focus:ring-zinc-900 outline-none transition-all dark:bg-zinc-800 dark:border-zinc-700 dark:text-zinc-100 dark:focus:ring-zinc-100 uppercase"
+          className="w-full pl-10 pr-10 py-2 bg-zinc-50 border border-zinc-200 rounded-xl text-sm focus:ring-2 focus:ring-zinc-900 outline-none transition-all dark:bg-zinc-800 dark:border-zinc-700 dark:text-zinc-100 dark:focus:ring-zinc-100 uppercase"
         />
+        {searchTerm && (
+          <button 
+            onClick={() => setSearchTerm('')}
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-rose-600 transition-colors"
+          >
+            <X size={16} />
+          </button>
+        )}
       </div>
       {activeSubTab === 'movements' && (
         <div className="flex flex-wrap items-center gap-2">
