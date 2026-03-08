@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { Html5Qrcode } from 'html5-qrcode';
 import { Product, Supplier, Order, Movement } from '../../types';
 import { Card, cn } from '../Common';
+import { useDebounce } from '../../hooks/useDebounce';
 
 interface ModalProps {
   isOpen: boolean;
@@ -103,7 +104,7 @@ export const ProductModal = ({
             type="text" 
             value={formData.name}
             onChange={e => setFormData({...formData, name: e.target.value.toUpperCase()})}
-            className="w-full px-3 py-2 text-sm border border-zinc-200 dark:border-zinc-800 rounded-lg focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-100 outline-none bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100"
+            className="w-full px-3 py-2 text-sm border border-zinc-200 dark:border-zinc-800 rounded-lg focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-100 outline-none bg-white dark:bg-black text-zinc-900 dark:text-zinc-100"
             placeholder="EX: CABO DE REDE CAT6"
           />
         </div>
@@ -114,7 +115,7 @@ export const ProductModal = ({
               required
               value={formData.category}
               onChange={e => setFormData({...formData, category: e.target.value})}
-              className="flex-1 px-3 py-2 text-sm border border-zinc-200 dark:border-zinc-800 rounded-lg focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-100 outline-none bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 uppercase"
+              className="flex-1 px-3 py-2 text-sm border border-zinc-200 dark:border-zinc-800 rounded-lg focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-100 outline-none bg-white dark:bg-black text-zinc-900 dark:text-zinc-100 uppercase"
             >
               <option value="">SELECIONE</option>
               {categories.map((c: any) => (
@@ -136,7 +137,7 @@ export const ProductModal = ({
             required
             value={formData.unit}
             onChange={e => setFormData({...formData, unit: e.target.value})}
-            className="w-full px-3 py-2 text-sm border border-zinc-200 dark:border-zinc-800 rounded-lg focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-100 outline-none bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 uppercase"
+            className="w-full px-3 py-2 text-sm border border-zinc-200 dark:border-zinc-800 rounded-lg focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-100 outline-none bg-white dark:bg-black text-zinc-900 dark:text-zinc-100 uppercase"
           >
             <option value="un">UNIDADE (UN)</option>
             <option value="kg">QUILOGRAMA (KG)</option>
@@ -154,7 +155,7 @@ export const ProductModal = ({
             step="0.01"
             value={formData.min_quantity === null ? '' : formData.min_quantity}
             onChange={e => setFormData({...formData, min_quantity: e.target.value === '' ? null : parseFloat(e.target.value)})}
-            className="w-full px-3 py-2 text-sm border border-zinc-200 dark:border-zinc-800 rounded-lg focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-100 outline-none bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100"
+            className="w-full px-3 py-2 text-sm border border-zinc-200 dark:border-zinc-800 rounded-lg focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-100 outline-none bg-white dark:bg-black text-zinc-900 dark:text-zinc-100"
             placeholder="DEIXE VAZIO PARA NÃO DEFINIR MÍNIMO"
           />
         </div>
@@ -174,7 +175,7 @@ export const ProductModal = ({
                 type="text" 
                 value={newCategoryName}
                 onChange={e => setNewCategoryName(e.target.value.toUpperCase())}
-                className="flex-1 px-3 py-1.5 text-sm border border-zinc-200 dark:border-zinc-800 rounded-lg focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-100 outline-none bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100"
+                className="flex-1 px-3 py-1.5 text-sm border border-zinc-200 dark:border-zinc-800 rounded-lg focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-100 outline-none bg-white dark:bg-black text-zinc-900 dark:text-zinc-100"
                 placeholder="NOME DA CATEGORIA"
                 autoFocus
               />
@@ -214,7 +215,7 @@ export const ProductModal = ({
         </button>
         <button 
           type="submit"
-          className="px-8 py-2 bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 text-sm font-bold rounded-xl hover:bg-zinc-800 transition-all shadow-lg shadow-zinc-900/10 uppercase"
+          className="px-8 py-2 bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 text-sm font-bold rounded-xl hover:bg-zinc-800 dark:hover:bg-zinc-200 transition-all shadow-lg shadow-zinc-900/10 uppercase"
         >
           {editingProduct ? 'ATUALIZAR PRODUTO' : 'CRIAR PRODUTO'}
         </button>
@@ -246,6 +247,7 @@ export const StockInModal = ({
   onClear
 }: any) => {
   const [searchTerm, setSearchTerm] = useState('');
+  const debouncedSearchTerm = useDebounce(searchTerm, 300);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isScanning, setIsScanning] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -298,7 +300,7 @@ export const StockInModal = ({
   };
 
   const filteredProducts = products.filter((p: Product) => 
-    p.name.toLowerCase().includes(searchTerm.toLowerCase())
+    p.name.toLowerCase().includes(debouncedSearchTerm.toLowerCase())
   );
 
   const selectedProduct = products.find((p: Product) => p.id === parseInt(stockInData.product_id));
@@ -361,7 +363,7 @@ export const StockInModal = ({
               type="text" 
               value={stockInData.doc_number}
               onChange={e => setStockInData({...stockInData, doc_number: e.target.value.toUpperCase()})}
-              className="w-full px-3 py-2 text-sm border border-zinc-200 dark:border-zinc-800 rounded-lg focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-100 outline-none bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100"
+              className="w-full px-3 py-2 text-sm border border-zinc-200 dark:border-zinc-800 rounded-lg focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-100 outline-none bg-white dark:bg-black text-zinc-900 dark:text-zinc-100"
               placeholder="NF-E, RECIBO, ETC"
             />
           </div>
@@ -372,7 +374,7 @@ export const StockInModal = ({
                 type="text" 
                 value={stockInData.xml}
                 onChange={e => setStockInData({...stockInData, xml: e.target.value.toUpperCase()})}
-                className="flex-1 px-3 py-2 text-sm border border-zinc-200 dark:border-zinc-800 rounded-lg focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-100 outline-none bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100"
+                className="flex-1 px-3 py-2 text-sm border border-zinc-200 dark:border-zinc-800 rounded-lg focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-100 outline-none bg-white dark:bg-black text-zinc-900 dark:text-zinc-100"
                 placeholder="CHAVE DA NOTA FISCAL"
               />
               <button 
@@ -441,7 +443,7 @@ export const StockInModal = ({
               type="date" 
               value={stockInData.issue_date}
               onChange={e => setStockInData({...stockInData, issue_date: e.target.value})}
-              className="w-full px-3 py-2 text-sm border border-zinc-200 dark:border-zinc-800 rounded-lg focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-100 outline-none bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100"
+              className="w-full px-3 py-2 text-sm border border-zinc-200 dark:border-zinc-800 rounded-lg focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-100 outline-none bg-white dark:bg-black text-zinc-900 dark:text-zinc-100"
             />
           </div>
           <div className="space-y-1.5">
@@ -451,7 +453,7 @@ export const StockInModal = ({
                 required
                 value={stockInData.supplier_id}
                 onChange={e => setStockInData({...stockInData, supplier_id: e.target.value})}
-                className="flex-1 px-3 py-2 text-sm border border-zinc-200 dark:border-zinc-800 rounded-lg focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-100 outline-none bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 uppercase"
+                className="flex-1 px-3 py-2 text-sm border border-zinc-200 dark:border-zinc-800 rounded-lg focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-100 outline-none bg-white dark:bg-black text-zinc-900 dark:text-zinc-100 uppercase"
               >
                 <option value="">SELECIONE</option>
                 {suppliers.map((s: Supplier) => (
@@ -474,7 +476,7 @@ export const StockInModal = ({
                 required
                 value={stockInData.location}
                 onChange={e => setStockInData({...stockInData, location: e.target.value})}
-                className="flex-1 px-3 py-2 text-sm border border-zinc-200 dark:border-zinc-800 rounded-lg focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-100 outline-none bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 uppercase"
+                className="flex-1 px-3 py-2 text-sm border border-zinc-200 dark:border-zinc-800 rounded-lg focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-100 outline-none bg-white dark:bg-black text-zinc-900 dark:text-zinc-100 uppercase"
               >
                 <option value="">SELECIONE</option>
                 {locations.map((l: any) => (
@@ -508,7 +510,7 @@ export const StockInModal = ({
                   type="text" 
                   value={isAddingSupplier ? newSupplierName : newLocationName}
                   onChange={e => isAddingSupplier ? setNewSupplierName(e.target.value.toUpperCase()) : setNewLocationName(e.target.value.toUpperCase())}
-                  className="flex-1 px-3 py-1.5 text-sm border border-zinc-200 dark:border-zinc-800 rounded-lg focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-100 outline-none bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100"
+                  className="flex-1 px-3 py-1.5 text-sm border border-zinc-200 dark:border-zinc-800 rounded-lg focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-100 outline-none bg-white dark:bg-black text-zinc-900 dark:text-zinc-100"
                   placeholder={isAddingSupplier ? "NOME DO FORNECEDOR" : "NOME DA LOCALIZAÇÃO"}
                   autoFocus
                 />
@@ -535,7 +537,7 @@ export const StockInModal = ({
           <label className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase">Produto</label>
           <div className="relative">
             <div 
-              className="w-full px-3 py-2 text-sm border border-zinc-200 dark:border-zinc-800 rounded-lg focus-within:ring-2 focus-within:ring-zinc-900 dark:focus-within:ring-zinc-100 outline-none bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 flex items-center gap-2 cursor-pointer"
+              className="w-full px-3 py-2 text-sm border border-zinc-200 dark:border-zinc-800 rounded-lg focus-within:ring-2 focus-within:ring-zinc-900 dark:focus-within:ring-zinc-100 outline-none bg-white dark:bg-black text-zinc-900 dark:text-zinc-100 flex items-center gap-2 cursor-pointer"
               onClick={() => setIsDropdownOpen(!isDropdownOpen)}
             >
               <Search size={16} className="text-zinc-400" />
@@ -602,7 +604,7 @@ export const StockInModal = ({
               step="0.01"
               value={stockInData.quantity || ''}
               onChange={e => setStockInData({...stockInData, quantity: parseFloat(e.target.value) || 0})}
-              className="w-full px-3 py-2 text-sm border border-zinc-200 dark:border-zinc-800 rounded-lg focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-100 outline-none bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100"
+              className="w-full px-3 py-2 text-sm border border-zinc-200 dark:border-zinc-800 rounded-lg focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-100 outline-none bg-white dark:bg-black text-zinc-900 dark:text-zinc-100"
             />
           </div>
           <div className="space-y-1.5">
@@ -613,7 +615,7 @@ export const StockInModal = ({
               step="0.01"
               value={stockInData.unit_price || ''}
               onChange={e => setStockInData({...stockInData, unit_price: parseFloat(e.target.value) || 0})}
-              className="w-full px-3 py-2 text-sm border border-zinc-200 dark:border-zinc-800 rounded-lg focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-100 outline-none bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100"
+              className="w-full px-3 py-2 text-sm border border-zinc-200 dark:border-zinc-800 rounded-lg focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-100 outline-none bg-white dark:bg-black text-zinc-900 dark:text-zinc-100"
             />
           </div>
         </div>
@@ -658,11 +660,12 @@ export const StockOutModal = ({
   onClear
 }: any) => {
   const [searchTerm, setSearchTerm] = useState('');
+  const debouncedSearchTerm = useDebounce(searchTerm, 300);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   const filteredProducts = products.filter((p: Product) => 
-    p.name.toLowerCase().includes(searchTerm.toLowerCase())
+    p.name.toLowerCase().includes(debouncedSearchTerm.toLowerCase())
   );
 
   const selectedProduct = products.find((p: Product) => p.id === parseInt(stockOutData.product_id));
@@ -703,7 +706,7 @@ export const StockOutModal = ({
           </label>
           <div className="relative">
             <div 
-              className="w-full px-3 py-2 text-sm border border-zinc-200 dark:border-zinc-800 rounded-lg focus-within:ring-2 focus-within:ring-zinc-900 dark:focus-within:ring-zinc-100 outline-none bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 flex items-center gap-2 cursor-pointer"
+              className="w-full px-3 py-2 text-sm border border-zinc-200 dark:border-zinc-800 rounded-lg focus-within:ring-2 focus-within:ring-zinc-900 dark:focus-within:ring-zinc-100 outline-none bg-white dark:bg-black text-zinc-900 dark:text-zinc-100 flex items-center gap-2 cursor-pointer"
               onClick={() => setIsDropdownOpen(!isDropdownOpen)}
             >
               <Search size={16} className="text-zinc-400" />
@@ -773,7 +776,7 @@ export const StockOutModal = ({
               setStockOutData({...stockOutData, quantity: parseFloat(e.target.value) || 0});
               setStockOutError(null);
             }}
-            className="w-full px-3 py-2 text-sm border border-zinc-200 dark:border-zinc-800 rounded-lg focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-100 outline-none bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100"
+            className="w-full px-3 py-2 text-sm border border-zinc-200 dark:border-zinc-800 rounded-lg focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-100 outline-none bg-white dark:bg-black text-zinc-900 dark:text-zinc-100"
           />
         </div>
         <div className="space-y-1.5">
@@ -782,7 +785,7 @@ export const StockOutModal = ({
             required
             value={stockOutData.reason}
             onChange={e => setStockOutData({...stockOutData, reason: e.target.value, destination: ''})}
-            className="w-full px-3 py-2 text-sm border border-zinc-200 dark:border-zinc-800 rounded-lg focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-100 outline-none bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 uppercase"
+            className="w-full px-3 py-2 text-sm border border-zinc-200 dark:border-zinc-800 rounded-lg focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-100 outline-none bg-white dark:bg-black text-zinc-900 dark:text-zinc-100 uppercase"
           >
             <option value="">SELECIONE UM MOTIVO</option>
             <option value="venda">VENDA</option>
@@ -798,7 +801,7 @@ export const StockOutModal = ({
               required
               value={stockOutData.destination}
               onChange={e => setStockOutData({...stockOutData, destination: e.target.value})}
-              className="w-full px-3 py-2 text-sm border border-zinc-200 dark:border-zinc-800 rounded-lg focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-100 outline-none bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 uppercase"
+              className="w-full px-3 py-2 text-sm border border-zinc-200 dark:border-zinc-800 rounded-lg focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-100 outline-none bg-white dark:bg-black text-zinc-900 dark:text-zinc-100 uppercase"
             >
               <option value="">SELECIONE UMA ORDEM DE PRODUÇÃO</option>
               {orders.map((order: Order) => (
@@ -811,7 +814,7 @@ export const StockOutModal = ({
               type="text" 
               value={stockOutData.destination}
               onChange={e => setStockOutData({...stockOutData, destination: e.target.value.toUpperCase()})}
-              className="w-full px-3 py-2 text-sm border border-zinc-200 dark:border-zinc-800 rounded-lg focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-100 outline-none bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100"
+              className="w-full px-3 py-2 text-sm border border-zinc-200 dark:border-zinc-800 rounded-lg focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-100 outline-none bg-white dark:bg-black text-zinc-900 dark:text-zinc-100"
               placeholder="EX: SETOR DE MANUTENÇÃO"
             />
           )}
@@ -910,7 +913,7 @@ export const PdfOptionsModal = ({
         </button>
         <button 
           onClick={onExport}
-          className="px-8 py-2 bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 text-sm font-bold rounded-xl hover:bg-rose-800 transition-all shadow-lg shadow-zinc-900/10 uppercase"
+          className="px-8 py-2 bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 text-sm font-bold rounded-xl hover:bg-zinc-800 dark:hover:bg-zinc-200 transition-all shadow-lg shadow-zinc-900/10 uppercase"
         >
           Gerar PDF
         </button>

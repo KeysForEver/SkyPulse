@@ -6,25 +6,27 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-export const SidebarItem = ({ icon: Icon, label, active, onClick }: { icon: any, label: string, active: boolean, onClick: () => void }) => (
+export const SidebarItem = ({ icon: Icon, label, active, onClick, isCollapsed }: { icon: any, label: string, active: boolean, onClick: () => void, isCollapsed?: boolean }) => (
   <button
     onClick={onClick}
     className={cn(
-      "flex items-center w-full gap-3 px-4 py-3 text-sm font-medium transition-colors rounded-lg",
+      "flex items-center w-full gap-3 transition-all duration-300 rounded-lg",
+      isCollapsed ? "justify-center px-0 py-3" : "px-4 py-3",
       active 
         ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900" 
-        : "text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:text-zinc-100 dark:hover:bg-zinc-800"
+        : "text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:text-zinc-100 dark:hover:bg-zinc-800/50"
     )}
+    title={isCollapsed ? label : undefined}
   >
-    <Icon size={18} />
-    {label.toUpperCase()}
+    <Icon size={18} className="flex-shrink-0" />
+    {!isCollapsed && <span className="text-sm font-medium truncate uppercase">{label}</span>}
   </button>
 );
 
 export const Card = ({ children, className, title, onClick }: { children: React.ReactNode, className?: string, title?: string, onClick?: () => void }) => (
   <div 
     onClick={onClick}
-    className={cn("bg-white border border-zinc-200 rounded-xl overflow-hidden shadow-sm dark:bg-zinc-900 dark:border-zinc-800", className)}
+    className={cn("bg-white border border-zinc-200 rounded-xl overflow-hidden shadow-sm dark:bg-zinc-900 dark:border-zinc-800/50", className)}
   >
     {title && (
       <div className="px-6 py-4 border-b border-zinc-100 dark:border-zinc-800">

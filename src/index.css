@@ -8,10 +8,13 @@
 
 @layer base {
   body {
-    @apply antialiased text-zinc-900 bg-zinc-50 transition-colors duration-300;
+    @apply antialiased text-zinc-900 bg-white transition-colors duration-300;
   }
   .dark body {
-    @apply text-zinc-100 bg-zinc-950;
+    @apply text-zinc-100 bg-black;
+  }
+  ::selection {
+    @apply bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900;
   }
 }
 
@@ -41,16 +44,16 @@
 
 /* Custom Scrollbar */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 8px;
+  height: 8px;
 }
 
 ::-webkit-scrollbar-track {
-  @apply bg-transparent;
+  @apply bg-transparent dark:bg-zinc-950;
 }
 
 ::-webkit-scrollbar-thumb {
-  @apply bg-zinc-300 rounded-full hover:bg-zinc-400 transition-colors;
+  @apply bg-zinc-300 rounded-full hover:bg-zinc-400 transition-colors dark:bg-zinc-800 dark:hover:bg-zinc-700;
 }
 
 .custom-scrollbar::-webkit-scrollbar {

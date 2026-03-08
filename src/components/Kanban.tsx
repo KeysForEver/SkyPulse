@@ -77,7 +77,7 @@ export const Kanban = ({ orders, onUpdateStatus, onEdit, onDelete, onAdd }: Kanb
         </div>
         <button 
           onClick={onAdd}
-          className="flex items-center gap-2 px-4 py-2 bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 text-sm font-bold rounded-xl hover:bg-zinc-800 transition-all shadow-lg shadow-zinc-900/10 uppercase"
+          className="flex items-center gap-2 px-4 py-2 bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 text-sm font-bold rounded-xl hover:bg-zinc-800 dark:hover:bg-zinc-200 transition-all shadow-lg shadow-zinc-900/10 uppercase"
         >
           <Plus size={18} />
           Nova Ordem

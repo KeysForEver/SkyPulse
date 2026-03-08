@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Search, X } from 'lucide-react';
+import { useDebounce } from '../../hooks/useDebounce';
 
 interface InventoryFiltersProps {
   activeSubTab: 'products' | 'movements';
@@ -30,6 +31,20 @@ export const InventoryFilters = ({
   endDate,
   setEndDate
 }: InventoryFiltersProps) => {
+  const [localSearchTerm, setLocalSearchTerm] = useState(searchTerm);
+  const debouncedSearchTerm = useDebounce(localSearchTerm, 300);
+
+  useEffect(() => {
+    setSearchTerm(debouncedSearchTerm);
+  }, [debouncedSearchTerm, setSearchTerm]);
+
+  // Sync local state if prop changes externally (e.g. clear filters)
+  useEffect(() => {
+    if (searchTerm !== localSearchTerm && searchTerm === '') {
+      setLocalSearchTerm('');
+    }
+  }, [searchTerm]);
+
   return (
     <div className="flex items-center gap-4 flex-1">
       <div className="relative flex-1 max-w-md">
@@ -37,13 +52,13 @@ export const InventoryFilters = ({
         <input 
           type="text" 
           placeholder={activeSubTab === 'products' ? "BUSCAR PRODUTOS..." : "BUSCAR MOVIMENTAÇÕES..."}
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value.toUpperCase())}
-          className="w-full pl-10 pr-10 py-2 bg-zinc-50 border border-zinc-200 rounded-xl text-sm focus:ring-2 focus:ring-zinc-900 outline-none transition-all dark:bg-zinc-800 dark:border-zinc-700 dark:text-zinc-100 dark:focus:ring-zinc-100 uppercase"
+          value={localSearchTerm}
+          onChange={(e) => setLocalSearchTerm(e.target.value.toUpperCase())}
+          className="w-full pl-10 pr-10 py-2 bg-white border border-zinc-200 rounded-xl text-sm focus:ring-2 focus:ring-zinc-900 outline-none transition-all dark:bg-black dark:border-zinc-800 dark:text-zinc-100 dark:focus:ring-zinc-100 uppercase"
         />
-        {searchTerm && (
+        {localSearchTerm && (
           <button 
-            onClick={() => setSearchTerm('')}
+            onClick={() => setLocalSearchTerm('')}
             className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-rose-600 transition-colors"
           >
             <X size={16} />
@@ -55,7 +70,7 @@ export const InventoryFilters = ({
           <select
             value={movementTypeFilter}
             onChange={(e) => setMovementTypeFilter(e.target.value as any)}
-            className="px-3 py-2 bg-zinc-50 border border-zinc-200 rounded-xl text-sm focus:ring-2 focus:ring-zinc-900 outline-none dark:bg-zinc-800 dark:border-zinc-700 dark:text-zinc-100 dark:focus:ring-zinc-100 uppercase"
+            className="px-3 py-2 bg-white border border-zinc-200 rounded-xl text-sm focus:ring-2 focus:ring-zinc-900 outline-none dark:bg-black dark:border-zinc-800 dark:text-zinc-100 dark:focus:ring-zinc-100 uppercase"
           >
             <option value="ALL">TODOS OS TIPOS</option>
             <option value="IN">ENTRADA</option>
@@ -65,7 +80,7 @@ export const InventoryFilters = ({
           <select
             value={movementLocationFilter}
             onChange={(e) => setMovementLocationFilter(e.target.value)}
-            className="px-3 py-2 bg-zinc-50 border border-zinc-200 rounded-xl text-sm focus:ring-2 focus:ring-zinc-900 outline-none dark:bg-zinc-800 dark:border-zinc-700 dark:text-zinc-100 dark:focus:ring-zinc-100 uppercase"
+            className="px-3 py-2 bg-white border border-zinc-200 rounded-xl text-sm focus:ring-2 focus:ring-zinc-900 outline-none dark:bg-black dark:border-zinc-800 dark:text-zinc-100 dark:focus:ring-zinc-100 uppercase"
           >
             <option value="ALL">TODAS AS LOCALIZAÇÕES</option>
             {locations.map(loc => (
@@ -77,14 +92,14 @@ export const InventoryFilters = ({
             type="date" 
             value={startDate}
             onChange={(e) => setStartDate(e.target.value)}
-            className="px-3 py-2 bg-zinc-50 border border-zinc-200 rounded-xl text-sm focus:ring-2 focus:ring-zinc-900 outline-none dark:bg-zinc-800 dark:border-zinc-700 dark:text-zinc-100 dark:focus:ring-zinc-100"
+            className="px-3 py-2 bg-white border border-zinc-200 rounded-xl text-sm focus:ring-2 focus:ring-zinc-900 outline-none dark:bg-black dark:border-zinc-800 dark:text-zinc-100 dark:focus:ring-zinc-100"
           />
           <span className="text-zinc-400 dark:text-zinc-500 text-xs font-bold uppercase">até</span>
           <input 
             type="date" 
             value={endDate}
             onChange={(e) => setEndDate(e.target.value)}
-            className="px-3 py-2 bg-zinc-50 border border-zinc-200 rounded-xl text-sm focus:ring-2 focus:ring-zinc-900 outline-none dark:bg-zinc-800 dark:border-zinc-700 dark:text-zinc-100 dark:focus:ring-zinc-100"
+            className="px-3 py-2 bg-white border border-zinc-200 rounded-xl text-sm focus:ring-2 focus:ring-zinc-900 outline-none dark:bg-black dark:border-zinc-800 dark:text-zinc-100 dark:focus:ring-zinc-100"
           />
           {(startDate || endDate || movementTypeFilter !== 'ALL' || movementLocationFilter !== 'ALL') && (
             <button 

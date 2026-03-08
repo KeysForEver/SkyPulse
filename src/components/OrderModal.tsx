@@ -85,7 +85,7 @@ export const OrderModal = ({
                     required
                     value={formData.title}
                     onChange={e => setFormData({...formData, title: e.target.value.toUpperCase()})}
-                    className="w-full px-4 py-2 text-sm border border-zinc-200 dark:border-zinc-800 rounded-xl focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-100 outline-none bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 uppercase"
+                    className="w-full px-4 py-2 text-sm border border-zinc-200 dark:border-zinc-800 rounded-xl focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-100 outline-none bg-white dark:bg-black text-zinc-900 dark:text-zinc-100 uppercase"
                     placeholder="EX: INSTALAÇÃO DE REDE - CLIENTE X"
                   />
                 </div>
@@ -95,7 +95,7 @@ export const OrderModal = ({
                   <textarea 
                     value={formData.description}
                     onChange={e => setFormData({...formData, description: e.target.value.toUpperCase()})}
-                    className="w-full px-4 py-2 text-sm border border-zinc-200 dark:border-zinc-800 rounded-xl focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-100 outline-none bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 min-h-[100px] uppercase"
+                    className="w-full px-4 py-2 text-sm border border-zinc-200 dark:border-zinc-800 rounded-xl focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-100 outline-none bg-white dark:bg-black text-zinc-900 dark:text-zinc-100 min-h-[100px] uppercase"
                     placeholder="DETALHES DA ORDEM..."
                   />
                 </div>
@@ -107,7 +107,7 @@ export const OrderModal = ({
                       required
                       value={formData.client_id}
                       onChange={e => setFormData({...formData, client_id: e.target.value})}
-                      className="w-full px-4 py-2 text-sm border border-zinc-200 dark:border-zinc-800 rounded-xl focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-100 outline-none bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 uppercase"
+                      className="w-full px-4 py-2 text-sm border border-zinc-200 dark:border-zinc-800 rounded-xl focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-100 outline-none bg-white dark:bg-black text-zinc-900 dark:text-zinc-100 uppercase"
                     >
                       <option value="">SELECIONE UM CLIENTE</option>
                       {clients.map(client => (
@@ -121,7 +121,7 @@ export const OrderModal = ({
                     <select 
                       value={formData.status}
                       onChange={e => setFormData({...formData, status: e.target.value as OrderStatus})}
-                      className="w-full px-4 py-2 text-sm border border-zinc-200 dark:border-zinc-800 rounded-xl focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-100 outline-none bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 uppercase"
+                      className="w-full px-4 py-2 text-sm border border-zinc-200 dark:border-zinc-800 rounded-xl focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-100 outline-none bg-white dark:bg-black text-zinc-900 dark:text-zinc-100 uppercase"
                     >
                       {KANBAN_COLUMNS.map(col => (
                         <option key={col} value={col}>{col}</option>
@@ -141,7 +141,7 @@ export const OrderModal = ({
                 </button>
                 <button 
                   type="submit"
-                  className="px-8 py-2 bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 text-sm font-bold rounded-xl hover:bg-zinc-800 transition-all shadow-lg shadow-zinc-900/10 uppercase"
+                  className="px-8 py-2 bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 text-sm font-bold rounded-xl hover:bg-zinc-800 dark:hover:bg-zinc-200 transition-all shadow-lg shadow-zinc-900/10 uppercase"
                 >
                   {editingOrder ? 'Salvar Alterações' : 'Criar Ordem'}
                 </button>

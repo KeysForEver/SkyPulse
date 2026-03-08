@@ -1,6 +1,7 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Search, Plus, Trash2 } from 'lucide-react';
 import { Card, cn } from './Common';
+import { useDebounce } from '../hooks/useDebounce';
 
 interface Column {
   key: string;
@@ -29,7 +30,14 @@ export const GenericList = ({
   onEdit,
   onDelete
 }: GenericListProps) => {
+  const [inputValue, setInputValue] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
+  const debouncedSearchTerm = useDebounce(inputValue, 300);
+
+  useEffect(() => {
+    setSearchTerm(debouncedSearchTerm);
+  }, [debouncedSearchTerm]);
+
   const [activeMenuId, setActiveMenuId] = useState<number | null>(null);
 
   const filteredItems = useMemo(() => {
@@ -50,9 +58,9 @@ export const GenericList = ({
             <input 
               type="text" 
               placeholder="BUSCAR..." 
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value.toUpperCase())}
-              className="w-full pl-9 pr-4 py-1.5 text-xs border border-zinc-200 dark:border-zinc-800 rounded-lg focus:outline-none focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-100 focus:border-transparent bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 uppercase"
+              value={inputValue}
+              onChange={(e) => setInputValue(e.target.value.toUpperCase())}
+              className="w-full pl-9 pr-4 py-1.5 text-xs border border-zinc-200 dark:border-zinc-800 rounded-lg focus:outline-none focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-100 focus:border-transparent bg-white dark:bg-black text-zinc-900 dark:text-zinc-100 uppercase"
             />
           </div>
         </div>
