@@ -127,3 +127,46 @@ export const exportMovementsToCSV = (movements: Movement[]) => {
   document.body.removeChild(link);
   URL.revokeObjectURL(url);
 };
+
+export const exportGenericToCSV = (data: any[], columns: { key: string, label: string }[], filename: string) => {
+  const headers = columns.map(col => col.label);
+  const rows = data.map(item => columns.map(col => item[col.key] ?? '-'));
+
+  const csvContent = [
+    headers.join(','),
+    ...rows.map(row => row.map(cell => `"${cell}"`).join(','))
+  ].join('\n');
+
+  const BOM = '\uFEFF';
+  const blob = new Blob([BOM + csvContent], { type: 'text/csv;charset=utf-8;' });
+  const link = document.createElement('a');
+  const url = URL.createObjectURL(blob);
+  link.setAttribute('href', url);
+  link.setAttribute('download', `${filename}_${new Date().toISOString().split('T')[0]}.csv`);
+  link.style.visibility = 'hidden';
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+};
+
+export const exportGenericToPDF = (data: any[], columns: { key: string, label: string }[], title: string, filename: string) => {
+  const doc = new jsPDF();
+  const tableColumn = columns.map(col => col.label);
+  const tableRows = data.map(item => columns.map(col => item[col.key] ?? '-'));
+
+  autoTable(doc, {
+    head: [tableColumn],
+    body: tableRows,
+    startY: 25,
+    theme: 'grid',
+    styles: { fontSize: 7, cellPadding: 2 },
+    headStyles: { fillColor: [24, 24, 27], textColor: [255, 255, 255] },
+  });
+
+  doc.setFontSize(14);
+  doc.text(title, 14, 15);
+  doc.setFontSize(10);
+  doc.text(`Gerado em: ${new Date().toLocaleString('pt-BR')}`, 14, 21);
+  
+  doc.save(`${filename}_${new Date().toISOString().split('T')[0]}.pdf`);
+};

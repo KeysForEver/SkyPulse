@@ -116,6 +116,17 @@ export const Inventory = ({
   const [movementLocationFilter, setMovementLocationFilter] = useState<string>('ALL');
   const [visibleColumns, setVisibleColumns] = useState<string[]>(['name', 'category', 'quantity', 'total_value', 'min_quantity', 'status']);
   const [isColumnSelectorOpen, setIsColumnSelectorOpen] = useState(false);
+  const columnSelectorRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (columnSelectorRef.current && !columnSelectorRef.current.contains(event.target as Node)) {
+        setIsColumnSelectorOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const importFileInputRef = useRef<HTMLInputElement>(null);
@@ -170,7 +181,7 @@ export const Inventory = ({
     quantity: 0,
     unit_price: 0,
     xml: '',
-    invoice_pdf: ''
+    invoices: [] as { name: string, data: string }[]
   });
 
   const [stockOutData, setStockOutData] = useState({
@@ -238,7 +249,7 @@ export const Inventory = ({
       quantity: 0,
       unit_price: 0,
       xml: '',
-      invoice_pdf: ''
+      invoices: []
     });
     setIsAddingSupplier(false);
     setIsAddingLocation(false);
@@ -495,9 +506,9 @@ export const Inventory = ({
         <button 
           onClick={() => setActiveSubTab('products')}
           className={cn(
-            "px-4 py-2 text-sm font-bold rounded-lg transition-colors uppercase",
+            "px-4 py-2 text-sm font-bold rounded-xl transition-colors uppercase",
             activeSubTab === 'products' 
-              ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900" 
+              ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 shadow-lg shadow-zinc-900/10 dark:shadow-none" 
               : "text-zinc-500 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-800"
           )}
         >
@@ -506,9 +517,9 @@ export const Inventory = ({
         <button 
           onClick={() => setActiveSubTab('movements')}
           className={cn(
-            "px-4 py-2 text-sm font-bold rounded-lg transition-colors uppercase",
+            "px-4 py-2 text-sm font-bold rounded-xl transition-colors uppercase",
             activeSubTab === 'movements' 
-              ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900" 
+              ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 shadow-lg shadow-zinc-900/10 dark:shadow-none" 
               : "text-zinc-500 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-800"
           )}
         >
@@ -534,7 +545,7 @@ export const Inventory = ({
           />
           <div className="flex items-center gap-3 overflow-x-auto w-full md:w-auto no-scrollbar py-1 -mx-2 px-2 md:mx-0 md:px-0">
             {activeSubTab === 'products' && (
-              <div className="relative">
+              <div className="relative" ref={columnSelectorRef}>
                 <button 
                   onClick={() => setIsColumnSelectorOpen(!isColumnSelectorOpen)}
                   className="flex items-center gap-2 px-4 py-2 text-sm font-bold text-zinc-600 bg-zinc-100 rounded-xl hover:bg-zinc-200 transition-colors dark:text-zinc-300 dark:bg-zinc-800 dark:hover:bg-zinc-700 uppercase"
@@ -544,37 +555,34 @@ export const Inventory = ({
                 </button>
                 <AnimatePresence>
                   {isColumnSelectorOpen && (
-                    <>
-                      <div className="fixed inset-0 z-[150]" onClick={() => setIsColumnSelectorOpen(false)} />
-                      <motion.div 
-                        initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                        animate={{ opacity: 1, y: 0, scale: 1 }}
-                        exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                        className="absolute right-0 top-full mt-2 w-48 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl shadow-xl z-[160] overflow-hidden p-2"
-                      >
-                        <div className="space-y-1">
-                          {ALL_COLUMNS.map(col => (
-                            <label key={col.id} className="flex items-center gap-3 px-3 py-2 hover:bg-zinc-50 dark:hover:bg-zinc-800 rounded-lg cursor-pointer transition-colors group">
-                              <input 
-                                type="checkbox"
-                                checked={visibleColumns.includes(col.id)}
-                                onChange={() => {
-                                  if (visibleColumns.includes(col.id)) {
-                                    if (visibleColumns.length > 1) {
-                                      setVisibleColumns(visibleColumns.filter(c => c !== col.id));
-                                    }
-                                  } else {
-                                    setVisibleColumns([...visibleColumns, col.id]);
+                    <motion.div 
+                      initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                      className="absolute right-0 top-full mt-2 w-48 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl shadow-xl z-[160] overflow-hidden p-2"
+                    >
+                      <div className="space-y-1">
+                        {ALL_COLUMNS.map(col => (
+                          <label key={col.id} className="flex items-center gap-3 px-3 py-2 hover:bg-zinc-50 dark:hover:bg-zinc-800 rounded-lg cursor-pointer transition-colors group">
+                            <input 
+                              type="checkbox"
+                              checked={visibleColumns.includes(col.id)}
+                              onChange={() => {
+                                if (visibleColumns.includes(col.id)) {
+                                  if (visibleColumns.length > 1) {
+                                    setVisibleColumns(visibleColumns.filter(c => c !== col.id));
                                   }
-                                }}
-                                className="w-4 h-4 rounded border-zinc-300 dark:border-zinc-700 text-zinc-900 dark:text-zinc-100 focus:ring-zinc-900 dark:focus:ring-zinc-100"
-                              />
-                              <span className="text-sm text-zinc-600 dark:text-zinc-400 group-hover:text-zinc-900 dark:group-hover:text-zinc-100 transition-colors">{col.label}</span>
-                            </label>
-                          ))}
-                        </div>
-                      </motion.div>
-                    </>
+                                } else {
+                                  setVisibleColumns([...visibleColumns, col.id]);
+                                }
+                              }}
+                              className="w-4 h-4 rounded border-zinc-300 dark:border-zinc-700 text-zinc-900 dark:text-zinc-100 focus:ring-zinc-900 dark:focus:ring-zinc-100"
+                            />
+                            <span className="text-sm text-zinc-600 dark:text-zinc-400 group-hover:text-zinc-900 dark:group-hover:text-zinc-100 transition-colors">{col.label}</span>
+                          </label>
+                        ))}
+                      </div>
+                    </motion.div>
                   )}
                 </AnimatePresence>
               </div>
@@ -725,6 +733,7 @@ export const Inventory = ({
           setIsModalOpen(true);
           setSelectedProductForDetail(null);
         }}
+        onDelete={onDeleteProduct}
       />
     </>
   );

@@ -10,7 +10,7 @@ export const SidebarItem = ({ icon: Icon, label, active, onClick, isCollapsed }:
   <button
     onClick={onClick}
     className={cn(
-      "flex items-center w-full gap-3 transition-all duration-300 rounded-lg",
+      "flex items-center w-full gap-3 transition-all duration-300 rounded-xl",
       isCollapsed ? "justify-center px-0 py-3" : "px-4 py-3",
       active 
         ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900" 
@@ -44,7 +44,7 @@ export const StatCard = ({ label, value, icon: Icon, trend, color, onClick }: { 
   >
     <div className="flex items-center justify-between">
       <span className="text-xs font-medium text-zinc-500 uppercase tracking-wider dark:text-zinc-400">{label.toUpperCase()}</span>
-      <div className={cn("p-2 rounded-lg", color)}>
+      <div className={cn("p-2 rounded-xl", color)}>
         <Icon size={16} className="text-white" />
       </div>
     </div>

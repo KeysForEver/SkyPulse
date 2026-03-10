@@ -15,6 +15,7 @@ interface KanbanProps {
 
 export const Kanban = ({ orders, onUpdateStatus, onEdit, onDelete, onAdd }: KanbanProps) => {
   const [searchTerm, setSearchTerm] = useState('');
+  const [draggedOrderId, setDraggedOrderId] = useState<number | null>(null);
   const [draggedOverColumn, setDraggedOverColumn] = useState<string | null>(null);
   const [activeMenuId, setActiveMenuId] = useState<number | null>(null);
   const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0 });
@@ -29,6 +30,7 @@ export const Kanban = ({ orders, onUpdateStatus, onEdit, onDelete, onAdd }: Kanb
   }, [orders, searchTerm]);
 
   const handleDragStart = (e: React.DragEvent, orderId: number) => {
+    setDraggedOrderId(orderId);
     e.dataTransfer.setData('orderId', orderId.toString());
     e.dataTransfer.effectAllowed = 'move';
   };
@@ -45,10 +47,12 @@ export const Kanban = ({ orders, onUpdateStatus, onEdit, onDelete, onAdd }: Kanb
   const handleDrop = (e: React.DragEvent, status: OrderStatus) => {
     e.preventDefault();
     setDraggedOverColumn(null);
-    const orderId = parseInt(e.dataTransfer.getData('orderId'));
-    if (!isNaN(orderId)) {
+    
+    const orderId = draggedOrderId || parseInt(e.dataTransfer.getData('orderId'));
+    if (orderId && !isNaN(orderId)) {
       onUpdateStatus(orderId, status);
     }
+    setDraggedOrderId(null);
   };
 
   const openMenu = (e: React.MouseEvent, orderId: number) => {
@@ -72,7 +76,7 @@ export const Kanban = ({ orders, onUpdateStatus, onEdit, onDelete, onAdd }: Kanb
             placeholder="BUSCAR ORDENS..." 
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value.toUpperCase())}
-            className="w-full pl-10 pr-4 py-2 text-sm border border-zinc-200 dark:border-zinc-800 rounded-lg focus:outline-none focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-100 focus:border-transparent bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 uppercase"
+            className="w-full pl-10 pr-4 py-2 text-sm border border-zinc-200 dark:border-zinc-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-100 focus:border-transparent bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 uppercase transition-all"
           />
         </div>
         <button 
@@ -83,13 +87,24 @@ export const Kanban = ({ orders, onUpdateStatus, onEdit, onDelete, onAdd }: Kanb
           Nova Ordem
         </button>
       </div>
-      <div className="flex gap-4 overflow-x-auto pb-4 min-h-[calc(100vh-12rem)]">
+      <div className="flex gap-4 overflow-x-auto pb-4 min-h-[calc(100vh-16rem)] items-start">
         {KANBAN_COLUMNS.map((col) => (
           <div 
             key={col} 
-            className="flex-shrink-0 w-72 flex flex-col gap-3"
+            className="flex-shrink-0 w-72 flex flex-col gap-3 self-stretch"
             onDragOver={(e) => handleDragOver(e, col)}
-            onDragLeave={handleDragLeave}
+            onDragLeave={(e) => {
+              // Only clear if we are actually leaving the column container
+              const rect = e.currentTarget.getBoundingClientRect();
+              if (
+                e.clientX <= rect.left ||
+                e.clientX >= rect.right ||
+                e.clientY <= rect.top ||
+                e.clientY >= rect.bottom
+              ) {
+                handleDragLeave();
+              }
+            }}
             onDrop={(e) => handleDrop(e, col as OrderStatus)}
           >
             <div className="flex items-center justify-between px-1">
@@ -99,19 +114,28 @@ export const Kanban = ({ orders, onUpdateStatus, onEdit, onDelete, onAdd }: Kanb
               </span>
             </div>
             <div className={cn(
-              "flex-1 rounded-xl p-2 space-y-3 border transition-colors duration-200",
+              "flex-1 rounded-xl p-2 space-y-3 border transition-colors duration-200 min-h-[150px]",
               draggedOverColumn === col 
                 ? "bg-zinc-200/50 dark:bg-zinc-800/50 border-zinc-400 dark:border-zinc-500 border-dashed" 
                 : "bg-zinc-100/50 dark:bg-zinc-900/50 border-zinc-200/50 dark:border-zinc-800/50"
             )}>
               {filteredOrders.filter(o => o.status === col).map((order) => (
-              <motion.div
-                layoutId={`order-${order.id}`}
-                key={order.id}
-                draggable
-                onDragStart={(e) => handleDragStart(e, order.id)}
-                className="bg-white dark:bg-zinc-900 p-4 rounded-lg shadow-sm border border-zinc-200 dark:border-zinc-800 cursor-grab active:cursor-grabbing hover:border-zinc-300 dark:hover:border-zinc-700 transition-colors"
-              >
+                <motion.div
+                  layoutId={`order-${order.id}`}
+                  key={order.id}
+                  draggable
+                  onDragStart={(e) => handleDragStart(e, order.id)}
+                  onDragEnd={() => {
+                    setDraggedOrderId(null);
+                    setDraggedOverColumn(null);
+                  }}
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98, cursor: 'grabbing' }}
+                  className={cn(
+                    "bg-white dark:bg-zinc-900 p-4 rounded-lg shadow-sm border border-zinc-200 dark:border-zinc-800 cursor-grab active:cursor-grabbing hover:border-zinc-300 dark:hover:border-zinc-700 transition-all",
+                    draggedOrderId === order.id && "opacity-50 border-dashed border-zinc-400"
+                  )}
+                >
                 <div className="flex justify-between items-start mb-2">
                   <span className="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase">#{order.id}</span>
                   <button 

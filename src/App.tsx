@@ -11,9 +11,9 @@ import {
   Settings, 
   DollarSign, 
   FileText,
-  Sun, 
-  Moon, 
-  RotateCcw
+  RotateCcw,
+  Edit,
+  Trash2
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Product, Client, Supplier, Asset, Order, Movement, OrderStatus } from './types';
@@ -24,25 +24,31 @@ import { GenericList } from './components/GenericList';
 import { Settings as SettingsView } from './components/Settings';
 import { SidebarItem, cn } from './components/Common';
 import { OrderModal } from './components/OrderModal';
+import { OrderDetailModal } from './components/OrderDetailModal';
 
 // --- Main App ---
 
 export default function App() {
   const [isDarkMode, setIsDarkMode] = useState(() => {
     if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('theme');
-      return saved === 'dark';
+      return window.matchMedia('(prefers-color-scheme: dark)').matches;
     }
     return false;
   });
 
   useEffect(() => {
+    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+    const handleChange = (e: MediaQueryListEvent) => setIsDarkMode(e.matches);
+    
+    mediaQuery.addEventListener('change', handleChange);
+    return () => mediaQuery.removeEventListener('change', handleChange);
+  }, []);
+
+  useEffect(() => {
     if (isDarkMode) {
       document.documentElement.classList.add('dark');
-      localStorage.setItem('theme', 'dark');
     } else {
       document.documentElement.classList.remove('dark');
-      localStorage.setItem('theme', 'light');
     }
   }, [isDarkMode]);
 
@@ -112,6 +118,16 @@ export default function App() {
 
   const [isOrderModalOpen, setIsOrderModalOpen] = useState(false);
   const [editingOrder, setEditingOrder] = useState<Order | null>(null);
+  const [selectedOrderForDetail, setSelectedOrderForDetail] = useState<Order | null>(null);
+  const [activeGenericMenuId, setActiveGenericMenuId] = useState<number | null>(null);
+  const [genericMenuPosition, setGenericMenuPosition] = useState<{ top: number, left: number } | null>(null);
+
+  const handleGenericMenuClick = (e: React.MouseEvent, id: number) => {
+    e.stopPropagation();
+    const rect = e.currentTarget.getBoundingClientRect();
+    setGenericMenuPosition({ top: rect.bottom + window.scrollY, left: rect.right - 160 + window.scrollX });
+    setActiveGenericMenuId(id);
+  };
 
   useEffect(() => {
     fetchData();
@@ -221,6 +237,45 @@ export default function App() {
     }
   };
 
+  const deleteClient = async (id: number) => {
+    try {
+      const res = await fetch(`/api/clients/${id}`, {
+        method: 'DELETE'
+      });
+      if (res.ok) {
+        fetchData();
+      }
+    } catch (err) {
+      console.error('Error deleting client:', err);
+    }
+  };
+
+  const deleteSupplier = async (id: number) => {
+    try {
+      const res = await fetch(`/api/suppliers/${id}`, {
+        method: 'DELETE'
+      });
+      if (res.ok) {
+        fetchData();
+      }
+    } catch (err) {
+      console.error('Error deleting supplier:', err);
+    }
+  };
+
+  const deleteAsset = async (id: number) => {
+    try {
+      const res = await fetch(`/api/assets/${id}`, {
+        method: 'DELETE'
+      });
+      if (res.ok) {
+        fetchData();
+      }
+    } catch (err) {
+      console.error('Error deleting asset:', err);
+    }
+  };
+
   const addProduct = async (formData: FormData) => {
     try {
       const res = await fetch('/api/products', {
@@ -312,10 +367,16 @@ export default function App() {
 
   const handleStockIn = async (data: any) => {
     try {
+      // Convert invoices array to JSON string for the backend column 'invoice_pdf'
+      const submissionData = {
+        ...data,
+        invoice_pdf: data.invoices && data.invoices.length > 0 ? JSON.stringify(data.invoices) : ''
+      };
+      
       const res = await fetch('/api/inventory/in', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data)
+        body: JSON.stringify(submissionData)
       });
       if (res.ok) {
         fetchData();
@@ -425,11 +486,8 @@ export default function App() {
             setEditingOrder(null);
             setIsOrderModalOpen(true);
           }}
-          onEdit={(order) => {
-            setEditingOrder(order);
-            setIsOrderModalOpen(true);
-          }}
-          onDelete={deleteOrder}
+          onItemClick={(order) => setSelectedOrderForDetail(order)}
+          onMenuClick={handleGenericMenuClick}
         />
       );
       case 'kanban': return (
@@ -456,6 +514,7 @@ export default function App() {
             { key: 'email', label: 'E-MAIL' },
             { key: 'phone', label: 'TELEFONE' }
           ]} 
+          onMenuClick={handleGenericMenuClick}
         />
       );
       case 'suppliers': return (
@@ -466,6 +525,7 @@ export default function App() {
             { key: 'name', label: 'NOME' },
             { key: 'contact', label: 'CONTATO' }
           ]} 
+          onMenuClick={handleGenericMenuClick}
         />
       );
       case 'assets': return (
@@ -477,12 +537,14 @@ export default function App() {
             { key: 'code', label: 'CÓDIGO', mono: true },
             { key: 'status', label: 'STATUS' }
           ]} 
+          onMenuClick={handleGenericMenuClick}
         />
       );
       case 'financial': return (
         <GenericList 
           title="FINANCEIRO (ENTRADAS DE ESTOQUE)" 
           showAddButton={false}
+          showActions={false}
           items={financialEntries.map(e => ({
             ...e,
             total_value: `R$ ${(e.quantity * e.unit_price).toFixed(2)}`,
@@ -622,13 +684,6 @@ export default function App() {
             </h1>
           </div>
           <div className="flex items-center gap-4">
-            <button
-              onClick={() => setIsDarkMode(!isDarkMode)}
-              className="p-2 text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100 bg-zinc-100 dark:bg-zinc-800 rounded-xl transition-colors"
-              title={isDarkMode ? "Ativar modo claro" : "Ativar modo escuro"}
-            >
-              {isDarkMode ? <Sun size={20} /> : <Moon size={20} />}
-            </button>
             <div className="hidden md:flex items-center gap-2 px-3 py-1.5 bg-zinc-100 dark:bg-zinc-800 rounded-full text-xs font-medium text-zinc-600 dark:text-zinc-400 uppercase">
               <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
               Sistema Online
@@ -667,6 +722,74 @@ export default function App() {
         editingOrder={editingOrder}
         clients={clients}
       />
+
+      <OrderDetailModal 
+        isOpen={!!selectedOrderForDetail}
+        onClose={() => setSelectedOrderForDetail(null)}
+        order={selectedOrderForDetail}
+        onEdit={(order) => {
+          setEditingOrder(order);
+          setIsOrderModalOpen(true);
+          setSelectedOrderForDetail(null);
+        }}
+        onDelete={deleteOrder}
+      />
+
+      <AnimatePresence>
+        {activeGenericMenuId && genericMenuPosition && (
+          <>
+            <div className="fixed inset-0 z-[150]" onClick={() => setActiveGenericMenuId(null)} />
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              style={{ top: genericMenuPosition.top, left: genericMenuPosition.left }}
+              className="absolute w-40 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl shadow-xl z-[160] overflow-hidden p-1"
+            >
+              <button 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (activeTab === 'production') {
+                    const item = orders.find(o => o.id === activeGenericMenuId);
+                    if (item) {
+                      setEditingOrder(item);
+                      setIsOrderModalOpen(true);
+                    }
+                  }
+                  // Handle other tabs here when modals are implemented
+                  setActiveGenericMenuId(null);
+                }}
+                className={cn(
+                  "flex items-center gap-2 w-full px-3 py-2 text-xs font-medium rounded-lg transition-colors",
+                  activeTab === 'production' 
+                    ? "text-zinc-600 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-800" 
+                    : "text-zinc-300 dark:text-zinc-600 cursor-not-allowed"
+                )}
+                disabled={activeTab !== 'production'}
+              >
+                <Edit size={14} />
+                Editar
+              </button>
+              <button 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (confirm('Tem certeza que deseja excluir este item?')) {
+                    if (activeTab === 'production') deleteOrder(activeGenericMenuId);
+                    else if (activeTab === 'clients') deleteClient(activeGenericMenuId);
+                    else if (activeTab === 'suppliers') deleteSupplier(activeGenericMenuId);
+                    else if (activeTab === 'assets') deleteAsset(activeGenericMenuId);
+                  }
+                  setActiveGenericMenuId(null);
+                }}
+                className="flex items-center gap-2 w-full px-3 py-2 text-xs font-medium text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-500/10 rounded-lg transition-colors"
+              >
+                <Trash2 size={14} />
+                Excluir
+              </button>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
     </div>
     </>
   );
