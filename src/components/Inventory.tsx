@@ -81,8 +81,6 @@ export const Inventory = ({
   const [selectedPdfFields, setSelectedPdfFields] = useState<string[]>(['name', 'category', 'quantity', 'unit', 'cost_price', 'status']);
   const [includeTotalValue, setIncludeTotalValue] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
-  const [activeMenuId, setActiveMenuId] = useState<number | null>(null);
-  const [menuPosition, setMenuPosition] = useState<{ top: number, left: number } | null>(null);
   const [stockOutError, setStockOutError] = useState<string | null>(null);
   const [productError, setProductError] = useState<string | null>(null);
   const [stockInError, setStockInError] = useState<string | null>(null);
@@ -476,8 +474,8 @@ export const Inventory = ({
         m.destination?.toLowerCase().includes(searchTerm.toLowerCase());
       
       const movementDate = new Date(m.date);
-      const start = startDate ? new Date(startDate) : null;
-      const end = endDate ? new Date(endDate) : null;
+      const start = startDate ? new Date(startDate.replace(/-/g, '\/')) : null;
+      const end = endDate ? new Date(endDate.replace(/-/g, '\/')) : null;
       
       if (start) start.setHours(0, 0, 0, 0);
       if (end) end.setHours(23, 59, 59, 999);
@@ -492,13 +490,6 @@ export const Inventory = ({
       return matchesSearch && matchesDate && matchesType && matchesLocation;
     });
   }, [movements, searchTerm, startDate, endDate, movementTypeFilter, movementLocationFilter]);
-
-  const handleMenuClick = (e: React.MouseEvent, id: number) => {
-    e.stopPropagation();
-    const rect = e.currentTarget.getBoundingClientRect();
-    setMenuPosition({ top: rect.bottom + window.scrollY, left: rect.right - 160 + window.scrollX });
-    setActiveMenuId(id);
-  };
 
   return (
     <>
@@ -527,7 +518,7 @@ export const Inventory = ({
         </button>
       </div>
 
-      <Card className="p-0">
+      <Card className="p-0 overflow-visible">
         <div className="p-6 border-b border-zinc-100 dark:border-zinc-800 flex flex-col md:flex-row md:items-center justify-between gap-4">
           <InventoryFilters 
             activeSubTab={activeSubTab}
@@ -543,7 +534,7 @@ export const Inventory = ({
             endDate={endDate}
             setEndDate={setEndDate}
           />
-          <div className="flex items-center gap-3 overflow-x-auto w-full md:w-auto no-scrollbar py-1 -mx-2 px-2 md:mx-0 md:px-0">
+          <div className="flex items-center gap-3 flex-wrap w-full md:w-auto py-1 -mx-2 px-2 md:mx-0 md:px-0">
             {activeSubTab === 'products' && (
               <div className="relative" ref={columnSelectorRef}>
                 <button 
@@ -615,42 +606,12 @@ export const Inventory = ({
               requestSort={requestSort}
               getSortIcon={getSortIcon}
               onProductClick={handleProductClick}
-              onMenuClick={handleMenuClick}
             />
           ) : (
             <MovementTable movements={filteredMovements} />
           )}
         </div>
       </Card>
-
-      <AnimatePresence>
-        {activeMenuId && menuPosition && (
-          <>
-            <div className="fixed inset-0 z-[150]" onClick={() => setActiveMenuId(null)} />
-            <motion.div 
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              style={{ top: menuPosition.top, left: menuPosition.left }}
-              className="absolute w-40 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl shadow-xl z-[160] overflow-hidden p-1"
-            >
-              <button 
-                onClick={(e) => {
-                  e.stopPropagation();
-                  if (confirm('Tem certeza que deseja excluir este produto?')) {
-                    onDeleteProduct(activeMenuId);
-                  }
-                  setActiveMenuId(null);
-                }}
-                className="flex items-center gap-2 w-full px-3 py-2 text-xs font-medium text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-500/10 rounded-lg transition-colors"
-              >
-                <Trash2 size={14} />
-                Excluir Produto
-              </button>
-            </motion.div>
-          </>
-        )}
-      </AnimatePresence>
 
       <ProductModal 
         isOpen={isModalOpen}

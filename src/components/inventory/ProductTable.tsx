@@ -9,7 +9,6 @@ interface ProductTableProps {
   requestSort: (key: keyof Product | 'status') => void;
   getSortIcon: (key: keyof Product | 'status') => React.ReactNode;
   onProductClick: (p: Product) => void;
-  onMenuClick: (e: React.MouseEvent, id: number) => void;
 }
 
 export const ProductTable = ({
@@ -17,8 +16,7 @@ export const ProductTable = ({
   visibleColumns,
   requestSort,
   getSortIcon,
-  onProductClick,
-  onMenuClick
+  onProductClick
 }: ProductTableProps) => {
   return (
     <table className="w-full text-left border-collapse">
@@ -95,7 +93,6 @@ export const ProductTable = ({
               </div>
             </th>
           )}
-          <th className="px-6 py-3 text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider"></th>
         </tr>
       </thead>
       <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800">
@@ -163,14 +160,6 @@ export const ProductTable = ({
                   </span>
                 </td>
               )}
-              <td className="px-6 py-4 text-right">
-                <button 
-                  onClick={(e) => onMenuClick(e, p.id)}
-                  className="p-2 text-zinc-400 hover:text-zinc-900 dark:text-zinc-500 dark:hover:text-zinc-100 transition-colors"
-                >
-                  <MoreVertical size={16} />
-                </button>
-              </td>
             </tr>
           );
         })}

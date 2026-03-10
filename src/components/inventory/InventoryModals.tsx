@@ -99,7 +99,9 @@ export const ProductModal = ({
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="space-y-1.5 md:col-span-2">
-          <label className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase">Nome do Produto</label>
+          <label className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase">
+            Nome do Produto <span className="text-rose-500 ml-0.5">*</span>
+          </label>
           <input 
             required
             type="text" 
@@ -110,7 +112,9 @@ export const ProductModal = ({
           />
         </div>
         <div className="space-y-1.5">
-          <label className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase">Categoria</label>
+          <label className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase">
+            Categoria <span className="text-rose-500 ml-0.5">*</span>
+          </label>
           <div className="flex gap-2">
             <select 
               required
@@ -133,7 +137,9 @@ export const ProductModal = ({
           </div>
         </div>
         <div className="space-y-1.5">
-          <label className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase">Unidade</label>
+          <label className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase">
+            Unidade <span className="text-rose-500 ml-0.5">*</span>
+          </label>
           <select 
             required
             value={formData.unit}
@@ -188,7 +194,9 @@ export const ProductModal = ({
       <Modal isOpen={isAddingCategory} onClose={() => setIsAddingCategory(false)} title="Nova Categoria" zIndex={300}>
         <div className="p-6 space-y-4">
           <div className="space-y-1.5">
-            <label className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase">Nome da Categoria</label>
+            <label className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase">
+              Nome da Categoria <span className="text-rose-500 ml-0.5">*</span>
+            </label>
             <input 
               type="text" 
               value={newCategoryName}
@@ -399,7 +407,9 @@ export const StockInModal = ({
         <div className="space-y-4">
           {/* Linha 1: Produto */}
           <div className="space-y-1.5 relative" ref={dropdownRef}>
-            <label className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase">Produto</label>
+            <label className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase">
+              Produto <span className="text-rose-500 ml-0.5">*</span>
+            </label>
             <div className="relative">
               <div 
                 className="w-full px-3 py-2 text-sm border border-zinc-200 dark:border-zinc-800 rounded-lg focus-within:ring-2 focus-within:ring-zinc-900 dark:focus-within:ring-zinc-100 outline-none bg-white dark:bg-black text-zinc-900 dark:text-zinc-100 flex items-center gap-2 cursor-pointer"
@@ -462,7 +472,9 @@ export const StockInModal = ({
           {/* Linha 2: Quantidade e Localização */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-1.5">
-              <label className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase">Quantidade</label>
+              <label className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase">
+                Quantidade <span className="text-rose-500 ml-0.5">*</span>
+              </label>
               <input 
                 required
                 type="number" 
@@ -474,7 +486,9 @@ export const StockInModal = ({
               />
             </div>
             <div className="space-y-1.5">
-              <label className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase">Localização</label>
+              <label className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase">
+                Localização <span className="text-rose-500 ml-0.5">*</span>
+              </label>
               <div className="flex gap-2">
                 <select 
                   required
@@ -501,7 +515,9 @@ export const StockInModal = ({
           {/* Linha 3: Fornecedor e Documento Fiscal */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-1.5">
-              <label className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase">Fornecedor</label>
+              <label className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase">
+                Fornecedor <span className="text-rose-500 ml-0.5">*</span>
+              </label>
               <div className="flex gap-2">
                 <select 
                   required
@@ -621,7 +637,9 @@ export const StockInModal = ({
           {/* Linha 5: Data de Emissão e Valor Unitário */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-1.5">
-              <label className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase">Data de Emissão</label>
+              <label className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase">
+                Data de Emissão <span className="text-rose-500 ml-0.5">*</span>
+              </label>
               <input 
                 required
                 type="date" 
@@ -676,7 +694,9 @@ export const StockInModal = ({
         <Modal isOpen={isAddingLocation} onClose={() => setIsAddingLocation(false)} title="Nova Localização" zIndex={300}>
           <div className="p-6 space-y-4">
             <div className="space-y-1.5">
-              <label className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase">Nome da Localização</label>
+              <label className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase">
+                Nome da Localização <span className="text-rose-500 ml-0.5">*</span>
+              </label>
               <input 
                 type="text" 
                 value={newLocationName}
@@ -708,7 +728,9 @@ export const StockInModal = ({
         <Modal isOpen={isAddingSupplier} onClose={() => setIsAddingSupplier(false)} title="Novo Fornecedor" zIndex={300}>
           <div className="p-6 space-y-4">
             <div className="space-y-1.5">
-              <label className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase">Nome do Fornecedor</label>
+              <label className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase">
+                Nome do Fornecedor <span className="text-rose-500 ml-0.5">*</span>
+              </label>
               <input 
                 type="text" 
                 value={newSupplierName}
@@ -792,7 +814,7 @@ export const StockOutModal = ({
         
         <div className="space-y-1.5 relative" ref={dropdownRef}>
           <label className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase">
-            Produto {selectedProduct && (
+            Produto <span className="text-rose-500 ml-0.5">*</span> {selectedProduct && (
               <span className="ml-2 text-zinc-400 uppercase">
                 (Saldo: {selectedProduct.quantity > 0 ? selectedProduct.quantity : '-'})
               </span>
@@ -859,7 +881,9 @@ export const StockOutModal = ({
         </div>
 
         <div className="space-y-1.5">
-          <label className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase">Quantidade</label>
+          <label className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase">
+            Quantidade <span className="text-rose-500 ml-0.5">*</span>
+          </label>
           <input 
             required
             type="number" 
@@ -874,7 +898,9 @@ export const StockOutModal = ({
           />
         </div>
         <div className="space-y-1.5">
-          <label className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase">Motivo da Saída</label>
+          <label className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase">
+            Motivo da Saída <span className="text-rose-500 ml-0.5">*</span>
+          </label>
           <select 
             required
             value={stockOutData.reason}
@@ -889,7 +915,9 @@ export const StockOutModal = ({
           </select>
         </div>
         <div className="space-y-1.5">
-          <label className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase">Destino / Ordem de Produção</label>
+          <label className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase">
+            Destino / Ordem de Produção <span className="text-rose-500 ml-0.5">*</span>
+          </label>
           {stockOutData.reason === 'venda' ? (
             <select
               required

@@ -27,7 +27,7 @@ export const GenericList = ({
   items, 
   columns, 
   showAddButton = true, 
-  showActions = true,
+  showActions = false,
   onAdd,
   onItemClick,
   onMenuClick
@@ -64,7 +64,7 @@ export const GenericList = ({
   const activeColumns = columns.filter(col => visibleColumns.includes(col.key));
 
   return (
-    <Card className="p-0">
+    <Card className="p-0 overflow-visible">
       <div className="px-6 py-4 border-b border-zinc-100 dark:border-zinc-800 flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="flex items-center gap-4 flex-1">
           <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100 whitespace-nowrap uppercase">{title}</h3>
@@ -80,7 +80,7 @@ export const GenericList = ({
           </div>
         </div>
         
-        <div className="flex items-center gap-2 overflow-x-auto no-scrollbar">
+        <div className="flex items-center gap-2 flex-wrap">
           <div className="relative" ref={columnSelectorRef}>
             <button 
               onClick={() => setIsColumnSelectorOpen(!isColumnSelectorOpen)}

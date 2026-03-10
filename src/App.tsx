@@ -487,7 +487,6 @@ export default function App() {
             setIsOrderModalOpen(true);
           }}
           onItemClick={(order) => setSelectedOrderForDetail(order)}
-          onMenuClick={handleGenericMenuClick}
         />
       );
       case 'kanban': return (
@@ -514,7 +513,6 @@ export default function App() {
             { key: 'email', label: 'E-MAIL' },
             { key: 'phone', label: 'TELEFONE' }
           ]} 
-          onMenuClick={handleGenericMenuClick}
         />
       );
       case 'suppliers': return (
@@ -525,7 +523,6 @@ export default function App() {
             { key: 'name', label: 'NOME' },
             { key: 'contact', label: 'CONTATO' }
           ]} 
-          onMenuClick={handleGenericMenuClick}
         />
       );
       case 'assets': return (
@@ -537,7 +534,6 @@ export default function App() {
             { key: 'code', label: 'CÓDIGO', mono: true },
             { key: 'status', label: 'STATUS' }
           ]} 
-          onMenuClick={handleGenericMenuClick}
         />
       );
       case 'financial': return (

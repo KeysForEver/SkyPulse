@@ -79,7 +79,9 @@ export const OrderModal = ({
             <form onSubmit={handleSubmit} className="p-6 space-y-6 overflow-y-auto flex-1">
               <div className="space-y-4">
                 <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">Título da Ordem</label>
+                  <label className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
+                    Título da Ordem <span className="text-rose-500 ml-0.5">*</span>
+                  </label>
                   <input 
                     type="text" 
                     required
@@ -102,7 +104,9 @@ export const OrderModal = ({
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">Cliente</label>
+                    <label className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
+                      Cliente <span className="text-rose-500 ml-0.5">*</span>
+                    </label>
                     <select 
                       required
                       value={formData.client_id}
