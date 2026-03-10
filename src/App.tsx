@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Product, Client, Supplier, Asset, Order, Movement, OrderStatus } from './types';
+import { apiService } from './services/apiService';
 import { Dashboard } from './components/Dashboard';
 import { Inventory } from './components/Inventory';
 import { Kanban } from './components/Kanban';
@@ -148,33 +149,43 @@ export default function App() {
 
   const fetchData = async () => {
     try {
-      const endpoints = [
-        { key: 'stats', url: '/api/stats', setter: setStats },
-        { key: 'products', url: '/api/products', setter: setProducts },
-        { key: 'orders', url: '/api/orders', setter: setOrders },
-        { key: 'clients', url: '/api/clients', setter: setClients },
-        { key: 'suppliers', url: '/api/suppliers', setter: setSuppliers },
-        { key: 'assets', url: '/api/assets', setter: setAssets },
-        { key: 'categories', url: '/api/categories', setter: setCategories },
-        { key: 'locations', url: '/api/locations', setter: setLocations },
-        { key: 'movements', url: '/api/movements', setter: setMovements },
-        { key: 'financial', url: '/api/financial/entries', setter: setFinancialEntries },
-        { key: 'audit-logs', url: '/api/audit-logs', setter: setAuditLogs },
-      ];
+      const [
+        statsData,
+        productsData,
+        ordersData,
+        clientsData,
+        suppliersData,
+        assetsData,
+        categoriesData,
+        locationsData,
+        movementsData,
+        financialData,
+        auditLogsData
+      ] = await Promise.all([
+        apiService.getStats(),
+        apiService.getProducts(),
+        apiService.getOrders(),
+        apiService.getClients(),
+        apiService.getSuppliers(),
+        apiService.getAssets(),
+        apiService.getCategories(),
+        apiService.getLocations(),
+        apiService.getMovements(),
+        apiService.getFinancialEntries(),
+        apiService.getAuditLogs()
+      ]);
 
-      await Promise.all(endpoints.map(async (endpoint) => {
-        try {
-          const res = await fetch(endpoint.url);
-          if (!res.ok) {
-            const errorData = await res.json().catch(() => ({ error: 'Unknown error' }));
-            throw new Error(errorData.error || `HTTP error! status: ${res.status}`);
-          }
-          const data = await res.json();
-          endpoint.setter(data);
-        } catch (err) {
-          console.error(`Error fetching ${endpoint.key}:`, err);
-        }
-      }));
+      setStats(statsData);
+      setProducts(productsData);
+      setOrders(ordersData);
+      setClients(clientsData);
+      setSuppliers(suppliersData);
+      setAssets(assetsData);
+      setCategories(categoriesData);
+      setLocations(locationsData);
+      setMovements(movementsData);
+      setFinancialEntries(financialData);
+      setAuditLogs(auditLogsData);
     } catch (err) {
       console.error('Error in fetchData:', err);
     }
@@ -182,11 +193,7 @@ export default function App() {
 
   const updateOrderStatus = async (id: number, status: OrderStatus) => {
     try {
-      await fetch(`/api/orders/${id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status })
-      });
+      await apiService.patchOrder(id, { status });
       fetchData();
     } catch (err) {
       console.error('Error updating order:', err);
@@ -195,14 +202,8 @@ export default function App() {
 
   const addOrder = async (data: any) => {
     try {
-      const res = await fetch('/api/orders', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data)
-      });
-      if (res.ok) {
-        fetchData();
-      }
+      await apiService.addOrder(data);
+      fetchData();
     } catch (err) {
       console.error('Error adding order:', err);
     }
@@ -210,14 +211,8 @@ export default function App() {
 
   const updateOrder = async (id: number, data: any) => {
     try {
-      const res = await fetch(`/api/orders/${id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data)
-      });
-      if (res.ok) {
-        fetchData();
-      }
+      await apiService.updateOrder(id, data);
+      fetchData();
     } catch (err) {
       console.error('Error updating order:', err);
     }
@@ -226,12 +221,8 @@ export default function App() {
   const deleteOrder = async (id: number) => {
     if (!confirm('Tem certeza que deseja excluir esta ordem de produção?')) return;
     try {
-      const res = await fetch(`/api/orders/${id}`, {
-        method: 'DELETE'
-      });
-      if (res.ok) {
-        fetchData();
-      }
+      await apiService.deleteOrder(id);
+      fetchData();
     } catch (err) {
       console.error('Error deleting order:', err);
     }
@@ -239,12 +230,8 @@ export default function App() {
 
   const deleteClient = async (id: number) => {
     try {
-      const res = await fetch(`/api/clients/${id}`, {
-        method: 'DELETE'
-      });
-      if (res.ok) {
-        fetchData();
-      }
+      await apiService.deleteClient(id);
+      fetchData();
     } catch (err) {
       console.error('Error deleting client:', err);
     }
@@ -252,12 +239,8 @@ export default function App() {
 
   const deleteSupplier = async (id: number) => {
     try {
-      const res = await fetch(`/api/suppliers/${id}`, {
-        method: 'DELETE'
-      });
-      if (res.ok) {
-        fetchData();
-      }
+      await apiService.deleteSupplier(id);
+      fetchData();
     } catch (err) {
       console.error('Error deleting supplier:', err);
     }
@@ -265,12 +248,8 @@ export default function App() {
 
   const deleteAsset = async (id: number) => {
     try {
-      const res = await fetch(`/api/assets/${id}`, {
-        method: 'DELETE'
-      });
-      if (res.ok) {
-        fetchData();
-      }
+      await apiService.deleteAsset(id);
+      fetchData();
     } catch (err) {
       console.error('Error deleting asset:', err);
     }
@@ -278,28 +257,18 @@ export default function App() {
 
   const addProduct = async (formData: FormData) => {
     try {
-      const res = await fetch('/api/products', {
-        method: 'POST',
-        body: formData
-      });
-      if (res.ok) {
-        fetchData();
-      }
-    } catch (err) {
+      await apiService.addProduct(formData);
+      fetchData();
+    } catch (err: any) {
+      alert(err.message || 'Erro ao adicionar produto');
       console.error('Error adding product:', err);
     }
   };
 
   const addCategory = async (name: string) => {
     try {
-      const res = await fetch('/api/categories', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name })
-      });
-      if (res.ok) {
-        fetchData();
-      }
+      await apiService.addCategory(name);
+      fetchData();
     } catch (err) {
       console.error('Error adding category:', err);
     }
@@ -307,14 +276,8 @@ export default function App() {
 
   const updateCategory = async (id: number, name: string) => {
     try {
-      const res = await fetch(`/api/categories/${id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name })
-      });
-      if (res.ok) {
-        fetchData();
-      }
+      await apiService.updateCategory(id, name);
+      fetchData();
     } catch (err) {
       console.error('Error updating category:', err);
     }
@@ -322,14 +285,8 @@ export default function App() {
 
   const addSupplier = async (name: string) => {
     try {
-      const res = await fetch('/api/suppliers', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, contact: '' })
-      });
-      if (res.ok) {
-        fetchData();
-      }
+      await apiService.addSupplier(name);
+      fetchData();
     } catch (err) {
       console.error('Error adding supplier:', err);
     }
@@ -337,14 +294,8 @@ export default function App() {
 
   const addLocation = async (name: string) => {
     try {
-      const res = await fetch('/api/locations', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name })
-      });
-      if (res.ok) {
-        fetchData();
-      }
+      await apiService.addLocation(name);
+      fetchData();
     } catch (err) {
       console.error('Error adding location:', err);
     }
@@ -352,14 +303,8 @@ export default function App() {
 
   const updateLocation = async (id: number, name: string) => {
     try {
-      const res = await fetch(`/api/locations/${id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name })
-      });
-      if (res.ok) {
-        fetchData();
-      }
+      await apiService.updateLocation(id, name);
+      fetchData();
     } catch (err) {
       console.error('Error updating location:', err);
     }
@@ -367,20 +312,12 @@ export default function App() {
 
   const handleStockIn = async (data: any) => {
     try {
-      // Convert invoices array to JSON string for the backend column 'invoice_pdf'
       const submissionData = {
         ...data,
         invoice_pdf: data.invoices && data.invoices.length > 0 ? JSON.stringify(data.invoices) : ''
       };
-      
-      const res = await fetch('/api/inventory/in', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(submissionData)
-      });
-      if (res.ok) {
-        fetchData();
-      }
+      await apiService.stockIn(submissionData);
+      fetchData();
     } catch (err) {
       console.error('Error in stock in:', err);
     }
@@ -388,35 +325,20 @@ export default function App() {
 
   const handleStockOut = async (data: any) => {
     try {
-      const res = await fetch('/api/inventory/out', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data)
-      });
-      if (res.ok) {
-        fetchData();
-      } else {
-        const error = await res.json();
-        alert(error.error || 'Erro ao processar saída');
-      }
-    } catch (err) {
+      await apiService.stockOut(data);
+      fetchData();
+    } catch (err: any) {
+      alert(err.message || 'Erro ao processar saída');
       console.error('Error in stock out:', err);
     }
   };
 
   const handleUpdateProduct = async (id: number, formData: FormData) => {
     try {
-      const res = await fetch(`/api/products/${id}`, {
-        method: 'PUT',
-        body: formData
-      });
-      if (res.ok) {
-        fetchData();
-      } else {
-        const error = await res.json();
-        alert(error.error || 'Erro ao atualizar produto');
-      }
-    } catch (err) {
+      await apiService.updateProduct(id, formData);
+      fetchData();
+    } catch (err: any) {
+      alert(err.message || 'Erro ao atualizar produto');
       console.error('Error updating product:', err);
     }
   };
@@ -424,16 +346,10 @@ export default function App() {
   const handleDeleteProduct = async (id: number) => {
     if (!confirm('Tem certeza que deseja excluir este produto?')) return;
     try {
-      const res = await fetch(`/api/products/${id}`, {
-        method: 'DELETE'
-      });
-      if (res.ok) {
-        fetchData();
-      } else {
-        const error = await res.json();
-        alert(error.error || 'Erro ao excluir produto');
-      }
-    } catch (err) {
+      await apiService.deleteProduct(id);
+      fetchData();
+    } catch (err: any) {
+      alert(err.message || 'Erro ao excluir produto');
       console.error('Error deleting product:', err);
     }
   };
@@ -502,6 +418,7 @@ export default function App() {
             setEditingOrder(null);
             setIsOrderModalOpen(true);
           }}
+          onItemClick={(order) => setSelectedOrderForDetail(order)}
         />
       );
       case 'clients': return (

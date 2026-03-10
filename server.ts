@@ -40,7 +40,7 @@ db.exec(`
 
   CREATE TABLE IF NOT EXISTS products (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    name TEXT NOT NULL,
+    name TEXT UNIQUE NOT NULL,
     category TEXT,
     unit TEXT DEFAULT 'un',
     cost_price REAL DEFAULT 0,
@@ -48,6 +48,8 @@ db.exec(`
     min_quantity REAL,
     photo TEXT
   );
+
+  CREATE UNIQUE INDEX IF NOT EXISTS idx_product_name ON products(name);
 
   CREATE TABLE IF NOT EXISTS clients (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -73,7 +75,7 @@ db.exec(`
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     title TEXT NOT NULL,
     description TEXT,
-    status TEXT DEFAULT 'Ordens de Produção',
+    status TEXT DEFAULT 'ORDENS DE PRODUÇÃO',
     client_id INTEGER,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (client_id) REFERENCES clients(id)
@@ -134,8 +136,35 @@ if (userCount.count === 0) {
   db.prepare('INSERT INTO products (name, category, quantity, cost_price) VALUES (?, ?, ?, ?)').run('Conector RJ45', 'Conectores', 500, 0.50);
   db.prepare('INSERT INTO clients (name, email) VALUES (?, ?)').run('Empresa ABC', 'contato@abc.com');
   db.prepare('INSERT INTO suppliers (name, contact) VALUES (?, ?)').run('Fornecedor Tech', 'vendas@tech.com');
-  db.prepare('INSERT INTO orders (title, status, client_id) VALUES (?, ?, ?)').run('Instalação Rede Escritório', 'Ordens de Produção', 1);
+  db.prepare('INSERT INTO orders (title, status, client_id) VALUES (?, ?, ?)').run('Instalação Rede Escritório', 'ORDENS DE PRODUÇÃO', 1);
 }
+
+// WebSocket Server
+let wss: WebSocketServer;
+const clients = new Set<WebSocket>();
+
+function broadcast(data: any) {
+  const message = JSON.stringify(data);
+  clients.forEach((client) => {
+    if (client.readyState === WebSocket.OPEN) {
+      client.send(message);
+    }
+  });
+}
+
+function logAction(userId: number, action: string, details: string) {
+  try {
+    db.prepare('INSERT INTO audit_logs (user_id, action, details) VALUES (?, ?, ?)').run(userId, action, details);
+    broadcast({ type: 'AUDIT_LOG_UPDATED' });
+  } catch (error) {
+    console.error('Error logging action:', error);
+  }
+}
+
+// Helper for async routes
+const wrapAsync = (fn: Function) => (req: express.Request, res: express.Response, next: express.NextFunction) => {
+  Promise.resolve(fn(req, res, next)).catch(next);
+};
 
 async function startServer() {
   const app = express();
@@ -160,285 +189,228 @@ async function startServer() {
   app.use('/uploads', express.static(uploadsDir));
 
   // API Routes
-  app.get('/api/movements', (req, res) => {
-    try {
-      const movements = db.prepare(`
-        SELECT m.*, strftime('%Y-%m-%dT%H:%M:%SZ', m.date) as date, p.name as product_name, s.name as supplier_name
-        FROM movements m
-        JOIN products p ON m.product_id = p.id
-        LEFT JOIN suppliers s ON m.supplier_id = s.id
-        ORDER BY m.date DESC
-      `).all();
-      res.json(movements);
-    } catch (error: any) {
-      res.status(500).json({ error: error.message });
-    }
-  });
+  app.get('/api/movements', wrapAsync((req: any, res: any) => {
+    const movements = db.prepare(`
+      SELECT m.*, strftime('%Y-%m-%dT%H:%M:%SZ', m.date) as date, p.name as product_name, s.name as supplier_name
+      FROM movements m
+      JOIN products p ON m.product_id = p.id
+      LEFT JOIN suppliers s ON m.supplier_id = s.id
+      ORDER BY m.date DESC
+    `).all();
+    res.json(movements);
+  }));
 
-  app.get('/api/stats', (req, res) => {
-    try {
-      const totalProducts = db.prepare('SELECT count(*) as count FROM products').get() as any;
-      const lowStock = db.prepare('SELECT count(*) as count FROM products WHERE quantity <= min_quantity').get() as any;
-      const activeOrders = db.prepare("SELECT count(*) as count FROM orders WHERE status != 'Finalização'").get() as any;
+  app.get('/api/stats', wrapAsync((req: any, res: any) => {
+    const totalProducts = db.prepare('SELECT count(*) as count FROM products').get() as any;
+    const lowStock = db.prepare('SELECT count(*) as count FROM products WHERE quantity <= min_quantity').get() as any;
+    const activeOrders = db.prepare("SELECT count(*) as count FROM orders WHERE status != 'FINALIZAÇÃO'").get() as any;
+    
+    const stockByCategory = db.prepare(`
+      SELECT category, SUM(quantity * cost_price) as total_value
+      FROM products
+      GROUP BY category
+      ORDER BY total_value DESC
+    `).all();
+
+    const topProducts = db.prepare(`
+      SELECT name, quantity
+      FROM products
+      ORDER BY quantity DESC
+      LIMIT 5
+    `).all();
+
+    const stockStatus = db.prepare(`
+      SELECT 
+        SUM(CASE WHEN quantity <= min_quantity THEN 1 ELSE 0 END) as low_stock,
+        SUM(CASE WHEN quantity > min_quantity OR min_quantity IS NULL THEN 1 ELSE 0 END) as normal_stock
+      FROM products
+    `).get() as any;
+
+    const recentMovements = db.prepare(`
+      SELECT m.*, strftime('%Y-%m-%dT%H:%M:%SZ', m.date) as date, p.name as product_name
+      FROM movements m
+      JOIN products p ON m.product_id = p.id
+      ORDER BY m.date DESC
+      LIMIT 5
+    `).all();
+
+    res.json({
+      totalProducts: totalProducts.count,
+      lowStock: lowStock.count,
+      activeOrders: activeOrders.count,
+      stockByCategory,
+      topProducts,
+      stockStatus: [
+        { name: 'Estoque Baixo', value: stockStatus.low_stock || 0 },
+        { name: 'Normal', value: stockStatus.normal_stock || 0 }
+      ],
+      recentMovements
+    });
+  }));
+
+  app.get('/api/products', wrapAsync((req: any, res: any) => {
+    res.json(db.prepare('SELECT * FROM products').all());
+  }));
+
+  app.post('/api/products', upload.single('photo'), wrapAsync(async (req: any, res: any) => {
+    const { name, category, unit, quantity, min_quantity } = req.body;
+    const upperName = name?.toUpperCase();
+
+    // Check for duplicate name
+    const existing = db.prepare('SELECT id FROM products WHERE name = ?').get(upperName);
+    if (existing) {
+      return res.status(400).json({ error: 'Já existe um produto cadastrado com este nome.' });
+    }
+
+    const upperCategory = category?.toUpperCase();
+    const upperUnit = unit?.toUpperCase();
+    let photo = null;
+
+    if (req.file) {
+      const sanitizedName = (upperName || 'product').replace(/[^a-z0-9]/gi, '_').toLowerCase();
+      const filename = `${sanitizedName}_${Date.now()}.webp`;
+      const filepath = path.join(uploadsDir, filename);
       
-      const stockByCategory = db.prepare(`
-        SELECT category, SUM(quantity * cost_price) as total_value
-        FROM products
-        GROUP BY category
-        ORDER BY total_value DESC
-      `).all();
-
-      const topProducts = db.prepare(`
-        SELECT name, quantity
-        FROM products
-        ORDER BY quantity DESC
-        LIMIT 5
-      `).all();
-
-      const stockStatus = db.prepare(`
-        SELECT 
-          SUM(CASE WHEN quantity <= min_quantity THEN 1 ELSE 0 END) as low_stock,
-          SUM(CASE WHEN quantity > min_quantity OR min_quantity IS NULL THEN 1 ELSE 0 END) as normal_stock
-        FROM products
-      `).get() as any;
-
-      const recentMovements = db.prepare(`
-        SELECT m.*, strftime('%Y-%m-%dT%H:%M:%SZ', m.date) as date, p.name as product_name
-        FROM movements m
-        JOIN products p ON m.product_id = p.id
-        ORDER BY m.date DESC
-        LIMIT 5
-      `).all();
-
-      res.json({
-        totalProducts: totalProducts.count,
-        lowStock: lowStock.count,
-        activeOrders: activeOrders.count,
-        stockByCategory,
-        topProducts,
-        stockStatus: [
-          { name: 'Estoque Baixo', value: stockStatus.low_stock || 0 },
-          { name: 'Normal', value: stockStatus.normal_stock || 0 }
-        ],
-        recentMovements
-      });
-    } catch (error: any) {
-      console.error('Error in /api/stats:', error);
-      res.status(500).json({ error: error.message });
-    }
-  });
-
-  app.get('/api/products', (req, res) => {
-    try {
-      res.json(db.prepare('SELECT * FROM products').all());
-    } catch (error: any) {
-      res.status(500).json({ error: error.message });
-    }
-  });
-
-  app.post('/api/products', upload.single('photo'), async (req, res) => {
-    try {
-      const { name, category, unit, quantity, min_quantity } = req.body;
-      const upperName = name?.toUpperCase();
-      const upperCategory = category?.toUpperCase();
-      const upperUnit = unit?.toUpperCase();
-      let photo = null;
-
-      if (req.file) {
-        const sanitizedName = (upperName || 'product').replace(/[^a-z0-9]/gi, '_').toLowerCase();
-        const filename = `${sanitizedName}_${Date.now()}.webp`;
-        const filepath = path.join(uploadsDir, filename);
-        
-        await sharp(req.file.buffer)
-          .webp({ quality: 80 })
-          .toFile(filepath);
-        
-        photo = `/uploads/${filename}`;
-      }
-
-      const result = db.prepare(`
-        INSERT INTO products (name, category, unit, quantity, min_quantity, photo)
-        VALUES (?, ?, ?, ?, ?, ?)
-      `).run(upperName, upperCategory, upperUnit, quantity || 0, min_quantity === '' || min_quantity === undefined ? null : min_quantity, photo);
-
-      logAction(1, 'CREATE_PRODUCT', `Produto: ${upperName}`);
-      res.json({ id: result.lastInsertRowid });
-    } catch (error: any) {
-      console.error('Error creating product:', error);
-      res.status(500).json({ error: error.message });
-    }
-  });
-
-  app.put('/api/products/:id', upload.single('photo'), async (req, res) => {
-    try {
-      const { id } = req.params;
-      const { name, category, unit, quantity, min_quantity } = req.body;
-      const upperName = name?.toUpperCase();
-      const upperCategory = category?.toUpperCase();
-      const upperUnit = unit?.toUpperCase();
+      await sharp(req.file.buffer)
+        .webp({ quality: 80 })
+        .toFile(filepath);
       
-      let photo = req.body.photo; // Keep existing if no new file
+      photo = `/uploads/${filename}`;
+    }
+
+    const result = db.prepare(`
+      INSERT INTO products (name, category, unit, quantity, min_quantity, photo)
+      VALUES (?, ?, ?, ?, ?, ?)
+    `).run(upperName, upperCategory, upperUnit, quantity || 0, min_quantity === '' || min_quantity === undefined ? null : min_quantity, photo);
+
+    logAction(1, 'CREATE_PRODUCT', `Produto: ${upperName}`);
+    res.json({ id: result.lastInsertRowid });
+  }));
+
+  app.put('/api/products/:id', upload.single('photo'), wrapAsync(async (req: any, res: any) => {
+    const { id } = req.params;
+    const { name, category, unit, quantity, min_quantity } = req.body;
+    const upperName = name?.toUpperCase();
+
+    // Check for duplicate name (excluding current product)
+    const existing = db.prepare('SELECT id FROM products WHERE name = ? AND id != ?').get(upperName, id);
+    if (existing) {
+      return res.status(400).json({ error: 'Já existe outro produto cadastrado com este nome.' });
+    }
+
+    const upperCategory = category?.toUpperCase();
+    const upperUnit = unit?.toUpperCase();
+    
+    let photo = req.body.photo; // Keep existing if no new file
+    
+    if (req.file) {
+      const sanitizedName = (upperName || 'product').replace(/[^a-z0-9]/gi, '_').toLowerCase();
+      const filename = `${sanitizedName}_${Date.now()}.webp`;
+      const filepath = path.join(uploadsDir, filename);
       
-      if (req.file) {
-        const sanitizedName = (upperName || 'product').replace(/[^a-z0-9]/gi, '_').toLowerCase();
-        const filename = `${sanitizedName}_${Date.now()}.webp`;
-        const filepath = path.join(uploadsDir, filename);
-        
-        await sharp(req.file.buffer)
-          .webp({ quality: 80 })
-          .toFile(filepath);
-        
-        photo = `/uploads/${filename}`;
-      }
-
-      db.prepare(`
-        UPDATE products
-        SET name = ?, category = ?, unit = ?, quantity = ?, min_quantity = ?, photo = ?
-        WHERE id = ?
-      `).run(upperName, upperCategory, upperUnit, quantity, min_quantity === '' || min_quantity === undefined ? null : min_quantity, photo, id);
-
-      logAction(1, 'UPDATE_PRODUCT', `Produto ID: ${id}, Nome: ${upperName}`);
-      broadcast({ type: 'INVENTORY_UPDATED' });
-      res.json({ success: true });
-    } catch (error: any) {
-      console.error('Error updating product:', error);
-      res.status(500).json({ error: error.message });
+      await sharp(req.file.buffer)
+        .webp({ quality: 80 })
+        .toFile(filepath);
+      
+      photo = `/uploads/${filename}`;
     }
-  });
 
-  app.delete('/api/products/:id', (req, res) => {
-    try {
-      const { id } = req.params;
+    db.prepare(`
+      UPDATE products
+      SET name = ?, category = ?, unit = ?, quantity = ?, min_quantity = ?, photo = ?
+      WHERE id = ?
+    `).run(upperName, upperCategory, upperUnit, quantity, min_quantity === '' || min_quantity === undefined ? null : min_quantity, photo, id);
 
-      const movements = db.prepare('SELECT count(*) as count FROM movements WHERE product_id = ?').get(id) as { count: number };
-      if (movements.count > 0) {
-        return res.status(400).json({ error: 'Não é possível excluir um produto que possui movimentações de estoque.' });
-      }
+    logAction(1, 'UPDATE_PRODUCT', `Produto ID: ${id}, Nome: ${upperName}`);
+    broadcast({ type: 'INVENTORY_UPDATED' });
+    res.json({ success: true });
+  }));
 
-      db.prepare('DELETE FROM products WHERE id = ?').run(id);
-      logAction(1, 'DELETE_PRODUCT', `Produto ID: ${id}`);
-      broadcast({ type: 'INVENTORY_UPDATED' });
-      res.json({ success: true });
-    } catch (error: any) {
-      res.status(500).json({ error: error.message });
+  app.delete('/api/products/:id', wrapAsync((req: any, res: any) => {
+    const { id } = req.params;
+
+    const movements = db.prepare('SELECT count(*) as count FROM movements WHERE product_id = ?').get(id) as { count: number };
+    if (movements.count > 0) {
+      return res.status(400).json({ error: 'Não é possível excluir um produto que possui movimentações de estoque.' });
     }
-  });
 
-  app.get('/api/products/:id/movements', (req, res) => {
-    try {
-      const { id } = req.params;
-      const movements = db.prepare(`
-        SELECT m.*, strftime('%Y-%m-%dT%H:%M:%SZ', m.date) as date, s.name as supplier_name
-        FROM movements m
-        LEFT JOIN suppliers s ON m.supplier_id = s.id
-        WHERE m.product_id = ?
-        ORDER BY m.date DESC
-      `).all(id);
+    db.prepare('DELETE FROM products WHERE id = ?').run(id);
+    logAction(1, 'DELETE_PRODUCT', `Produto ID: ${id}`);
+    broadcast({ type: 'INVENTORY_UPDATED' });
+    res.json({ success: true });
+  }));
 
-      res.json(movements);
-    } catch (error: any) {
-      res.status(500).json({ error: error.message });
-    }
-  });
+  app.get('/api/products/:id/movements', wrapAsync((req: any, res: any) => {
+    const { id } = req.params;
+    const movements = db.prepare(`
+      SELECT m.*, strftime('%Y-%m-%dT%H:%M:%SZ', m.date) as date, s.name as supplier_name
+      FROM movements m
+      LEFT JOIN suppliers s ON m.supplier_id = s.id
+      WHERE m.product_id = ?
+      ORDER BY m.date DESC
+    `).all(id);
 
-  app.get('/api/clients', (req, res) => {
-    try {
-      res.json(db.prepare('SELECT * FROM clients').all());
-    } catch (error: any) {
-      res.status(500).json({ error: error.message });
-    }
-  });
+    res.json(movements);
+  }));
 
-  app.get('/api/suppliers', (req, res) => {
-    try {
-      res.json(db.prepare('SELECT * FROM suppliers').all());
-    } catch (error: any) {
-      res.status(500).json({ error: error.message });
-    }
-  });
+  app.get('/api/clients', wrapAsync((req: any, res: any) => {
+    res.json(db.prepare('SELECT * FROM clients').all());
+  }));
 
-  app.post('/api/suppliers', (req, res) => {
-    try {
-      const { name, contact } = req.body;
-      const result = db.prepare('INSERT INTO suppliers (name, contact) VALUES (?, ?)').run(name, contact);
-      logAction(1, 'CREATE_SUPPLIER', `Fornecedor: ${name}`);
-      res.json({ id: result.lastInsertRowid, name, contact });
-    } catch (error: any) {
-      res.status(500).json({ error: error.message });
-    }
-  });
+  app.get('/api/suppliers', wrapAsync((req: any, res: any) => {
+    res.json(db.prepare('SELECT * FROM suppliers').all());
+  }));
 
-  app.get('/api/locations', (req, res) => {
-    try {
-      res.json(db.prepare('SELECT * FROM locations').all());
-    } catch (error: any) {
-      res.status(500).json({ error: error.message });
-    }
-  });
+  app.post('/api/suppliers', wrapAsync((req: any, res: any) => {
+    const { name, contact } = req.body;
+    const result = db.prepare('INSERT INTO suppliers (name, contact) VALUES (?, ?)').run(name, contact);
+    logAction(1, 'CREATE_SUPPLIER', `Fornecedor: ${name}`);
+    res.json({ id: result.lastInsertRowid, name, contact });
+  }));
 
-  app.post('/api/locations', (req, res) => {
-    try {
-      const { name } = req.body;
-      const result = db.prepare('INSERT INTO locations (name) VALUES (?)').run(name);
-      logAction(1, 'CREATE_LOCATION', `Local: ${name}`);
-      res.json({ id: result.lastInsertRowid, name });
-    } catch (error: any) {
-      res.status(500).json({ error: error.message });
-    }
-  });
+  app.get('/api/locations', wrapAsync((req: any, res: any) => {
+    res.json(db.prepare('SELECT * FROM locations').all());
+  }));
 
-  app.put('/api/locations/:id', (req, res) => {
-    try {
-      const { id } = req.params;
-      const { name } = req.body;
-      db.prepare('UPDATE locations SET name = ? WHERE id = ?').run(name, id);
-      logAction(1, 'UPDATE_LOCATION', `Local ID: ${id}, Nome: ${name}`);
-      res.json({ success: true });
-    } catch (error: any) {
-      res.status(500).json({ error: error.message });
-    }
-  });
+  app.post('/api/locations', wrapAsync((req: any, res: any) => {
+    const { name } = req.body;
+    const result = db.prepare('INSERT INTO locations (name) VALUES (?)').run(name);
+    logAction(1, 'CREATE_LOCATION', `Local: ${name}`);
+    res.json({ id: result.lastInsertRowid, name });
+  }));
 
-  app.get('/api/assets', (req, res) => {
-    try {
-      res.json(db.prepare('SELECT * FROM assets').all());
-    } catch (error: any) {
-      res.status(500).json({ error: error.message });
-    }
-  });
+  app.put('/api/locations/:id', wrapAsync((req: any, res: any) => {
+    const { id } = req.params;
+    const { name } = req.body;
+    db.prepare('UPDATE locations SET name = ? WHERE id = ?').run(name, id);
+    logAction(1, 'UPDATE_LOCATION', `Local ID: ${id}, Nome: ${name}`);
+    res.json({ success: true });
+  }));
 
-  app.get('/api/categories', (req, res) => {
-    try {
-      res.json(db.prepare('SELECT * FROM categories').all());
-    } catch (error: any) {
-      res.status(500).json({ error: error.message });
-    }
-  });
+  app.get('/api/assets', wrapAsync((req: any, res: any) => {
+    res.json(db.prepare('SELECT * FROM assets').all());
+  }));
 
-  app.post('/api/categories', (req, res) => {
-    try {
-      const { name } = req.body;
-      const result = db.prepare('INSERT INTO categories (name) VALUES (?)').run(name);
-      logAction(1, 'CREATE_CATEGORY', `Categoria: ${name}`);
-      res.json({ id: result.lastInsertRowid, name });
-    } catch (error: any) {
-      res.status(500).json({ error: error.message });
-    }
-  });
+  app.get('/api/categories', wrapAsync((req: any, res: any) => {
+    res.json(db.prepare('SELECT * FROM categories').all());
+  }));
 
-  app.put('/api/categories/:id', (req, res) => {
-    try {
-      const { id } = req.params;
-      const { name } = req.body;
-      db.prepare('UPDATE categories SET name = ? WHERE id = ?').run(name, id);
-      logAction(1, 'UPDATE_CATEGORY', `Categoria ID: ${id}, Nome: ${name}`);
-      res.json({ success: true });
-    } catch (error: any) {
-      res.status(500).json({ error: error.message });
-    }
-  });
+  app.post('/api/categories', wrapAsync((req: any, res: any) => {
+    const { name } = req.body;
+    const result = db.prepare('INSERT INTO categories (name) VALUES (?)').run(name);
+    logAction(1, 'CREATE_CATEGORY', `Categoria: ${name}`);
+    res.json({ id: result.lastInsertRowid, name });
+  }));
 
-  app.post('/api/inventory/in', (req, res) => {
+  app.put('/api/categories/:id', wrapAsync((req: any, res: any) => {
+    const { id } = req.params;
+    const { name } = req.body;
+    db.prepare('UPDATE categories SET name = ? WHERE id = ?').run(name, id);
+    logAction(1, 'UPDATE_CATEGORY', `Categoria ID: ${id}, Nome: ${name}`);
+    res.json({ success: true });
+  }));
+
+  app.post('/api/inventory/in', wrapAsync((req: any, res: any) => {
     const { product_id, quantity, supplier_id, doc_number, issue_date, location, unit_price, xml, invoice_pdf } = req.body;
 
     const transaction = db.transaction(() => {
@@ -462,218 +434,188 @@ async function startServer() {
         .run(quantity, newAvgPrice, product_id);
     });
 
-    try {
-      transaction();
-      logAction(1, 'STOCK_IN', `Produto ID: ${product_id}, Qtd: ${quantity}, Doc: ${doc_number}`);
-      broadcast({ type: 'INVENTORY_UPDATED' });
-      res.json({ success: true });
-    } catch (error: any) {
-      res.status(500).json({ error: error.message });
-    }
-  });
+    transaction();
+    logAction(1, 'STOCK_IN', `Produto ID: ${product_id}, Qtd: ${quantity}, Doc: ${doc_number}`);
+    broadcast({ type: 'INVENTORY_UPDATED' });
+    res.json({ success: true });
+  }));
 
-  app.post('/api/products/import', (req, res) => {
-    try {
-      const { csvData } = req.body;
-      if (!csvData) return res.status(400).json({ error: 'Dados do CSV não fornecidos' });
+  app.post('/api/products/import', wrapAsync((req: any, res: any) => {
+    const { csvData } = req.body;
+    if (!csvData) return res.status(400).json({ error: 'Dados do CSV não fornecidos' });
 
-      const lines = csvData.split('\n');
-      if (lines.length < 2) return res.status(400).json({ error: 'Arquivo CSV vazio ou sem dados' });
+    const lines = csvData.split('\n');
+    if (lines.length < 2) return res.status(400).json({ error: 'Arquivo CSV vazio ou sem dados' });
 
-      const results: any[] = [];
-      const errors: any[] = [];
+    const results: any[] = [];
+    const errors: any[] = [];
 
-      const transaction = db.transaction(() => {
-        for (let i = 1; i < lines.length; i++) {
-          const line = lines[i].trim();
-          if (!line) continue;
+    const transaction = db.transaction(() => {
+      for (let i = 1; i < lines.length; i++) {
+        const line = lines[i].trim();
+        if (!line) continue;
 
-          // Split by semicolon as requested
-          const parts = line.split(';').map((p: string) => p.trim());
-          if (parts.length < 3) {
-            errors.push(`Linha ${i + 1}: Formato inválido (esperado: NOME;CATEGORIA;UNIDADE)`);
-            continue;
-          }
-
-          const [name, category, unit] = parts;
-          if (!name) {
-            errors.push(`Linha ${i + 1}: Nome do produto é obrigatório`);
-            continue;
-          }
-
-          // Check/Create category
-          const categoryName = category || 'SEM CATEGORIA';
-          const categoryExists = db.prepare('SELECT id FROM categories WHERE name = ?').get(categoryName) as { id: number } | undefined;
-          if (!categoryExists) {
-            db.prepare('INSERT INTO categories (name) VALUES (?)').run(categoryName);
-          }
-
-          try {
-            db.prepare('INSERT INTO products (name, category, unit, quantity, cost_price, min_quantity) VALUES (?, ?, ?, 0, 0, NULL)')
-              .run(name, categoryName, unit || 'un');
-            results.push({ name, category: categoryName, unit: unit || 'un' });
-          } catch (err: any) {
-            errors.push(`Linha ${i + 1} (${name}): ${err.message}`);
-          }
+        // Split by semicolon as requested
+        const parts = line.split(';').map((p: string) => p.trim());
+        if (parts.length < 3) {
+          errors.push(`Linha ${i + 1}: Formato inválido (esperado: NOME;CATEGORIA;UNIDADE)`);
+          continue;
         }
-      });
 
-      transaction();
-      logAction(1, 'IMPORT_PRODUCTS', `Importados ${results.length} produtos via CSV`);
-      broadcast({ type: 'INVENTORY_UPDATED' });
-      res.json({ success: true, imported: results.length, errors });
-    } catch (error: any) {
-      res.status(500).json({ error: error.message });
-    }
-  });
+        const [name, category, unit] = parts;
+        if (!name) {
+          errors.push(`Linha ${i + 1}: Nome do produto é obrigatório`);
+          continue;
+        }
 
-  app.get('/api/financial/entries', (req, res) => {
-    try {
-      const entries = db.prepare(`
-        SELECT m.*, strftime('%Y-%m-%dT%H:%M:%SZ', m.date) as date, p.name as product_name
-        FROM movements m
-        JOIN products p ON m.product_id = p.id
-        WHERE m.type = 'IN'
-        ORDER BY m.issue_date DESC, m.date DESC
-      `).all();
-      res.json(entries);
-    } catch (error: any) {
-      res.status(500).json({ error: error.message });
-    }
-  });
+        const upperName = name.toUpperCase();
+        const existing = db.prepare('SELECT id FROM products WHERE name = ?').get(upperName);
+        if (existing) {
+          errors.push(`Linha ${i + 1} (${name}): Produto já cadastrado`);
+          continue;
+        }
 
-  app.post('/api/inventory/out', (req, res) => {
+        // Check/Create category
+        const categoryName = category || 'SEM CATEGORIA';
+        const categoryExists = db.prepare('SELECT id FROM categories WHERE name = ?').get(categoryName) as { id: number } | undefined;
+        if (!categoryExists) {
+          db.prepare('INSERT INTO categories (name) VALUES (?)').run(categoryName);
+        }
+
+        try {
+          db.prepare('INSERT INTO products (name, category, unit, quantity, cost_price, min_quantity) VALUES (?, ?, ?, 0, 0, NULL)')
+            .run(name, categoryName, unit || 'un');
+          results.push({ name, category: categoryName, unit: unit || 'un' });
+        } catch (err: any) {
+          errors.push(`Linha ${i + 1} (${name}): ${err.message}`);
+        }
+      }
+    });
+
+    transaction();
+    logAction(1, 'IMPORT_PRODUCTS', `Importados ${results.length} produtos via CSV`);
+    broadcast({ type: 'INVENTORY_UPDATED' });
+    res.json({ success: true, imported: results.length, errors });
+  }));
+
+  app.get('/api/financial/entries', wrapAsync((req: any, res: any) => {
+    const entries = db.prepare(`
+      SELECT m.*, strftime('%Y-%m-%dT%H:%M:%SZ', m.date) as date, p.name as product_name
+      FROM movements m
+      JOIN products p ON m.product_id = p.id
+      WHERE m.type = 'IN'
+      ORDER BY m.issue_date DESC, m.date DESC
+    `).all();
+    res.json(entries);
+  }));
+
+  app.post('/api/inventory/out', wrapAsync((req: any, res: any) => {
     const { product_id, quantity, reason, destination } = req.body;
 
-    try {
-      const product = db.prepare('SELECT quantity FROM products WHERE id = ?').get(product_id) as any;
-      if (!product || product.quantity < quantity) {
-        return res.status(400).json({ error: 'Estoque insuficiente' });
-      }
-
-      const transaction = db.transaction(() => {
-        db.prepare(`
-          INSERT INTO movements (product_id, type, quantity, reason, destination)
-          VALUES (?, 'OUT', ?, ?, ?)
-        `).run(product_id, quantity, reason, destination);
-
-        db.prepare('UPDATE products SET quantity = quantity - ? WHERE id = ?')
-          .run(quantity, product_id);
-      });
-
-      transaction();
-      logAction(1, 'STOCK_OUT', `Produto ID: ${product_id}, Qtd: ${quantity}, Motivo: ${reason}`);
-      broadcast({ type: 'INVENTORY_UPDATED' });
-      res.json({ success: true });
-    } catch (error: any) {
-      res.status(500).json({ error: error.message });
+    const product = db.prepare('SELECT quantity FROM products WHERE id = ?').get(product_id) as any;
+    if (!product || product.quantity < quantity) {
+      return res.status(400).json({ error: 'Estoque insuficiente' });
     }
-  });
 
-  app.get('/api/orders', (req, res) => {
-    try {
-      res.json(
-        db.prepare("SELECT o.*, strftime('%Y-%m-%dT%H:%M:%SZ', o.created_at) as created_at, c.name as client_name FROM orders o LEFT JOIN clients c ON o.client_id = c.id").all()
-      );
-    } catch (error: any) {
-      res.status(500).json({ error: error.message });
-    }
-  });
-
-  app.post('/api/orders', (req, res) => {
-    try {
-      const { title, description, client_id, status } = req.body;
-      const result = db.prepare(`
-        INSERT INTO orders (title, description, client_id, status)
-        VALUES (?, ?, ?, ?)
-      `).run(title, description, client_id, status || 'Ordens de Produção');
-      
-      logAction(1, 'CREATE_ORDER', `Ordem: ${title}`);
-      broadcast({ type: 'ORDER_UPDATED' });
-      res.json({ id: result.lastInsertRowid });
-    } catch (error: any) {
-      res.status(500).json({ error: error.message });
-    }
-  });
-
-  app.put('/api/orders/:id', (req, res) => {
-    try {
-      const { title, description, client_id, status } = req.body;
+    const transaction = db.transaction(() => {
       db.prepare(`
-        UPDATE orders
-        SET title = ?, description = ?, client_id = ?, status = ?
-        WHERE id = ?
-      `).run(title, description, client_id, status, req.params.id);
-      
-      logAction(1, 'UPDATE_ORDER', `Ordem ID: ${req.params.id}`);
-      broadcast({ type: 'ORDER_UPDATED' });
-      res.json({ success: true });
-    } catch (error: any) {
-      res.status(500).json({ error: error.message });
-    }
-  });
+        INSERT INTO movements (product_id, type, quantity, reason, destination)
+        VALUES (?, 'OUT', ?, ?, ?)
+      `).run(product_id, quantity, reason, destination);
 
-  app.delete('/api/orders/:id', (req, res) => {
-    try {
-      db.prepare('DELETE FROM orders WHERE id = ?').run(req.params.id);
-      logAction(1, 'DELETE_ORDER', `Ordem ID: ${req.params.id}`);
-      broadcast({ type: 'ORDER_UPDATED' });
-      res.json({ success: true });
-    } catch (error: any) {
-      res.status(500).json({ error: error.message });
-    }
-  });
+      db.prepare('UPDATE products SET quantity = quantity - ? WHERE id = ?')
+        .run(quantity, product_id);
+    });
 
-  app.patch('/api/orders/:id', (req, res) => {
-    try {
-      const { status } = req.body;
-      db.prepare('UPDATE orders SET status = ? WHERE id = ?').run(status, req.params.id);
-      logAction(1, 'UPDATE_ORDER_STATUS', `Ordem ID: ${req.params.id}, Status: ${status}`);
-      broadcast({ type: 'ORDER_UPDATED', id: req.params.id, status });
-      res.json({ success: true });
-    } catch (error: any) {
-      res.status(500).json({ error: error.message });
-    }
-  });
+    transaction();
+    logAction(1, 'STOCK_OUT', `Produto ID: ${product_id}, Qtd: ${quantity}, Motivo: ${reason}`);
+    broadcast({ type: 'INVENTORY_UPDATED' });
+    res.json({ success: true });
+  }));
 
-  app.get('/api/backup', (req, res) => {
-    try {
-      const zip = new AdmZip();
-      // Adiciona o arquivo do banco ao ZIP
-      zip.addLocalFile(dbPath);
-      
-      // Adiciona a pasta de uploads ao ZIP se ela existir
-      if (fs.existsSync(uploadsDir)) {
-        zip.addLocalFolder(uploadsDir, 'uploads');
-      }
-      
-      const buffer = zip.toBuffer();
-      const fileName = `backup_skysmart_${new Date().toISOString().split('T')[0]}.zip`;
-      
-      res.set('Content-Type', 'application/zip');
-      res.set('Content-Disposition', `attachment; filename=${fileName}`);
-      res.send(buffer);
-      
-      logAction(1, 'DATABASE_BACKUP', 'Backup do banco de dados realizado');
-    } catch (error: any) {
-      console.error('Error generating backup:', error);
-      res.status(500).json({ error: 'Erro ao gerar backup' });
-    }
-  });
+  app.get('/api/orders', wrapAsync((req: any, res: any) => {
+    res.json(
+      db.prepare("SELECT o.*, strftime('%Y-%m-%dT%H:%M:%SZ', o.created_at) as created_at, c.name as client_name FROM orders o LEFT JOIN clients c ON o.client_id = c.id").all()
+    );
+  }));
 
-  app.get('/api/audit-logs', (req, res) => {
-    try {
-      const logs = db.prepare(`
-        SELECT al.*, strftime('%Y-%m-%dT%H:%M:%SZ', al.created_at) as created_at, u.name as user_name
-        FROM audit_logs al
-        LEFT JOIN users u ON al.user_id = u.id
-        ORDER BY al.created_at DESC
-        LIMIT 100
-      `).all();
-      res.json(logs);
-    } catch (error: any) {
-      res.status(500).json({ error: error.message });
+  app.post('/api/orders', wrapAsync((req: any, res: any) => {
+    const { title, description, client_id, status } = req.body;
+    const result = db.prepare(`
+      INSERT INTO orders (title, description, client_id, status)
+      VALUES (?, ?, ?, ?)
+    `).run(title, description, client_id, status || 'ORDENS DE PRODUÇÃO');
+    
+    logAction(1, 'CREATE_ORDER', `Ordem: ${title}`);
+    broadcast({ type: 'ORDER_UPDATED' });
+    res.json({ id: result.lastInsertRowid });
+  }));
+
+  app.put('/api/orders/:id', wrapAsync((req: any, res: any) => {
+    const { title, description, client_id, status } = req.body;
+    db.prepare(`
+      UPDATE orders
+      SET title = ?, description = ?, client_id = ?, status = ?
+      WHERE id = ?
+    `).run(title, description, client_id, status, req.params.id);
+    
+    logAction(1, 'UPDATE_ORDER', `Ordem ID: ${req.params.id}`);
+    broadcast({ type: 'ORDER_UPDATED' });
+    res.json({ success: true });
+  }));
+
+  app.delete('/api/orders/:id', wrapAsync((req: any, res: any) => {
+    db.prepare('DELETE FROM orders WHERE id = ?').run(req.params.id);
+    logAction(1, 'DELETE_ORDER', `Ordem ID: ${req.params.id}`);
+    broadcast({ type: 'ORDER_UPDATED' });
+    res.json({ success: true });
+  }));
+
+  app.patch('/api/orders/:id', wrapAsync((req: any, res: any) => {
+    const { status } = req.body;
+    db.prepare('UPDATE orders SET status = ? WHERE id = ?').run(status, req.params.id);
+    logAction(1, 'UPDATE_ORDER_STATUS', `Ordem ID: ${req.params.id}, Status: ${status}`);
+    broadcast({ type: 'ORDER_UPDATED', id: req.params.id, status });
+    res.json({ success: true });
+  }));
+
+  app.get('/api/backup', wrapAsync((req: any, res: any) => {
+    const zip = new AdmZip();
+    // Adiciona o arquivo do banco ao ZIP
+    zip.addLocalFile(dbPath);
+    
+    // Adiciona a pasta de uploads ao ZIP se ela existir
+    if (fs.existsSync(uploadsDir)) {
+      zip.addLocalFolder(uploadsDir, 'uploads');
     }
+    
+    const buffer = zip.toBuffer();
+    const fileName = `backup_skysmart_${new Date().toISOString().split('T')[0]}.zip`;
+    
+    res.set('Content-Type', 'application/zip');
+    res.set('Content-Disposition', `attachment; filename=${fileName}`);
+    res.send(buffer);
+    
+    logAction(1, 'DATABASE_BACKUP', 'Backup do banco de dados realizado');
+  }));
+
+  app.get('/api/audit-logs', wrapAsync((req: any, res: any) => {
+    const logs = db.prepare(`
+      SELECT al.*, strftime('%Y-%m-%dT%H:%M:%SZ', al.created_at) as created_at, u.name as user_name
+      FROM audit_logs al
+      LEFT JOIN users u ON al.user_id = u.id
+      ORDER BY al.created_at DESC
+      LIMIT 100
+    `).all();
+    res.json(logs);
+  }));
+
+  // Global Error Handler
+  app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
+    console.error('Unhandled Error:', err);
+    res.status(err.status || 500).json({ 
+      error: err.message || 'Ocorreu um erro interno no servidor.' 
+    });
   });
 
   // Vite middleware

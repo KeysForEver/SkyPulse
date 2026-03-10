@@ -11,9 +11,10 @@ interface KanbanProps {
   onEdit: (order: Order) => void;
   onDelete: (id: number) => void;
   onAdd: () => void;
+  onItemClick: (order: Order) => void;
 }
 
-export const Kanban = ({ orders, onUpdateStatus, onEdit, onDelete, onAdd }: KanbanProps) => {
+export const Kanban = ({ orders, onUpdateStatus, onEdit, onDelete, onAdd, onItemClick }: KanbanProps) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [draggedOrderId, setDraggedOrderId] = useState<number | null>(null);
   const [draggedOverColumn, setDraggedOverColumn] = useState<string | null>(null);
@@ -121,7 +122,6 @@ export const Kanban = ({ orders, onUpdateStatus, onEdit, onDelete, onAdd }: Kanb
             )}>
               {filteredOrders.filter(o => o.status === col).map((order) => (
                 <motion.div
-                  layoutId={`order-${order.id}`}
                   key={order.id}
                   draggable
                   onDragStart={(e) => handleDragStart(e, order.id)}
@@ -129,10 +129,11 @@ export const Kanban = ({ orders, onUpdateStatus, onEdit, onDelete, onAdd }: Kanb
                     setDraggedOrderId(null);
                     setDraggedOverColumn(null);
                   }}
+                  onClick={() => onItemClick(order)}
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98, cursor: 'grabbing' }}
                   className={cn(
-                    "bg-white dark:bg-zinc-900 p-4 rounded-lg shadow-sm border border-zinc-200 dark:border-zinc-800 cursor-grab active:cursor-grabbing hover:border-zinc-300 dark:hover:border-zinc-700 transition-all",
+                    "bg-white dark:bg-zinc-900 p-4 rounded-lg shadow-sm border border-zinc-200 dark:border-zinc-800 cursor-pointer hover:border-zinc-300 dark:hover:border-zinc-700 transition-all",
                     draggedOrderId === order.id && "opacity-50 border-dashed border-zinc-400"
                   )}
                 >

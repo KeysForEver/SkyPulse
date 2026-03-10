@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Product, Supplier, Order, Movement } from '../types';
+import { apiService } from '../services/apiService';
 import { Card, cn } from './Common';
 import { ProductTable } from './inventory/ProductTable';
 import { MovementTable } from './inventory/MovementTable';
@@ -367,21 +368,15 @@ export const Inventory = ({
     reader.onload = async (event) => {
       const csvData = event.target?.result as string;
       try {
-        const response = await fetch('/api/products/import', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ csvData })
-        });
-
-        const result = await response.json();
+        const result = await apiService.importProducts(csvData);
         if (result.success) {
           alert(`Importação concluída! ${result.imported} produtos importados.${result.errors.length > 0 ? '\n\nErros:\n' + result.errors.join('\n') : ''}`);
         } else {
-          alert(`Erro na importação: ${result.error}`);
+          alert(`Erro na importação: ${result.success}`);
         }
-      } catch (error) {
+      } catch (error: any) {
         console.error('Erro ao importar CSV:', error);
-        alert('Erro ao importar arquivo CSV.');
+        alert(error.message || 'Erro ao importar arquivo CSV.');
       } finally {
         if (importFileInputRef.current) importFileInputRef.current.value = '';
       }
@@ -453,11 +448,8 @@ export const Inventory = ({
     setSelectedProductForDetail(product);
     setIsLoadingMovements(true);
     try {
-      const res = await fetch(`/api/products/${product.id}/movements`);
-      if (res.ok) {
-        const data = await res.json();
-        setProductMovements(data);
-      }
+      const data = await apiService.getProductMovements(product.id);
+      setProductMovements(data);
     } catch (err) {
       console.error('Error fetching movements:', err);
     } finally {

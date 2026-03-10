@@ -125,10 +125,10 @@ export const OrderDetailModal = ({
                   <div 
                     className="absolute inset-y-0 left-0 bg-zinc-900 dark:bg-zinc-100 transition-all duration-500"
                     style={{ 
-                      width: order.status === 'Revisão' ? '100%' : 
-                             order.status === 'Finalização' ? '80%' : 
-                             order.status === 'Produção' ? '60%' : 
-                             order.status === 'Separação de Material' ? '40%' : '20%' 
+                      width: order.status === 'REVISÃO' ? '100%' : 
+                             order.status === 'FINALIZAÇÃO' ? '80%' : 
+                             order.status === 'PRODUÇÃO' ? '60%' : 
+                             order.status === 'SEPARAÇÃO DE MATERIAL' ? '40%' : '20%' 
                     }}
                   />
                 </div>

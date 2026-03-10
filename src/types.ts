@@ -38,7 +38,7 @@ export interface Asset {
   status: string;
 }
 
-export type OrderStatus = 'Ordens de Produção' | 'Separação de Material' | 'Produção' | 'Finalização' | 'Revisão';
+export type OrderStatus = 'ORDENS DE PRODUÇÃO' | 'SEPARAÇÃO DE MATERIAL' | 'PRODUÇÃO' | 'FINALIZAÇÃO' | 'REVISÃO';
 
 export interface Order {
   id: number;

@@ -23,7 +23,7 @@ export const OrderModal = ({
     title: '',
     description: '',
     client_id: '',
-    status: 'Ordens de Produção' as OrderStatus
+    status: 'ORDENS DE PRODUÇÃO' as OrderStatus
   });
 
   React.useEffect(() => {
@@ -39,7 +39,7 @@ export const OrderModal = ({
         title: '',
         description: '',
         client_id: '',
-        status: 'Ordens de Produção'
+        status: 'ORDENS DE PRODUÇÃO'
       });
     }
   }, [editingOrder, isOpen]);
