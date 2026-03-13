@@ -14,7 +14,7 @@ const __dirname = path.dirname(__filename);
 
 // Use caminho absoluto para garantir que o DB fique sempre na pasta do projeto
 const dbPath = path.join(__dirname, 'inventory.db');
-const db = new Database(dbPath);
+let db = new Database(dbPath);
 
 const uploadsDir = path.join(__dirname, 'uploads');
 if (!fs.existsSync(uploadsDir)) {
@@ -77,6 +77,7 @@ db.exec(`
     description TEXT,
     status TEXT DEFAULT 'ORDENS DE PRODUÇÃO',
     client_id INTEGER,
+    details TEXT,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (client_id) REFERENCES clients(id)
   );
@@ -110,6 +111,11 @@ db.exec(`
     name TEXT UNIQUE NOT NULL
   );
 
+  CREATE TABLE IF NOT EXISTS units (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT UNIQUE NOT NULL
+  );
+
   CREATE TABLE IF NOT EXISTS audit_logs (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     user_id INTEGER,
@@ -137,6 +143,12 @@ if (userCount.count === 0) {
   db.prepare('INSERT INTO clients (name, email) VALUES (?, ?)').run('Empresa ABC', 'contato@abc.com');
   db.prepare('INSERT INTO suppliers (name, contact) VALUES (?, ?)').run('Fornecedor Tech', 'vendas@tech.com');
   db.prepare('INSERT INTO orders (title, status, client_id) VALUES (?, ?, ?)').run('Instalação Rede Escritório', 'ORDENS DE PRODUÇÃO', 1);
+  
+  db.prepare('INSERT INTO units (name) VALUES (?)').run('UN');
+  db.prepare('INSERT INTO units (name) VALUES (?)').run('MT');
+  db.prepare('INSERT INTO units (name) VALUES (?)').run('KG');
+  db.prepare('INSERT INTO units (name) VALUES (?)').run('PC');
+  db.prepare('INSERT INTO units (name) VALUES (?)').run('CX');
 }
 
 // WebSocket Server
@@ -203,7 +215,8 @@ async function startServer() {
   app.get('/api/stats', wrapAsync((req: any, res: any) => {
     const totalProducts = db.prepare('SELECT count(*) as count FROM products').get() as any;
     const lowStock = db.prepare('SELECT count(*) as count FROM products WHERE quantity <= min_quantity').get() as any;
-    const activeOrders = db.prepare("SELECT count(*) as count FROM orders WHERE status != 'FINALIZAÇÃO'").get() as any;
+    const activeOrders = db.prepare("SELECT count(*) as count FROM orders WHERE status != 'CONCLUIDO'").get() as any;
+    const totalInventoryValue = db.prepare('SELECT SUM(quantity * cost_price) as total FROM products').get() as any;
     
     const stockByCategory = db.prepare(`
       SELECT category, SUM(quantity * cost_price) as total_value
@@ -238,6 +251,7 @@ async function startServer() {
       totalProducts: totalProducts.count,
       lowStock: lowStock.count,
       activeOrders: activeOrders.count,
+      totalInventoryValue: totalInventoryValue.total || 0,
       stockByCategory,
       topProducts,
       stockStatus: [
@@ -372,10 +386,21 @@ async function startServer() {
     res.json(db.prepare('SELECT * FROM locations').all());
   }));
 
+  app.get('/api/units', wrapAsync((req: any, res: any) => {
+    res.json(db.prepare('SELECT * FROM units').all());
+  }));
+
   app.post('/api/locations', wrapAsync((req: any, res: any) => {
     const { name } = req.body;
     const result = db.prepare('INSERT INTO locations (name) VALUES (?)').run(name);
     logAction(1, 'CREATE_LOCATION', `Local: ${name}`);
+    res.json({ id: result.lastInsertRowid, name });
+  }));
+
+  app.post('/api/units', wrapAsync((req: any, res: any) => {
+    const { name } = req.body;
+    const result = db.prepare('INSERT INTO units (name) VALUES (?)').run(name);
+    logAction(1, 'CREATE_UNIT', `Unidade: ${name}`);
     res.json({ id: result.lastInsertRowid, name });
   }));
 
@@ -540,11 +565,11 @@ async function startServer() {
   }));
 
   app.post('/api/orders', wrapAsync((req: any, res: any) => {
-    const { title, description, client_id, status } = req.body;
+    const { title, description, client_id, status, details } = req.body;
     const result = db.prepare(`
-      INSERT INTO orders (title, description, client_id, status)
-      VALUES (?, ?, ?, ?)
-    `).run(title, description, client_id, status || 'ORDENS DE PRODUÇÃO');
+      INSERT INTO orders (title, description, client_id, status, details)
+      VALUES (?, ?, ?, ?, ?)
+    `).run(title, description, client_id, status || 'ORDENS DE PRODUÇÃO', details ? JSON.stringify(details) : null);
     
     logAction(1, 'CREATE_ORDER', `Ordem: ${title}`);
     broadcast({ type: 'ORDER_UPDATED' });
@@ -552,12 +577,12 @@ async function startServer() {
   }));
 
   app.put('/api/orders/:id', wrapAsync((req: any, res: any) => {
-    const { title, description, client_id, status } = req.body;
+    const { title, description, client_id, status, details } = req.body;
     db.prepare(`
       UPDATE orders
-      SET title = ?, description = ?, client_id = ?, status = ?
+      SET title = ?, description = ?, client_id = ?, status = ?, details = ?
       WHERE id = ?
-    `).run(title, description, client_id, status, req.params.id);
+    `).run(title, description, client_id, status, details ? JSON.stringify(details) : null, req.params.id);
     
     logAction(1, 'UPDATE_ORDER', `Ordem ID: ${req.params.id}`);
     broadcast({ type: 'ORDER_UPDATED' });
@@ -597,6 +622,51 @@ async function startServer() {
     res.send(buffer);
     
     logAction(1, 'DATABASE_BACKUP', 'Backup do banco de dados realizado');
+  }));
+
+  app.post('/api/restore', upload.single('backup'), wrapAsync(async (req: any, res: any) => {
+    if (!req.file) return res.status(400).json({ error: 'Arquivo de backup não fornecido' });
+
+    try {
+      const zip = new AdmZip(req.file.buffer);
+      const zipEntries = zip.getEntries();
+      
+      // Verifica se o ZIP contém o arquivo do banco
+      const hasDbFile = zipEntries.some(entry => entry.entryName === 'inventory.db');
+      if (!hasDbFile) {
+        return res.status(400).json({ error: 'Arquivo de backup inválido (inventory.db não encontrado)' });
+      }
+
+      // Fecha a conexão atual
+      db.close();
+
+      // Extrai os arquivos
+      // Para o banco de dados, extraímos para o diretório raiz
+      zip.extractEntryTo('inventory.db', __dirname, false, true);
+      
+      // Para a pasta de uploads, extraímos se existir no ZIP
+      const hasUploads = zipEntries.some(entry => entry.entryName.startsWith('uploads/'));
+      if (hasUploads) {
+        zip.extractEntryTo('uploads/', __dirname, true, true);
+      }
+
+      // Reabre a conexão
+      db = new Database(dbPath);
+      db.pragma('journal_mode = WAL');
+
+      logAction(1, 'DATABASE_RESTORE', 'Restauração do banco de dados realizada via importação');
+      broadcast({ type: 'DATABASE_RESTORED' });
+      
+      res.json({ success: true });
+    } catch (error: any) {
+      console.error('Erro na restauração:', error);
+      // Tenta reabrir a conexão se falhou no meio
+      try {
+        db = new Database(dbPath);
+        db.pragma('journal_mode = WAL');
+      } catch {}
+      res.status(500).json({ error: 'Erro ao restaurar banco de dados: ' + error.message });
+    }
   }));
 
   app.get('/api/audit-logs', wrapAsync((req: any, res: any) => {

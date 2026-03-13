@@ -38,7 +38,7 @@ export interface Asset {
   status: string;
 }
 
-export type OrderStatus = 'ORDENS DE PRODUÇÃO' | 'SEPARAÇÃO DE MATERIAL' | 'PRODUÇÃO' | 'FINALIZAÇÃO' | 'REVISÃO';
+export type OrderStatus = 'ORDENS DE PRODUÇÃO' | 'SEPARAÇÃO DE MATERIAL' | 'PRODUÇÃO' | 'FINALIZAÇÃO' | 'REVISÃO' | 'CONCLUIDO';
 
 export interface Order {
   id: number;
@@ -48,6 +48,21 @@ export interface Order {
   client_id: number;
   client_name?: string;
   created_at: string;
+  details?: string; // JSON string containing OrderDetails
+}
+
+export interface OrderDetails {
+  entry_date: string;
+  kanban_description?: string;
+  impression_3d: { items: string[] };
+  cuts_folds: { items: string[] };
+  welds: { items: string[] };
+  rough_finish: { items: string[] };
+  painting: { items: string[]; shipping_date?: string };
+  final_finish: { items: string[] };
+  lighting: { items: string[]; temperature?: string; model?: string };
+  accessories: { items: string[] };
+  gluing: { items: string[] };
 }
 
 export interface Movement {

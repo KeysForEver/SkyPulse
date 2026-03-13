@@ -76,6 +76,7 @@ export default function App() {
   const [assets, setAssets] = useState<Asset[]>([]);
   const [categories, setCategories] = useState<{id: number, name: string}[]>([]);
   const [locations, setLocations] = useState<{id: number, name: string}[]>([]);
+  const [units, setUnits] = useState<{id: number, name: string}[]>([]);
   const [movements, setMovements] = useState<Movement[]>([]);
   const [financialEntries, setFinancialEntries] = useState<any[]>([]);
   const [auditLogs, setAuditLogs] = useState<any[]>([]);
@@ -158,6 +159,7 @@ export default function App() {
         assetsData,
         categoriesData,
         locationsData,
+        unitsData,
         movementsData,
         financialData,
         auditLogsData
@@ -170,6 +172,7 @@ export default function App() {
         apiService.getAssets(),
         apiService.getCategories(),
         apiService.getLocations(),
+        apiService.getUnits(),
         apiService.getMovements(),
         apiService.getFinancialEntries(),
         apiService.getAuditLogs()
@@ -183,6 +186,7 @@ export default function App() {
       setAssets(assetsData);
       setCategories(categoriesData);
       setLocations(locationsData);
+      setUnits(unitsData);
       setMovements(movementsData);
       setFinancialEntries(financialData);
       setAuditLogs(auditLogsData);
@@ -271,6 +275,15 @@ export default function App() {
       fetchData();
     } catch (err) {
       console.error('Error adding category:', err);
+    }
+  };
+
+  const addUnit = async (name: string) => {
+    try {
+      await apiService.addUnit(name);
+      fetchData();
+    } catch (err) {
+      console.error('Error adding unit:', err);
     }
   };
 
@@ -370,6 +383,7 @@ export default function App() {
         <Inventory 
           products={products} 
           categories={categories} 
+          units={units}
           suppliers={suppliers}
           locations={locations}
           orders={orders}
@@ -378,6 +392,7 @@ export default function App() {
           onUpdateProduct={handleUpdateProduct}
           onDeleteProduct={handleDeleteProduct}
           onAddCategory={addCategory} 
+          onAddUnit={addUnit}
           onUpdateCategory={updateCategory}
           onAddSupplier={addSupplier}
           onAddLocation={addLocation}

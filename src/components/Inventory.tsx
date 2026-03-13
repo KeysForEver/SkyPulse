@@ -36,6 +36,7 @@ import {
 interface InventoryProps {
   products: Product[];
   categories: {id: number, name: string}[];
+  units: {id: number, name: string}[];
   suppliers: Supplier[];
   locations: {id: number, name: string}[];
   orders: Order[];
@@ -44,6 +45,7 @@ interface InventoryProps {
   onUpdateProduct: (id: number, p: FormData) => Promise<void>;
   onDeleteProduct: (id: number) => Promise<void>;
   onAddCategory: (name: string) => Promise<void>;
+  onAddUnit: (name: string) => Promise<void>;
   onUpdateCategory: (id: number, name: string) => Promise<void>;
   onAddSupplier: (name: string) => Promise<void>;
   onAddLocation: (name: string) => Promise<void>;
@@ -57,6 +59,7 @@ interface InventoryProps {
 export const Inventory = ({ 
   products, 
   categories, 
+  units,
   suppliers,
   locations,
   orders,
@@ -65,6 +68,7 @@ export const Inventory = ({
   onUpdateProduct,
   onDeleteProduct,
   onAddCategory,
+  onAddUnit,
   onUpdateCategory,
   onAddSupplier,
   onAddLocation,
@@ -86,6 +90,7 @@ export const Inventory = ({
   const [productError, setProductError] = useState<string | null>(null);
   const [stockInError, setStockInError] = useState<string | null>(null);
   const [isAddingCategory, setIsAddingCategory] = useState(false);
+  const [isAddingUnit, setIsAddingUnit] = useState(false);
   const [isEditingCategory, setIsEditingCategory] = useState(false);
   const [editingCategoryId, setEditingCategoryId] = useState<number | null>(null);
   const [isAddingSupplier, setIsAddingSupplier] = useState(false);
@@ -93,6 +98,7 @@ export const Inventory = ({
   const [isEditingLocation, setIsEditingLocation] = useState(false);
   const [editingLocationId, setEditingLocationId] = useState<number | null>(null);
   const [newCategoryName, setNewCategoryName] = useState('');
+  const [newUnitName, setNewUnitName] = useState('');
   const [newSupplierName, setNewSupplierName] = useState('');
   const [newLocationName, setNewLocationName] = useState('');
   const [searchTerm, setSearchTerm] = useState(initialSearchTerm);
@@ -334,6 +340,15 @@ export const Inventory = ({
       setIsAddingCategory(false);
       setIsEditingCategory(false);
       setEditingCategoryId(null);
+    }
+  };
+
+  const handleAddUnit = async () => {
+    if (newUnitName.trim()) {
+      await onAddUnit(newUnitName.trim().toUpperCase());
+      setFormData({ ...formData, unit: newUnitName.trim().toUpperCase() });
+      setNewUnitName('');
+      setIsAddingUnit(false);
     }
   };
 
@@ -613,11 +628,17 @@ export const Inventory = ({
         setFormData={setFormData}
         onSubmit={handleSubmit}
         categories={categories}
+        units={units}
         isAddingCategory={isAddingCategory}
         setIsAddingCategory={setIsAddingCategory}
         newCategoryName={newCategoryName}
         setNewCategoryName={setNewCategoryName}
         onAddCategory={handleAddCategory}
+        onAddUnit={handleAddUnit}
+        isAddingUnit={isAddingUnit}
+        setIsAddingUnit={setIsAddingUnit}
+        newUnitName={newUnitName}
+        setNewUnitName={setNewUnitName}
         productError={productError}
         fileInputRef={fileInputRef}
         handleFileChange={handleFileChange}

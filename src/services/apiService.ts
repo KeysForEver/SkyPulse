@@ -96,6 +96,14 @@ export const apiService = {
     body: JSON.stringify({ name })
   }).then(handleResponse<{ success: boolean }>),
 
+  // Units
+  getUnits: () => fetch(`${API_BASE}/units`).then(handleResponse<{ id: number, name: string }[]>),
+  addUnit: (name: string) => fetch(`${API_BASE}/units`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name })
+  }).then(handleResponse<{ id: number, name: string }>),
+
   // Assets
   getAssets: () => fetch(`${API_BASE}/assets`).then(handleResponse<Asset[]>),
   deleteAsset: (id: number) => fetch(`${API_BASE}/assets/${id}`, {
@@ -120,4 +128,14 @@ export const apiService = {
 
   // Audit Logs
   getAuditLogs: () => fetch(`${API_BASE}/audit-logs`).then(handleResponse<any[]>),
+
+  // Database
+  importDatabase: (file: File) => {
+    const formData = new FormData();
+    formData.append('backup', file);
+    return fetch(`${API_BASE}/restore`, {
+      method: 'POST',
+      body: formData
+    }).then(handleResponse<{ success: boolean }>);
+  },
 };

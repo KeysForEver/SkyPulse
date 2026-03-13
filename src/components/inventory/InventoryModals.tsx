@@ -52,11 +52,17 @@ export const ProductModal = ({
   setFormData, 
   onSubmit, 
   categories, 
+  units,
   isAddingCategory, 
   setIsAddingCategory, 
   newCategoryName, 
   setNewCategoryName, 
   onAddCategory,
+  isAddingUnit,
+  setIsAddingUnit,
+  newUnitName,
+  setNewUnitName,
+  onAddUnit,
   productError,
   fileInputRef,
   handleFileChange,
@@ -140,19 +146,26 @@ export const ProductModal = ({
           <label className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase">
             Unidade <span className="text-rose-500 ml-0.5">*</span>
           </label>
-          <select 
-            required
-            value={formData.unit}
-            onChange={e => setFormData({...formData, unit: e.target.value})}
-            className="w-full px-3 py-2 text-sm border border-zinc-200 dark:border-zinc-800 rounded-lg focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-100 outline-none bg-white dark:bg-black text-zinc-900 dark:text-zinc-100 uppercase"
-          >
-            <option value="un">UNIDADE (UN)</option>
-            <option value="kg">QUILOGRAMA (KG)</option>
-            <option value="m">METRO (M)</option>
-            <option value="l">LITRO (L)</option>
-            <option value="cx">CAIXA (CX)</option>
-            <option value="par">PAR (PAR)</option>
-          </select>
+          <div className="flex gap-2">
+            <select 
+              required
+              value={formData.unit}
+              onChange={e => setFormData({...formData, unit: e.target.value})}
+              className="flex-1 px-3 py-2 text-sm border border-zinc-200 dark:border-zinc-800 rounded-lg focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-100 outline-none bg-white dark:bg-black text-zinc-900 dark:text-zinc-100 uppercase"
+            >
+              <option value="">SELECIONE...</option>
+              {units?.map((u: any) => (
+                <option key={u.id} value={u.name}>{u.name}</option>
+              ))}
+            </select>
+            <button 
+              type="button"
+              onClick={() => setIsAddingUnit(true)}
+              className="p-2 bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 rounded-lg hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors"
+            >
+              <Plus size={18} />
+            </button>
+          </div>
         </div>
         <div className="space-y-1.5 md:col-span-2">
           <label className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase">Estoque Mínimo (Opcional)</label>
@@ -220,6 +233,40 @@ export const ProductModal = ({
               className="px-6 py-2 bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 text-sm font-bold rounded-xl hover:bg-zinc-800 transition-all shadow-lg shadow-zinc-900/10 uppercase"
             >
               Salvar Categoria
+            </button>
+          </div>
+        </div>
+      </Modal>
+
+      <Modal isOpen={isAddingUnit} onClose={() => setIsAddingUnit(false)} title="Nova Unidade" zIndex={300}>
+        <div className="p-6 space-y-4">
+          <div className="space-y-1.5">
+            <label className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase">
+              Nome da Unidade <span className="text-rose-500 ml-0.5">*</span>
+            </label>
+            <input 
+              type="text" 
+              value={newUnitName}
+              onChange={e => setNewUnitName(e.target.value.toUpperCase())}
+              className="w-full px-3 py-2 text-sm border border-zinc-200 dark:border-zinc-800 rounded-lg focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-100 outline-none bg-white dark:bg-black text-zinc-900 dark:text-zinc-100"
+              placeholder="EX: KG, MT, UN"
+              autoFocus
+            />
+          </div>
+          <div className="flex justify-end gap-3 pt-4 border-t border-zinc-100 dark:border-zinc-800">
+            <button 
+              type="button"
+              onClick={() => setIsAddingUnit(false)}
+              className="px-4 py-2 text-sm font-bold text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100 transition-colors uppercase"
+            >
+              Cancelar
+            </button>
+            <button 
+              type="button"
+              onClick={onAddUnit}
+              className="px-6 py-2 bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 text-sm font-bold rounded-xl hover:bg-zinc-800 transition-all shadow-lg shadow-zinc-900/10 uppercase"
+            >
+              Salvar Unidade
             </button>
           </div>
         </div>

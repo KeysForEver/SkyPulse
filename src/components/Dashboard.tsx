@@ -3,7 +3,7 @@ import {
   Package, 
   AlertTriangle, 
   ClipboardList, 
-  Users 
+  DollarSign 
 } from 'lucide-react';
 import { 
   BarChart, 
@@ -58,11 +58,11 @@ export const Dashboard = ({ stats, isDarkMode, onNavigate }: DashboardProps) => 
           onClick={() => onNavigate('kanban')}
         />
         <StatCard 
-          label="CLIENTES" 
-          value={stats?.totalClients || 12} 
-          icon={Users} 
+          label="VALOR TOTAL ESTOQUE" 
+          value={`R$ ${(stats?.totalInventoryValue || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`} 
+          icon={DollarSign} 
           color="bg-emerald-500" 
-          onClick={() => onNavigate('clients')}
+          onClick={() => onNavigate('inventory')}
         />
       </div>
 

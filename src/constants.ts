@@ -5,7 +5,8 @@ export const KANBAN_COLUMNS: OrderStatus[] = [
   'SEPARAÇÃO DE MATERIAL',
   'PRODUÇÃO',
   'FINALIZAÇÃO',
-  'REVISÃO'
+  'REVISÃO',
+  'CONCLUIDO'
 ];
 
 export const ROLES = ['Admin', 'Almoxarifado', 'Vendas', 'Instalação'];
