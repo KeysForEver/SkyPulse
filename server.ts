@@ -371,6 +371,28 @@ async function startServer() {
     res.json(db.prepare('SELECT * FROM clients').all());
   }));
 
+  app.post('/api/clients', wrapAsync((req: any, res: any) => {
+    const { name, email, phone } = req.body;
+    const result = db.prepare('INSERT INTO clients (name, email, phone) VALUES (?, ?, ?)').run(name, email, phone);
+    logAction(1, 'CREATE_CLIENT', `Cliente: ${name}`);
+    res.json({ id: result.lastInsertRowid });
+  }));
+
+  app.put('/api/clients/:id', wrapAsync((req: any, res: any) => {
+    const { id } = req.params;
+    const { name, email, phone } = req.body;
+    db.prepare('UPDATE clients SET name = ?, email = ?, phone = ? WHERE id = ?').run(name, email, phone, id);
+    logAction(1, 'UPDATE_CLIENT', `Cliente ID: ${id}, Nome: ${name}`);
+    res.json({ success: true });
+  }));
+
+  app.delete('/api/clients/:id', wrapAsync((req: any, res: any) => {
+    const { id } = req.params;
+    db.prepare('DELETE FROM clients WHERE id = ?').run(id);
+    logAction(1, 'DELETE_CLIENT', `Cliente ID: ${id}`);
+    res.json({ success: true });
+  }));
+
   app.get('/api/suppliers', wrapAsync((req: any, res: any) => {
     res.json(db.prepare('SELECT * FROM suppliers').all());
   }));
@@ -380,6 +402,21 @@ async function startServer() {
     const result = db.prepare('INSERT INTO suppliers (name, contact) VALUES (?, ?)').run(name, contact);
     logAction(1, 'CREATE_SUPPLIER', `Fornecedor: ${name}`);
     res.json({ id: result.lastInsertRowid, name, contact });
+  }));
+
+  app.put('/api/suppliers/:id', wrapAsync((req: any, res: any) => {
+    const { id } = req.params;
+    const { name, contact } = req.body;
+    db.prepare('UPDATE suppliers SET name = ?, contact = ? WHERE id = ?').run(name, contact, id);
+    logAction(1, 'UPDATE_SUPPLIER', `Fornecedor ID: ${id}, Nome: ${name}`);
+    res.json({ success: true });
+  }));
+
+  app.delete('/api/suppliers/:id', wrapAsync((req: any, res: any) => {
+    const { id } = req.params;
+    db.prepare('DELETE FROM suppliers WHERE id = ?').run(id);
+    logAction(1, 'DELETE_SUPPLIER', `Fornecedor ID: ${id}`);
+    res.json({ success: true });
   }));
 
   app.get('/api/locations', wrapAsync((req: any, res: any) => {
@@ -414,6 +451,28 @@ async function startServer() {
 
   app.get('/api/assets', wrapAsync((req: any, res: any) => {
     res.json(db.prepare('SELECT * FROM assets').all());
+  }));
+
+  app.post('/api/assets', wrapAsync((req: any, res: any) => {
+    const { name, code, status } = req.body;
+    const result = db.prepare('INSERT INTO assets (name, code, status) VALUES (?, ?, ?)').run(name, code, status);
+    logAction(1, 'CREATE_ASSET', `Patrimônio: ${name}, Código: ${code}`);
+    res.json({ id: result.lastInsertRowid });
+  }));
+
+  app.put('/api/assets/:id', wrapAsync((req: any, res: any) => {
+    const { id } = req.params;
+    const { name, code, status } = req.body;
+    db.prepare('UPDATE assets SET name = ?, code = ?, status = ? WHERE id = ?').run(name, code, status, id);
+    logAction(1, 'UPDATE_ASSET', `Patrimônio ID: ${id}, Nome: ${name}`);
+    res.json({ success: true });
+  }));
+
+  app.delete('/api/assets/:id', wrapAsync((req: any, res: any) => {
+    const { id } = req.params;
+    db.prepare('DELETE FROM assets WHERE id = ?').run(id);
+    logAction(1, 'DELETE_ASSET', `Patrimônio ID: ${id}`);
+    res.json({ success: true });
   }));
 
   app.get('/api/categories', wrapAsync((req: any, res: any) => {
@@ -578,13 +637,37 @@ async function startServer() {
 
   app.put('/api/orders/:id', wrapAsync((req: any, res: any) => {
     const { title, description, client_id, status, details } = req.body;
+    const oldOrder = db.prepare('SELECT details FROM orders WHERE id = ?').get(req.params.id) as { details: string } | undefined;
+    
     db.prepare(`
       UPDATE orders
       SET title = ?, description = ?, client_id = ?, status = ?, details = ?
       WHERE id = ?
     `).run(title, description, client_id, status, details ? JSON.stringify(details) : null, req.params.id);
     
-    logAction(1, 'UPDATE_ORDER', `Ordem ID: ${req.params.id}`);
+    // Check if a checklist item was completed
+    if (oldOrder && details && details.completed_items) {
+      try {
+        const oldDetails = oldOrder.details ? JSON.parse(oldOrder.details) : {};
+        const oldCompleted = oldDetails.completed_items || [];
+        const newCompleted = details.completed_items || [];
+        
+        if (newCompleted.length > oldCompleted.length) {
+          const added = newCompleted.filter((item: string) => !oldCompleted.includes(item));
+          added.forEach((item: string) => {
+            const [section, itemName] = item.split('|');
+            logAction(1, 'CHECKLIST_COMPLETED', `Ordem ID: ${req.params.id}, Item: ${itemName} (${section})`);
+          });
+        } else {
+          logAction(1, 'UPDATE_ORDER', `Ordem ID: ${req.params.id}`);
+        }
+      } catch (e) {
+        logAction(1, 'UPDATE_ORDER', `Ordem ID: ${req.params.id}`);
+      }
+    } else {
+      logAction(1, 'UPDATE_ORDER', `Ordem ID: ${req.params.id}`);
+    }
+
     broadcast({ type: 'ORDER_UPDATED' });
     res.json({ success: true });
   }));

@@ -26,6 +26,7 @@ import { Settings as SettingsView } from './components/Settings';
 import { SidebarItem, cn } from './components/Common';
 import { OrderModal } from './components/OrderModal';
 import { OrderDetailModal } from './components/OrderDetailModal';
+import { ClientModal, SupplierModal, AssetModal } from './components/EntityModals';
 
 // --- Main App ---
 
@@ -85,6 +86,30 @@ export default function App() {
   const [lastScrollY, setLastScrollY] = useState(0);
   const mainContentRef = useRef<HTMLDivElement>(null);
 
+  // Handle window resize to ensure sidebar state is consistent
+  useEffect(() => {
+    const handleResize = () => {
+      const width = window.innerWidth;
+      if (width >= 1024) {
+        // On desktop, ensure sidebar is "open" (drawer state)
+        setIsSidebarOpen(true);
+        // On desktop, we generally want the sidebar expanded unless scrolling down
+        // Resetting it here ensures that when returning from mobile it's in a clean state
+        setIsSidebarCollapsed(false);
+      } else {
+        // On mobile/tablet, default to closed drawer
+        setIsSidebarOpen(false);
+        setIsSidebarCollapsed(false);
+      }
+    };
+
+    window.addEventListener('resize', handleResize);
+    // Initial check
+    handleResize();
+    
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   useEffect(() => {
     const handleScroll = () => {
       if (!mainContentRef.current) return;
@@ -120,6 +145,12 @@ export default function App() {
 
   const [isOrderModalOpen, setIsOrderModalOpen] = useState(false);
   const [editingOrder, setEditingOrder] = useState<Order | null>(null);
+  const [isClientModalOpen, setIsClientModalOpen] = useState(false);
+  const [editingClient, setEditingClient] = useState<Client | null>(null);
+  const [isSupplierModalOpen, setIsSupplierModalOpen] = useState(false);
+  const [editingSupplier, setEditingSupplier] = useState<Supplier | null>(null);
+  const [isAssetModalOpen, setIsAssetModalOpen] = useState(false);
+  const [editingAsset, setEditingAsset] = useState<Asset | null>(null);
   const [selectedOrderForDetail, setSelectedOrderForDetail] = useState<Order | null>(null);
   const [activeGenericMenuId, setActiveGenericMenuId] = useState<number | null>(null);
   const [genericMenuPosition, setGenericMenuPosition] = useState<{ top: number, left: number } | null>(null);
@@ -147,6 +178,13 @@ export default function App() {
 
     return () => ws.close();
   }, []);
+
+  useEffect(() => {
+    if (selectedOrderForDetail) {
+      const updated = orders.find(o => o.id === selectedOrderForDetail.id);
+      if (updated) setSelectedOrderForDetail(updated);
+    }
+  }, [orders]);
 
   const fetchData = async () => {
     try {
@@ -232,7 +270,26 @@ export default function App() {
     }
   };
 
+  const addClient = async (data: any) => {
+    try {
+      await apiService.addClient(data);
+      fetchData();
+    } catch (err) {
+      console.error('Error adding client:', err);
+    }
+  };
+
+  const updateClient = async (id: number, data: any) => {
+    try {
+      await apiService.updateClient(id, data);
+      fetchData();
+    } catch (err) {
+      console.error('Error updating client:', err);
+    }
+  };
+
   const deleteClient = async (id: number) => {
+    if (!confirm('Tem certeza que deseja excluir este cliente?')) return;
     try {
       await apiService.deleteClient(id);
       fetchData();
@@ -241,7 +298,17 @@ export default function App() {
     }
   };
 
+  const updateSupplierEntity = async (id: number, data: any) => {
+    try {
+      await apiService.updateSupplier(id, data);
+      fetchData();
+    } catch (err) {
+      console.error('Error updating supplier:', err);
+    }
+  };
+
   const deleteSupplier = async (id: number) => {
+    if (!confirm('Tem certeza que deseja excluir este fornecedor?')) return;
     try {
       await apiService.deleteSupplier(id);
       fetchData();
@@ -250,7 +317,26 @@ export default function App() {
     }
   };
 
+  const addAsset = async (data: any) => {
+    try {
+      await apiService.addAsset(data);
+      fetchData();
+    } catch (err) {
+      console.error('Error adding asset:', err);
+    }
+  };
+
+  const updateAsset = async (id: number, data: any) => {
+    try {
+      await apiService.updateAsset(id, data);
+      fetchData();
+    } catch (err) {
+      console.error('Error updating asset:', err);
+    }
+  };
+
   const deleteAsset = async (id: number) => {
+    if (!confirm('Tem certeza que deseja excluir este patrimônio?')) return;
     try {
       await apiService.deleteAsset(id);
       fetchData();
@@ -296,9 +382,10 @@ export default function App() {
     }
   };
 
-  const addSupplier = async (name: string) => {
+  const addSupplier = async (data: any) => {
     try {
-      await apiService.addSupplier(name);
+      const payload = typeof data === 'string' ? { name: data, contact: '' } : data;
+      await apiService.addSupplier(payload);
       fetchData();
     } catch (err) {
       console.error('Error adding supplier:', err);
@@ -445,6 +532,16 @@ export default function App() {
             { key: 'email', label: 'E-MAIL' },
             { key: 'phone', label: 'TELEFONE' }
           ]} 
+          onAdd={() => {
+            setEditingClient(null);
+            setIsClientModalOpen(true);
+          }}
+          onItemClick={(client) => {
+            setEditingClient(client);
+            setIsClientModalOpen(true);
+          }}
+          showActions={true}
+          onMenuClick={handleGenericMenuClick}
         />
       );
       case 'suppliers': return (
@@ -455,6 +552,16 @@ export default function App() {
             { key: 'name', label: 'NOME' },
             { key: 'contact', label: 'CONTATO' }
           ]} 
+          onAdd={() => {
+            setEditingSupplier(null);
+            setIsSupplierModalOpen(true);
+          }}
+          onItemClick={(supplier) => {
+            setEditingSupplier(supplier);
+            setIsSupplierModalOpen(true);
+          }}
+          showActions={true}
+          onMenuClick={handleGenericMenuClick}
         />
       );
       case 'assets': return (
@@ -466,6 +573,16 @@ export default function App() {
             { key: 'code', label: 'CÓDIGO', mono: true },
             { key: 'status', label: 'STATUS' }
           ]} 
+          onAdd={() => {
+            setEditingAsset(null);
+            setIsAssetModalOpen(true);
+          }}
+          onItemClick={(asset) => {
+            setEditingAsset(asset);
+            setIsAssetModalOpen(true);
+          }}
+          showActions={true}
+          onMenuClick={handleGenericMenuClick}
         />
       );
       case 'financial': return (
@@ -661,6 +778,55 @@ export default function App() {
           setSelectedOrderForDetail(null);
         }}
         onDelete={deleteOrder}
+        onUpdate={fetchData}
+      />
+
+      <ClientModal 
+        isOpen={isClientModalOpen}
+        onClose={() => {
+          setIsClientModalOpen(false);
+          setEditingClient(null);
+        }}
+        onSubmit={(data) => {
+          if (editingClient) {
+            updateClient(editingClient.id, data);
+          } else {
+            addClient(data);
+          }
+        }}
+        editingClient={editingClient}
+      />
+
+      <SupplierModal 
+        isOpen={isSupplierModalOpen}
+        onClose={() => {
+          setIsSupplierModalOpen(false);
+          setEditingSupplier(null);
+        }}
+        onSubmit={(data) => {
+          if (editingSupplier) {
+            updateSupplierEntity(editingSupplier.id, data);
+          } else {
+            addSupplier(data);
+          }
+        }}
+        editingSupplier={editingSupplier}
+      />
+
+      <AssetModal 
+        isOpen={isAssetModalOpen}
+        onClose={() => {
+          setIsAssetModalOpen(false);
+          setEditingAsset(null);
+        }}
+        onSubmit={(data) => {
+          if (editingAsset) {
+            updateAsset(editingAsset.id, data);
+          } else {
+            addAsset(data);
+          }
+        }}
+        editingAsset={editingAsset}
       />
 
       <AnimatePresence>
@@ -683,17 +849,34 @@ export default function App() {
                       setEditingOrder(item);
                       setIsOrderModalOpen(true);
                     }
+                  } else if (activeTab === 'clients') {
+                    const item = clients.find(c => c.id === activeGenericMenuId);
+                    if (item) {
+                      setEditingClient(item);
+                      setIsClientModalOpen(true);
+                    }
+                  } else if (activeTab === 'suppliers') {
+                    const item = suppliers.find(s => s.id === activeGenericMenuId);
+                    if (item) {
+                      setEditingSupplier(item);
+                      setIsSupplierModalOpen(true);
+                    }
+                  } else if (activeTab === 'assets') {
+                    const item = assets.find(a => a.id === activeGenericMenuId);
+                    if (item) {
+                      setEditingAsset(item);
+                      setIsAssetModalOpen(true);
+                    }
                   }
-                  // Handle other tabs here when modals are implemented
                   setActiveGenericMenuId(null);
                 }}
                 className={cn(
                   "flex items-center gap-2 w-full px-3 py-2 text-xs font-medium rounded-lg transition-colors",
-                  activeTab === 'production' 
+                  ['production', 'clients', 'suppliers', 'assets'].includes(activeTab)
                     ? "text-zinc-600 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-800" 
                     : "text-zinc-300 dark:text-zinc-600 cursor-not-allowed"
                 )}
-                disabled={activeTab !== 'production'}
+                disabled={!['production', 'clients', 'suppliers', 'assets'].includes(activeTab)}
               >
                 <Edit size={14} />
                 Editar

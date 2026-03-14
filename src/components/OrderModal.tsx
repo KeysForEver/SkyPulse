@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { X, ChevronLeft, ChevronRight, Plus, Trash2, Check } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { X, ChevronLeft, ChevronRight, Plus, Trash2, Check, AlertTriangle } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Client, Order, OrderStatus, OrderDetails } from '../types';
 import { KANBAN_COLUMNS } from '../constants';
@@ -30,6 +30,8 @@ export const OrderModal = ({
   clients 
 }: OrderModalProps) => {
   const [step, setStep] = useState(1);
+  const [error, setError] = useState<string | null>(null);
+  const formRef = useRef<HTMLFormElement>(null);
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -37,6 +39,7 @@ export const OrderModal = ({
     status: 'ORDENS DE PRODUÇÃO' as OrderStatus,
     details: {
       entry_date: new Date().toISOString().split('T')[0],
+      delivery_date: '',
       kanban_description: '',
       impression_3d: { items: [] },
       cuts_folds: { items: [] },
@@ -73,6 +76,7 @@ export const OrderModal = ({
 
       const initialDetails: OrderDetails = {
         entry_date: details?.entry_date || new Date().toISOString().split('T')[0],
+        delivery_date: details?.delivery_date || '',
         kanban_description: details?.kanban_description || '',
         impression_3d: details?.impression_3d || { items: [] },
         cuts_folds: details?.cuts_folds || { items: [] },
@@ -97,7 +101,8 @@ export const OrderModal = ({
       const newCustomItems: { [key: string]: string[] } = {};
       
       const checkCustom = (key: string, options: string[], items: string[]) => {
-        newCustomItems[key] = items.filter(item => !options.includes(item));
+        const upperOptions = options.map(o => o.toUpperCase());
+        newCustomItems[key] = items.filter(item => !upperOptions.includes(item.toUpperCase()));
       };
 
       checkCustom('impression_3d', ['Impressão 3D'], initialDetails.impression_3d.items);
@@ -120,6 +125,7 @@ export const OrderModal = ({
         status: 'ORDENS DE PRODUÇÃO',
         details: {
           entry_date: new Date().toISOString().split('T')[0],
+          delivery_date: '',
           kanban_description: '',
           impression_3d: { items: [] },
           cuts_folds: { items: [] },
@@ -148,22 +154,21 @@ export const OrderModal = ({
   }, [editingOrder, isOpen]);
 
   const handleNext = () => {
+    setError(null);
+    if (formRef.current && !formRef.current.reportValidity()) {
+      return;
+    }
     if (validateStep()) {
       setStep(prev => Math.min(prev + 1, 11));
     }
   };
 
   const handleBack = () => {
+    setError(null);
     setStep(prev => Math.max(prev - 1, 1));
   };
 
   const validateStep = () => {
-    if (step === 1) {
-      return formData.title && formData.description && formData.client_id && formData.details.entry_date;
-    }
-    if (step === 2) {
-      return !!formData.status;
-    }
     // Steps 3-11 are mostly checkboxes, but custom items must have names
     const keys = [
       '', '', 'impression_3d', 'cuts_folds', 'welds', 'rough_finish', 
@@ -172,83 +177,97 @@ export const OrderModal = ({
     const key = keys[step - 1];
     if (key) {
       const custom = customItems[key];
-      if (custom.some(item => !item.trim())) return false;
+      if (custom.some(item => !item.trim())) {
+        setError('Por favor, informe o nome de todos os itens personalizados adicionados.');
+        return false;
+      }
     }
     return true;
   };
 
   const toggleItem = (key: keyof OrderDetails, item: string) => {
+    setError(null);
     const currentItems = (formData.details[key] as any).items as string[];
     const newItems = currentItems.includes(item)
       ? currentItems.filter(i => i !== item)
       : [...currentItems, item];
     
-    setFormData({
-      ...formData,
+    setFormData(prev => ({
+      ...prev,
       details: {
-        ...formData.details,
+        ...prev.details,
         [key]: {
-          ...(formData.details[key] as any),
+          ...(prev.details[key] as any),
           items: newItems
         }
       }
-    });
+    }));
+  };
+
+  const syncItems = (key: string, customList: string[]) => {
+    // Get current predefined options for this key
+    const stepConfigs: { [key: number]: { key: keyof OrderDetails, options: string[] } } = {
+      3: { key: 'impression_3d', options: ['Impressão 3D'] },
+      4: { key: 'cuts_folds', options: CUTS_FOLDS_OPTIONS },
+      5: { key: 'welds', options: WELDS_OPTIONS },
+      6: { key: 'rough_finish', options: ROUGH_FINISH_OPTIONS },
+      7: { key: 'painting', options: PAINTING_OPTIONS },
+      8: { key: 'final_finish', options: FINAL_FINISH_OPTIONS },
+      9: { key: 'lighting', options: LIGHTING_OPTIONS },
+      10: { key: 'accessories', options: ACCESSORIES_OPTIONS },
+      11: { key: 'gluing', options: GLUING_OPTIONS },
+    };
+
+    const config = Object.values(stepConfigs).find(c => c.key === key);
+    if (!config) return;
+
+    const currentItems = (formData.details[config.key] as any).items as string[];
+    const upperOptions = config.options.map(o => o.toUpperCase());
+    
+    // Keep only predefined items that were already selected
+    const predefinedSelected = currentItems.filter(item => 
+      config.options.includes(item) || upperOptions.includes(item.toUpperCase())
+    );
+
+    // Filter out any predefined items from the custom list to avoid duplicates
+    const actualCustom = customList.filter(item => 
+      item.trim() !== '' && !upperOptions.includes(item.toUpperCase())
+    );
+
+    const newItems = [...new Set([...predefinedSelected, ...actualCustom])];
+
+    setFormData(prev => ({
+      ...prev,
+      details: {
+        ...prev.details,
+        [config.key]: {
+          ...(prev.details[config.key] as any),
+          items: newItems
+        }
+      }
+    }));
   };
 
   const addCustomItem = (key: string) => {
-    setCustomItems({
-      ...customItems,
-      [key]: [...customItems[key], '']
-    });
+    setError(null);
+    setCustomItems(prev => ({
+      ...prev,
+      [key]: [...prev[key], '']
+    }));
   };
 
   const updateCustomItem = (key: string, index: number, value: string) => {
     const newCustom = [...customItems[key]];
-    const oldValue = newCustom[index];
     newCustom[index] = value.toUpperCase();
-    setCustomItems({ ...customItems, [key]: newCustom });
-
-    // Also update in formData.details
-    const currentItems = (formData.details[key as keyof OrderDetails] as any).items as string[];
-    const newItems = [...currentItems];
-    const itemIndex = newItems.indexOf(oldValue);
-    
-    if (itemIndex > -1) {
-      newItems[itemIndex] = value.toUpperCase();
-    } else {
-      newItems.push(value.toUpperCase());
-    }
-
-    setFormData({
-      ...formData,
-      details: {
-        ...formData.details,
-        [key]: {
-          ...(formData.details[key as keyof OrderDetails] as any),
-          items: newItems
-        }
-      }
-    });
+    setCustomItems(prev => ({ ...prev, [key]: newCustom }));
+    syncItems(key, newCustom);
   };
 
   const removeCustomItem = (key: string, index: number) => {
-    const valueToRemove = customItems[key][index];
+    setError(null);
     const newCustom = customItems[key].filter((_, i) => i !== index);
-    setCustomItems({ ...customItems, [key]: newCustom });
-
-    const currentItems = (formData.details[key as keyof OrderDetails] as any).items as string[];
-    const newItems = currentItems.filter(i => i !== valueToRemove);
-
-    setFormData({
-      ...formData,
-      details: {
-        ...formData.details,
-        [key]: {
-          ...(formData.details[key as keyof OrderDetails] as any),
-          items: newItems
-        }
-      }
-    });
+    setCustomItems(prev => ({ ...prev, [key]: newCustom }));
+    syncItems(key, newCustom);
   };
 
   const renderStep = () => {
@@ -256,6 +275,7 @@ export const OrderModal = ({
       case 1:
         return (
           <div className="space-y-4">
+            {/* Line 1: TITULO DA ORDEM */}
             <div className="space-y-1.5">
               <label className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
                 Título da Ordem <span className="text-rose-500 ml-0.5">*</span>
@@ -269,33 +289,25 @@ export const OrderModal = ({
                 placeholder="EX: INSTALAÇÃO DE REDE"
               />
             </div>
+
+            {/* Line 2: CLIENTE */}
             <div className="space-y-1.5">
               <label className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
-                Descrição <span className="text-rose-500 ml-0.5">*</span>
+                Cliente <span className="text-rose-500 ml-0.5">*</span>
               </label>
-              <textarea 
+              <select 
                 required
-                value={formData.description}
-                onChange={e => setFormData({...formData, description: e.target.value.toUpperCase()})}
-                className="w-full px-4 py-2 text-sm border border-zinc-200 dark:border-zinc-800 rounded-xl focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-100 outline-none bg-white dark:bg-black text-zinc-900 dark:text-zinc-100 min-h-[80px] uppercase"
-                placeholder="DETALHES DA ORDEM..."
-              />
+                value={formData.client_id}
+                onChange={e => setFormData({...formData, client_id: e.target.value})}
+                className="w-full px-4 py-2 text-sm border border-zinc-200 dark:border-zinc-800 rounded-xl focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-100 outline-none bg-white dark:bg-black text-zinc-900 dark:text-zinc-100 uppercase"
+              >
+                <option value="">SELECIONE...</option>
+                {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+              </select>
             </div>
+
+            {/* Line 3: DATA ENTRADA, DATA ENTREGA */}
             <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-1.5">
-                <label className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
-                  Cliente <span className="text-rose-500 ml-0.5">*</span>
-                </label>
-                <select 
-                  required
-                  value={formData.client_id}
-                  onChange={e => setFormData({...formData, client_id: e.target.value})}
-                  className="w-full px-4 py-2 text-sm border border-zinc-200 dark:border-zinc-800 rounded-xl focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-100 outline-none bg-white dark:bg-black text-zinc-900 dark:text-zinc-100 uppercase"
-                >
-                  <option value="">SELECIONE...</option>
-                  {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                </select>
-              </div>
               <div className="space-y-1.5">
                 <label className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
                   Data de Entrada <span className="text-rose-500 ml-0.5">*</span>
@@ -308,6 +320,32 @@ export const OrderModal = ({
                   className="w-full px-4 py-2 text-sm border border-zinc-200 dark:border-zinc-800 rounded-xl focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-100 outline-none bg-white dark:bg-black text-zinc-900 dark:text-zinc-100"
                 />
               </div>
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
+                  Data de Entrega <span className="text-rose-500 ml-0.5">*</span>
+                </label>
+                <input 
+                  type="date" 
+                  required
+                  value={formData.details.delivery_date}
+                  onChange={e => setFormData({...formData, details: {...formData.details, delivery_date: e.target.value}})}
+                  className="w-full px-4 py-2 text-sm border border-zinc-200 dark:border-zinc-800 rounded-xl focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-100 outline-none bg-white dark:bg-black text-zinc-900 dark:text-zinc-100"
+                />
+              </div>
+            </div>
+
+            {/* Line 4: DESCRIÇÃO */}
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
+                Descrição <span className="text-rose-500 ml-0.5">*</span>
+              </label>
+              <textarea 
+                required
+                value={formData.description}
+                onChange={e => setFormData({...formData, description: e.target.value.toUpperCase()})}
+                className="w-full px-4 py-2 text-sm border border-zinc-200 dark:border-zinc-800 rounded-xl focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-100 outline-none bg-white dark:bg-black text-zinc-900 dark:text-zinc-100 min-h-[80px] uppercase"
+                placeholder="DETALHES DA ORDEM..."
+              />
             </div>
           </div>
         );
@@ -327,7 +365,9 @@ export const OrderModal = ({
                       : "bg-white dark:bg-black border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-400 hover:border-zinc-400"
                   )}>
                     <input 
-                      type="checkbox" 
+                      type="radio" 
+                      name="kanban_status"
+                      required
                       className="hidden"
                       checked={formData.status === col}
                       onChange={() => setFormData({...formData, status: col as OrderStatus})}
@@ -509,7 +549,13 @@ export const OrderModal = ({
               />
             </div>
 
-            <form onSubmit={(e) => e.preventDefault()} className="p-6 space-y-6 overflow-y-auto flex-1">
+            <form ref={formRef} onSubmit={(e) => e.preventDefault()} className="p-6 space-y-6 overflow-y-auto flex-1">
+              {error && (
+                <div className="p-3 bg-rose-50 dark:bg-rose-500/10 border border-rose-100 dark:border-rose-500/20 rounded-lg flex items-center gap-3 text-rose-600 dark:text-rose-400 text-sm animate-in fade-in slide-in-from-top-2">
+                  <AlertTriangle size={18} />
+                  {error}
+                </div>
+              )}
               <div className="min-h-[300px]">
                 <AnimatePresence mode="wait">
                   <motion.div
@@ -569,6 +615,9 @@ export const OrderModal = ({
                     <button 
                       type="button"
                       onClick={() => {
+                        if (formRef.current && !formRef.current.reportValidity()) {
+                          return;
+                        }
                         if (validateStep()) {
                           onSubmit(formData);
                           onClose();

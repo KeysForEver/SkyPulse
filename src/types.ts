@@ -53,7 +53,9 @@ export interface Order {
 
 export interface OrderDetails {
   entry_date: string;
+  delivery_date: string;
   kanban_description?: string;
+  completed_items?: string[]; // Array of item names that are finished
   impression_3d: { items: string[] };
   cuts_folds: { items: string[] };
   welds: { items: string[] };

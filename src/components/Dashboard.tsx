@@ -70,10 +70,22 @@ export const Dashboard = ({ stats, isDarkMode, onNavigate }: DashboardProps) => 
         <Card title="VALOR EM ESTOQUE POR CATEGORIA">
           <div className="h-80">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={stats?.stockByCategory || []} layout="vertical" margin={{ left: 40, right: 20 }}>
+              <BarChart 
+                data={stats?.stockByCategory || []} 
+                layout="vertical" 
+                margin={{ left: 40, right: 20 }}
+                barCategoryGap="35%"
+              >
                 <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke={gridColor} />
                 <XAxis type="number" axisLine={false} tickLine={false} tick={{fontSize: 10, fill: textColor}} />
-                <YAxis dataKey="category" type="category" axisLine={false} tickLine={false} tick={{fontSize: 10, fill: textColor}} width={100} />
+                <YAxis 
+                  dataKey="category" 
+                  type="category" 
+                  axisLine={false} 
+                  tickLine={false} 
+                  tick={{fontSize: 14, fill: textColor}} 
+                  width={120} 
+                />
                 <Tooltip 
                   formatter={(value: number) => `R$ ${value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`}
                   contentStyle={{ 
@@ -84,7 +96,7 @@ export const Dashboard = ({ stats, isDarkMode, onNavigate }: DashboardProps) => 
                     color: isDarkMode ? '#f4f4f5' : '#18181b'
                   }}
                 />
-                <Bar dataKey="total_value" fill={barColor} radius={[0, 4, 4, 0]} barSize={20} />
+                <Bar dataKey="total_value" fill={barColor} radius={[0, 4, 4, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>

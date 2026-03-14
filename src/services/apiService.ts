@@ -57,15 +57,32 @@ export const apiService = {
 
   // Clients
   getClients: () => fetch(`${API_BASE}/clients`).then(handleResponse<Client[]>),
-  deleteClient: (id: number) => fetch(`${API_BASE}/clients/${id}`).then(handleResponse<{ success: boolean }>),
+  addClient: (data: Partial<Client>) => fetch(`${API_BASE}/clients`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data)
+  }).then(handleResponse<{ id: number }>),
+  updateClient: (id: number, data: Partial<Client>) => fetch(`${API_BASE}/clients/${id}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data)
+  }).then(handleResponse<{ success: boolean }>),
+  deleteClient: (id: number) => fetch(`${API_BASE}/clients/${id}`, {
+    method: 'DELETE'
+  }).then(handleResponse<{ success: boolean }>),
 
   // Suppliers
   getSuppliers: () => fetch(`${API_BASE}/suppliers`).then(handleResponse<Supplier[]>),
-  addSupplier: (name: string) => fetch(`${API_BASE}/suppliers`, {
+  addSupplier: (data: Partial<Supplier>) => fetch(`${API_BASE}/suppliers`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ name, contact: '' })
+    body: JSON.stringify(data)
   }).then(handleResponse<Supplier>),
+  updateSupplier: (id: number, data: Partial<Supplier>) => fetch(`${API_BASE}/suppliers/${id}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data)
+  }).then(handleResponse<{ success: boolean }>),
   deleteSupplier: (id: number) => fetch(`${API_BASE}/suppliers/${id}`, {
     method: 'DELETE'
   }).then(handleResponse<{ success: boolean }>),
@@ -106,6 +123,16 @@ export const apiService = {
 
   // Assets
   getAssets: () => fetch(`${API_BASE}/assets`).then(handleResponse<Asset[]>),
+  addAsset: (data: Partial<Asset>) => fetch(`${API_BASE}/assets`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data)
+  }).then(handleResponse<{ id: number }>),
+  updateAsset: (id: number, data: Partial<Asset>) => fetch(`${API_BASE}/assets/${id}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data)
+  }).then(handleResponse<{ success: boolean }>),
   deleteAsset: (id: number) => fetch(`${API_BASE}/assets/${id}`, {
     method: 'DELETE'
   }).then(handleResponse<{ success: boolean }>),

@@ -14,7 +14,7 @@ interface ModalProps {
   zIndex?: number;
 }
 
-const Modal = ({ isOpen, onClose, title, children, zIndex = 200 }: ModalProps) => (
+export const Modal = ({ isOpen, onClose, title, children, zIndex = 200 }: ModalProps) => (
   <AnimatePresence>
     {isOpen && (
       <div className={cn("fixed inset-0 flex items-center justify-center p-4 sm:p-6", zIndex === 200 ? "z-[200]" : "z-[300]")}>

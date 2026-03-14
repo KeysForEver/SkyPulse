@@ -1,8 +1,9 @@
 import React from 'react';
-import { X, Edit, Trash2, ClipboardList, User, Calendar, CheckCircle2, Info, Check } from 'lucide-react';
+import { X, Edit, Trash2, ClipboardList, User, Calendar, CheckCircle2, Info, Check, AlertTriangle } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Order, OrderDetails } from '../types';
 import { cn } from './Common';
+import { apiService } from '../services/apiService';
 
 interface OrderDetailModalProps {
   isOpen: boolean;
@@ -10,6 +11,7 @@ interface OrderDetailModalProps {
   order: Order | null;
   onEdit: (order: Order) => void;
   onDelete: (id: number) => void;
+  onUpdate?: () => void;
 }
 
 export const OrderDetailModal = ({ 
@@ -17,8 +19,12 @@ export const OrderDetailModal = ({
   onClose, 
   order, 
   onEdit,
-  onDelete
+  onDelete,
+  onUpdate
 }: OrderDetailModalProps) => {
+  const [confirmingItem, setConfirmingItem] = React.useState<{ section: string, item: string } | null>(null);
+  const [isUpdating, setIsUpdating] = React.useState(false);
+
   if (!order) return null;
 
   let details: OrderDetails | null = null;
@@ -27,6 +33,36 @@ export const OrderDetailModal = ({
   } catch (e) {
     console.error("Error parsing order details", e);
   }
+
+  const handleCheckItem = async (section: string, item: string) => {
+    if (!details || !order) return;
+    
+    setIsUpdating(true);
+    try {
+      const itemKey = `${section}|${item}`;
+      const completedItems = details.completed_items || [];
+      
+      if (completedItems.includes(itemKey)) return;
+
+      const updatedDetails: OrderDetails = {
+        ...details,
+        completed_items: [...completedItems, itemKey]
+      };
+
+      await apiService.updateOrder(order.id, {
+        ...order,
+        details: JSON.stringify(updatedDetails)
+      });
+
+      if (onUpdate) onUpdate();
+      setConfirmingItem(null);
+    } catch (error) {
+      console.error("Error updating checklist", error);
+      alert("Erro ao atualizar o checklist. Tente novamente.");
+    } finally {
+      setIsUpdating(false);
+    }
+  };
 
   const renderSection = (title: string, items: string[], extra?: React.ReactNode) => {
     if (items.length === 0 && !extra) return null;
@@ -37,16 +73,33 @@ export const OrderDetailModal = ({
           <h4 className="text-[10px] font-bold text-zinc-900 dark:text-zinc-100 uppercase tracking-widest">{title}</h4>
         </div>
         <div className="grid grid-cols-1 gap-1.5 ml-3">
-          {items.map((item, idx) => (
-            <div key={idx} className="flex items-center gap-3 group">
-              <div className="w-5 h-5 rounded-md bg-emerald-500/10 dark:bg-emerald-500/20 flex items-center justify-center text-emerald-600 dark:text-emerald-400">
-                <Check size={12} strokeWidth={3} />
+          {items.map((item, idx) => {
+            const itemKey = `${title}|${item}`;
+            const isCompleted = details?.completed_items?.includes(itemKey);
+
+            return (
+              <div key={idx} className="flex items-center gap-3 group">
+                <button
+                  disabled={isCompleted || isUpdating}
+                  onClick={() => !isCompleted && setConfirmingItem({ section: title, item })}
+                  className={cn(
+                    "w-5 h-5 rounded-md flex items-center justify-center transition-all duration-200",
+                    isCompleted 
+                      ? "bg-emerald-500 text-white cursor-default" 
+                      : "bg-zinc-100 dark:bg-zinc-800 text-transparent hover:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-700 border border-zinc-200 dark:border-zinc-700"
+                  )}
+                >
+                  <Check size={12} strokeWidth={3} className={cn(isCompleted ? "opacity-100" : "opacity-0 group-hover:opacity-100")} />
+                </button>
+                <span className={cn(
+                  "text-xs font-bold uppercase tracking-tight transition-colors",
+                  isCompleted ? "text-zinc-400 dark:text-zinc-500 line-through" : "text-zinc-700 dark:text-zinc-300"
+                )}>
+                  {item}
+                </span>
               </div>
-              <span className="text-xs font-bold text-zinc-700 dark:text-zinc-300 uppercase tracking-tight">
-                {item}
-              </span>
-            </div>
-          ))}
+            );
+          })}
           {items.length === 0 && <span className="text-[10px] text-zinc-400 italic ml-8">NENHUM ITEM SELECIONADO</span>}
           {extra && <div className="mt-2 ml-8">{extra}</div>}
         </div>
@@ -140,11 +193,17 @@ export const OrderDetailModal = ({
                   <h3 className="text-xs font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest flex items-center gap-2">
                     <Calendar size={14} /> Datas e Prazos
                   </h3>
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-3 gap-4">
                     <div>
                       <p className="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase">Entrada</p>
                       <p className="text-xs font-medium text-zinc-900 dark:text-zinc-100">
                         {details?.entry_date ? new Date(details.entry_date).toLocaleDateString('pt-BR') : '-'}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase">Entrega</p>
+                      <p className="text-xs font-medium text-emerald-600 dark:text-emerald-400 font-bold">
+                        {details?.delivery_date ? new Date(details.delivery_date).toLocaleDateString('pt-BR') : '-'}
                       </p>
                     </div>
                     <div>
@@ -225,6 +284,57 @@ export const OrderDetailModal = ({
               </div>
             </div>
           </motion.div>
+
+          {/* Confirmation Dialog */}
+          <AnimatePresence>
+            {confirmingItem && (
+              <div className="fixed inset-0 z-[300] flex items-center justify-center p-4">
+                <motion.div 
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  onClick={() => !isUpdating && setConfirmingItem(null)}
+                  className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+                />
+                <motion.div 
+                  initial={{ opacity: 0, scale: 0.95, y: 10 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.95, y: 10 }}
+                  className="relative w-full max-w-sm bg-white dark:bg-zinc-900 rounded-2xl shadow-2xl p-6 border border-zinc-100 dark:border-zinc-800"
+                >
+                  <div className="flex items-center gap-3 text-amber-500 mb-4">
+                    <div className="w-10 h-10 rounded-full bg-amber-50 dark:bg-amber-500/10 flex items-center justify-center">
+                      <AlertTriangle size={20} />
+                    </div>
+                    <h3 className="text-sm font-bold uppercase tracking-tight">Confirmar Finalização</h3>
+                  </div>
+                  
+                  <p className="text-xs text-zinc-600 dark:text-zinc-400 mb-6 leading-relaxed">
+                    Você está prestes a marcar <span className="font-bold text-zinc-900 dark:text-zinc-100">"{confirmingItem.item}"</span> como concluído. 
+                    <br /><br />
+                    <span className="text-rose-500 font-bold uppercase">Atenção:</span> Esta ação é irreversível e ficará registrada no histórico do sistema.
+                  </p>
+
+                  <div className="flex gap-3">
+                    <button
+                      disabled={isUpdating}
+                      onClick={() => setConfirmingItem(null)}
+                      className="flex-1 px-4 py-2 text-xs font-bold uppercase tracking-widest text-zinc-500 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-200 transition-colors"
+                    >
+                      Cancelar
+                    </button>
+                    <button
+                      disabled={isUpdating}
+                      onClick={() => handleCheckItem(confirmingItem.section, confirmingItem.item)}
+                      className="flex-1 px-4 py-2 bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 rounded-xl text-xs font-bold uppercase tracking-widest hover:opacity-90 transition-opacity disabled:opacity-50"
+                    >
+                      {isUpdating ? 'Processando...' : 'Confirmar'}
+                    </button>
+                  </div>
+                </motion.div>
+              </div>
+            )}
+          </AnimatePresence>
         </div>
       )}
     </AnimatePresence>

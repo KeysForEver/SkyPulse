@@ -216,6 +216,12 @@ export const Inventory = ({
     e.preventDefault();
     setProductError(null);
 
+    // Manual validation
+    if (!formData.name || !formData.category || !formData.unit) {
+      setProductError('Por favor, preencha todos os campos obrigatórios (*).');
+      return;
+    }
+
     const data = new FormData();
     data.append('name', formData.name);
     data.append('category', formData.category);
@@ -305,6 +311,7 @@ export const Inventory = ({
   const handleStockInSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setStockInError(null);
+
     onStockIn(stockInData);
     setIsStockInModalOpen(false);
     resetStockInForm();
@@ -313,6 +320,7 @@ export const Inventory = ({
   const handleStockOutSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setStockOutError(null);
+
     const product = products.find(p => p.id === parseInt(stockOutData.product_id));
     if (product && product.quantity < stockOutData.quantity) {
       setStockOutError(`Não é possível realizar a saída: Quantidade solicitada (${stockOutData.quantity}) é maior que o saldo atual (${product.quantity}).`);
