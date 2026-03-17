@@ -24,10 +24,12 @@ import { Inventory } from './components/Inventory';
 import { Kanban } from './components/Kanban';
 import { GenericList } from './components/GenericList';
 import { Settings as SettingsView } from './components/Settings';
+import { Assets } from './components/Assets';
 import { SidebarItem, cn } from './components/Common';
 import { OrderModal } from './components/OrderModal';
 import { OrderDetailModal } from './components/OrderDetailModal';
-import { ClientModal, SupplierModal, AssetModal } from './components/EntityModals';
+import { ClientModal, SupplierModal } from './components/EntityModals';
+import { AssetModal } from './components/assets/AssetModals';
 import { FinancialDetailModal } from './components/FinancialDetailModal';
 
 // --- Main App ---
@@ -362,21 +364,30 @@ export default function App() {
     }
   };
 
-  const addAsset = async (data: any) => {
+  const addAsset = async (formData: FormData) => {
     try {
-      await apiService.addAsset(data);
+      await apiService.addAsset(formData);
       fetchData();
     } catch (err) {
       console.error('Error adding asset:', err);
     }
   };
 
-  const updateAsset = async (id: number, data: any) => {
+  const updateAsset = async (id: number, formData: FormData) => {
     try {
-      await apiService.updateAsset(id, data);
+      await apiService.updateAsset(id, formData);
       fetchData();
     } catch (err) {
       console.error('Error updating asset:', err);
+    }
+  };
+
+  const handleDisposalAsset = async (id: number, data: any) => {
+    try {
+      await apiService.disposalAsset(id, data);
+      fetchData();
+    } catch (err) {
+      console.error('Error in asset disposal:', err);
     }
   };
 
@@ -571,11 +582,18 @@ export default function App() {
       case 'clients': return (
         <GenericList 
           title="CLIENTES" 
-          items={clients} 
+          items={clients.map(c => ({
+            ...c,
+            display_name: c.tipo_cliente === 'PF' ? c.name : c.razao_social,
+            document: c.tipo_cliente === 'PF' ? c.cpf : c.cnpj
+          }))} 
           columns={[
-            { key: 'name', label: 'NOME' },
+            { key: 'tipo_cliente', label: 'TIPO' },
+            { key: 'display_name', label: 'NOME / RAZÃO SOCIAL' },
+            { key: 'document', label: 'CPF / CNPJ' },
             { key: 'email', label: 'E-MAIL' },
-            { key: 'phone', label: 'TELEFONE' }
+            { key: 'telefone1', label: 'TELEFONE' },
+            { key: 'cidade', label: 'CIDADE' }
           ]} 
           onAdd={() => {
             setEditingClient(null);
@@ -592,15 +610,24 @@ export default function App() {
       case 'suppliers': return (
         <GenericList 
           title="FORNECEDORES" 
-          items={suppliers} 
+          items={suppliers.map(s => ({
+            ...s,
+            display_name: s.tipo === 'PF' ? s.name : s.razao_social,
+            document: s.tipo === 'PF' ? s.cpf : s.cnpj
+          }))} 
           columns={[
-            { key: 'name', label: 'NOME' },
-            { key: 'contact', label: 'CONTATO' }
+            { key: 'tipo', label: 'TIPO' },
+            { key: 'display_name', label: 'NOME / RAZÃO SOCIAL' },
+            { key: 'document', label: 'CPF / CNPJ' },
+            { key: 'email', label: 'E-MAIL' },
+            { key: 'telefone1', label: 'TELEFONE' },
+            { key: 'cidade', label: 'CIDADE' }
           ]} 
           onAdd={() => {
             setEditingSupplier(null);
             setIsSupplierModalOpen(true);
           }}
+          addButtonLabel="NOVO FORNECEDOR"
           onItemClick={(supplier) => {
             setEditingSupplier(supplier);
             setIsSupplierModalOpen(true);
@@ -610,24 +637,13 @@ export default function App() {
         />
       );
       case 'assets': return (
-        <GenericList 
-          title="PATRIMÔNIOS" 
-          items={assets} 
-          columns={[
-            { key: 'name', label: 'NOME' },
-            { key: 'code', label: 'CÓDIGO', mono: true },
-            { key: 'status', label: 'STATUS' }
-          ]} 
-          onAdd={() => {
-            setEditingAsset(null);
-            setIsAssetModalOpen(true);
-          }}
-          onItemClick={(asset) => {
-            setEditingAsset(asset);
-            setIsAssetModalOpen(true);
-          }}
-          showActions={true}
-          onMenuClick={handleGenericMenuClick}
+        <Assets 
+          assets={assets}
+          categories={categories}
+          onAddAsset={addAsset}
+          onUpdateAsset={updateAsset}
+          onDeleteAsset={deleteAsset}
+          onDisposalAsset={handleDisposalAsset}
         />
       );
       case 'financial': return (
@@ -865,14 +881,15 @@ export default function App() {
           setIsAssetModalOpen(false);
           setEditingAsset(null);
         }}
-        onSubmit={(data) => {
+        onSave={(data) => {
           if (editingAsset) {
             updateAsset(editingAsset.id, data);
           } else {
             addAsset(data);
           }
         }}
-        editingAsset={editingAsset}
+        asset={editingAsset}
+        categories={categories}
       />
 
       <AnimatePresence>

@@ -9,6 +9,7 @@ interface Column {
   key: string;
   label: string;
   mono?: boolean;
+  render?: (val: any, item: any) => React.ReactNode;
 }
 
 interface GenericListProps {
@@ -18,6 +19,7 @@ interface GenericListProps {
   showAddButton?: boolean;
   showActions?: boolean;
   onAdd?: () => void;
+  addButtonLabel?: string;
   onItemClick?: (item: any) => void;
   onMenuClick?: (e: React.MouseEvent, id: number) => void;
 }
@@ -27,6 +29,7 @@ export const GenericList = ({
   items, 
   columns, 
   showAddButton = true, 
+  addButtonLabel = "Novo",
   showActions = false,
   onAdd,
   onItemClick,
@@ -145,7 +148,7 @@ export const GenericList = ({
               className="flex items-center gap-2 px-4 py-2 bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 text-sm font-bold rounded-xl hover:bg-zinc-800 dark:hover:bg-zinc-200 transition-colors uppercase ml-2 shadow-lg shadow-zinc-900/10 dark:shadow-none"
             >
               <Plus size={18} />
-              Novo
+              {addButtonLabel}
             </button>
           )}
         </div>
@@ -172,7 +175,7 @@ export const GenericList = ({
               >
                 {activeColumns.map(col => (
                   <td key={col.key} className={cn("px-6 py-4 text-sm", col.mono ? "font-mono text-zinc-500 dark:text-zinc-400" : "text-zinc-900 dark:text-zinc-100")}>
-                    {item[col.key]}
+                    {col.render ? col.render(item[col.key], item) : item[col.key]}
                   </td>
                 ))}
                 {showActions && (

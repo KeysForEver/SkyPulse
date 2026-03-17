@@ -123,13 +123,16 @@ export const apiService = {
 
   // Assets
   getAssets: () => fetch(`${API_BASE}/assets`).then(handleResponse<Asset[]>),
-  addAsset: (data: Partial<Asset>) => fetch(`${API_BASE}/assets`, {
+  addAsset: (formData: FormData) => fetch(`${API_BASE}/assets`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(data)
+    body: formData
   }).then(handleResponse<{ id: number }>),
-  updateAsset: (id: number, data: Partial<Asset>) => fetch(`${API_BASE}/assets/${id}`, {
+  updateAsset: (id: number, formData: FormData) => fetch(`${API_BASE}/assets/${id}`, {
     method: 'PUT',
+    body: formData
+  }).then(handleResponse<{ success: boolean }>),
+  disposalAsset: (id: number, data: any) => fetch(`${API_BASE}/assets/${id}/disposal`, {
+    method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data)
   }).then(handleResponse<{ success: boolean }>),

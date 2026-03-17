@@ -53,22 +53,65 @@ db.exec(`
 
   CREATE TABLE IF NOT EXISTS clients (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
+    tipo_cliente TEXT DEFAULT 'PF',
     name TEXT NOT NULL,
-    email TEXT,
-    phone TEXT
+    cpf TEXT,
+    rg TEXT,
+    data_nascimento TEXT,
+    razao_social TEXT,
+    cnpj TEXT,
+    nome_fantasia TEXT,
+    ie TEXT,
+    im TEXT,
+    contato_responsavel TEXT,
+    endereco TEXT,
+    complemento TEXT,
+    bairro TEXT,
+    cep TEXT,
+    cidade TEXT,
+    telefone1 TEXT,
+    telefone2 TEXT,
+    email TEXT
   );
 
   CREATE TABLE IF NOT EXISTS suppliers (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    name TEXT NOT NULL,
-    contact TEXT
+    tipo TEXT DEFAULT 'PF',
+    name TEXT,
+    cpf TEXT,
+    rg TEXT,
+    data_nascimento TEXT,
+    razao_social TEXT,
+    cnpj TEXT,
+    nome_fantasia TEXT,
+    ie TEXT,
+    im TEXT,
+    contato_responsavel TEXT,
+    endereco TEXT,
+    complemento TEXT,
+    bairro TEXT,
+    cep TEXT,
+    cidade TEXT,
+    telefone1 TEXT,
+    telefone2 TEXT,
+    email TEXT,
+    website TEXT
   );
 
   CREATE TABLE IF NOT EXISTS assets (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    name TEXT NOT NULL,
-    code TEXT UNIQUE NOT NULL,
-    status TEXT DEFAULT 'disponivel'
+    description TEXT NOT NULL,
+    asset_number TEXT UNIQUE,
+    category TEXT,
+    purchase_date TEXT,
+    purchase_value REAL,
+    depreciation_type TEXT,
+    depreciation_percentage REAL,
+    photo TEXT,
+    status TEXT DEFAULT 'ATIVO',
+    disposal_type TEXT,
+    disposal_date TEXT,
+    disposal_value REAL
   );
 
   CREATE TABLE IF NOT EXISTS orders (
@@ -128,7 +171,40 @@ db.exec(`
 
 // Migrations (para bancos antigos que não tinham colunas)
 // Observação: em SQLite não existe "ADD COLUMN IF NOT EXISTS", então usamos try/catch.
-// try { db.exec("ALTER TABLE products ADD COLUMN code TEXT UNIQUE"); } catch {}
+try { db.exec("ALTER TABLE clients ADD COLUMN tipo_cliente TEXT DEFAULT 'PF'"); } catch {}
+try { db.exec("ALTER TABLE clients ADD COLUMN cpf TEXT"); } catch {}
+try { db.exec("ALTER TABLE clients ADD COLUMN rg TEXT"); } catch {}
+try { db.exec("ALTER TABLE clients ADD COLUMN data_nascimento TEXT"); } catch {}
+try { db.exec("ALTER TABLE clients ADD COLUMN razao_social TEXT"); } catch {}
+try { db.exec("ALTER TABLE clients ADD COLUMN cnpj TEXT"); } catch {}
+try { db.exec("ALTER TABLE clients ADD COLUMN nome_fantasia TEXT"); } catch {}
+try { db.exec("ALTER TABLE clients ADD COLUMN ie TEXT"); } catch {}
+try { db.exec("ALTER TABLE clients ADD COLUMN im TEXT"); } catch {}
+try { db.exec("ALTER TABLE clients ADD COLUMN contato_responsavel TEXT"); } catch {}
+try { db.exec("ALTER TABLE clients ADD COLUMN endereco TEXT"); } catch {}
+try { db.exec("ALTER TABLE clients ADD COLUMN complemento TEXT"); } catch {}
+try { db.exec("ALTER TABLE clients ADD COLUMN bairro TEXT"); } catch {}
+try { db.exec("ALTER TABLE clients ADD COLUMN cep TEXT"); } catch {}
+try { db.exec("ALTER TABLE clients ADD COLUMN cidade TEXT"); } catch {}
+try { db.exec("ALTER TABLE clients ADD COLUMN telefone1 TEXT"); } catch {}
+try { db.exec("ALTER TABLE suppliers ADD COLUMN tipo TEXT DEFAULT 'PF'"); } catch {}
+try { db.exec("ALTER TABLE suppliers ADD COLUMN cpf TEXT"); } catch {}
+try { db.exec("ALTER TABLE suppliers ADD COLUMN rg TEXT"); } catch {}
+try { db.exec("ALTER TABLE suppliers ADD COLUMN data_nascimento TEXT"); } catch {}
+try { db.exec("ALTER TABLE suppliers ADD COLUMN razao_social TEXT"); } catch {}
+try { db.exec("ALTER TABLE suppliers ADD COLUMN cnpj TEXT"); } catch {}
+try { db.exec("ALTER TABLE suppliers ADD COLUMN nome_fantasia TEXT"); } catch {}
+try { db.exec("ALTER TABLE suppliers ADD COLUMN ie TEXT"); } catch {}
+try { db.exec("ALTER TABLE suppliers ADD COLUMN im TEXT"); } catch {}
+try { db.exec("ALTER TABLE suppliers ADD COLUMN contato_responsavel TEXT"); } catch {}
+try { db.exec("ALTER TABLE suppliers ADD COLUMN endereco TEXT"); } catch {}
+try { db.exec("ALTER TABLE suppliers ADD COLUMN complemento TEXT"); } catch {}
+try { db.exec("ALTER TABLE suppliers ADD COLUMN bairro TEXT"); } catch {}
+try { db.exec("ALTER TABLE suppliers ADD COLUMN cep TEXT"); } catch {}
+try { db.exec("ALTER TABLE suppliers ADD COLUMN cidade TEXT"); } catch {}
+try { db.exec("ALTER TABLE suppliers ADD COLUMN telefone1 TEXT"); } catch {}
+try { db.exec("ALTER TABLE suppliers ADD COLUMN telefone2 TEXT"); } catch {}
+try { db.exec("ALTER TABLE suppliers ADD COLUMN website TEXT"); } catch {}
 
 // Seed initial data if empty
 const userCount = db.prepare('SELECT count(*) as count FROM users').get() as { count: number };
@@ -372,17 +448,50 @@ async function startServer() {
   }));
 
   app.post('/api/clients', wrapAsync((req: any, res: any) => {
-    const { name, email, phone } = req.body;
-    const result = db.prepare('INSERT INTO clients (name, email, phone) VALUES (?, ?, ?)').run(name, email, phone);
-    logAction(1, 'CREATE_CLIENT', `Cliente: ${name}`);
+    const { 
+      tipo_cliente, name, cpf, rg, data_nascimento, 
+      razao_social, cnpj, nome_fantasia, ie, im, contato_responsavel,
+      endereco, complemento, bairro, cep, cidade, telefone1, telefone2, email 
+    } = req.body;
+    
+    const result = db.prepare(`
+      INSERT INTO clients (
+        tipo_cliente, name, cpf, rg, data_nascimento, 
+        razao_social, cnpj, nome_fantasia, ie, im, contato_responsavel,
+        endereco, complemento, bairro, cep, cidade, telefone1, telefone2, email
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(
+      tipo_cliente, name, cpf, rg, data_nascimento, 
+      razao_social, cnpj, nome_fantasia, ie, im, contato_responsavel,
+      endereco, complemento, bairro, cep, cidade, telefone1, telefone2, email
+    );
+    
+    logAction(1, 'CREATE_CLIENT', `Cliente: ${name || razao_social}`);
     res.json({ id: result.lastInsertRowid });
   }));
 
   app.put('/api/clients/:id', wrapAsync((req: any, res: any) => {
     const { id } = req.params;
-    const { name, email, phone } = req.body;
-    db.prepare('UPDATE clients SET name = ?, email = ?, phone = ? WHERE id = ?').run(name, email, phone, id);
-    logAction(1, 'UPDATE_CLIENT', `Cliente ID: ${id}, Nome: ${name}`);
+    const { 
+      tipo_cliente, name, cpf, rg, data_nascimento, 
+      razao_social, cnpj, nome_fantasia, ie, im, contato_responsavel,
+      endereco, complemento, bairro, cep, cidade, telefone1, telefone2, email 
+    } = req.body;
+    
+    db.prepare(`
+      UPDATE clients SET 
+        tipo_cliente = ?, name = ?, cpf = ?, rg = ?, data_nascimento = ?, 
+        razao_social = ?, cnpj = ?, nome_fantasia = ?, ie = ?, im = ?, contato_responsavel = ?,
+        endereco = ?, complemento = ?, bairro = ?, cep = ?, cidade = ?, telefone1 = ?, telefone2 = ?, email = ?
+      WHERE id = ?
+    `).run(
+      tipo_cliente, name, cpf, rg, data_nascimento, 
+      razao_social, cnpj, nome_fantasia, ie, im, contato_responsavel,
+      endereco, complemento, bairro, cep, cidade, telefone1, telefone2, email,
+      id
+    );
+    
+    logAction(1, 'UPDATE_CLIENT', `Cliente ID: ${id}, Nome: ${name || razao_social}`);
     res.json({ success: true });
   }));
 
@@ -398,17 +507,37 @@ async function startServer() {
   }));
 
   app.post('/api/suppliers', wrapAsync((req: any, res: any) => {
-    const { name, contact } = req.body;
-    const result = db.prepare('INSERT INTO suppliers (name, contact) VALUES (?, ?)').run(name, contact);
-    logAction(1, 'CREATE_SUPPLIER', `Fornecedor: ${name}`);
-    res.json({ id: result.lastInsertRowid, name, contact });
+    const supplierFields = [
+      'tipo', 'name', 'cpf', 'rg', 'data_nascimento',
+      'razao_social', 'cnpj', 'nome_fantasia', 'ie', 'im',
+      'contato_responsavel', 'endereco', 'complemento', 'bairro',
+      'cep', 'cidade', 'telefone1', 'telefone2', 'email', 'website'
+    ];
+    const data = req.body;
+    const activeFields = supplierFields.filter(f => data[f] !== undefined);
+    const placeholders = activeFields.map(() => '?').join(', ');
+    const values = activeFields.map(f => data[f]);
+    
+    const result = db.prepare(`INSERT INTO suppliers (${activeFields.join(', ')}) VALUES (${placeholders})`).run(...values);
+    logAction(1, 'CREATE_SUPPLIER', `Fornecedor: ${data.name || data.razao_social}`);
+    res.json({ id: result.lastInsertRowid, ...data });
   }));
 
   app.put('/api/suppliers/:id', wrapAsync((req: any, res: any) => {
     const { id } = req.params;
-    const { name, contact } = req.body;
-    db.prepare('UPDATE suppliers SET name = ?, contact = ? WHERE id = ?').run(name, contact, id);
-    logAction(1, 'UPDATE_SUPPLIER', `Fornecedor ID: ${id}, Nome: ${name}`);
+    const supplierFields = [
+      'tipo', 'name', 'cpf', 'rg', 'data_nascimento',
+      'razao_social', 'cnpj', 'nome_fantasia', 'ie', 'im',
+      'contato_responsavel', 'endereco', 'complemento', 'bairro',
+      'cep', 'cidade', 'telefone1', 'telefone2', 'email', 'website'
+    ];
+    const data = req.body;
+    const activeFields = supplierFields.filter(f => data[f] !== undefined);
+    const setClause = activeFields.map(f => `${f} = ?`).join(', ');
+    const values = activeFields.map(f => data[f]);
+    
+    db.prepare(`UPDATE suppliers SET ${setClause} WHERE id = ?`).run(...values, id);
+    logAction(1, 'UPDATE_SUPPLIER', `Fornecedor ID: ${id}`);
     res.json({ success: true });
   }));
 
@@ -615,6 +744,80 @@ async function startServer() {
     transaction();
     logAction(1, 'STOCK_OUT', `Produto ID: ${product_id}, Qtd: ${quantity}, Motivo: ${reason}`);
     broadcast({ type: 'INVENTORY_UPDATED' });
+    res.json({ success: true });
+  }));
+
+  // Assets API
+  app.get('/api/assets', wrapAsync((req: any, res: any) => {
+    res.json(db.prepare('SELECT * FROM assets').all());
+  }));
+
+  app.post('/api/assets', upload.single('photo'), wrapAsync(async (req: any, res: any) => {
+    const { description, asset_number, category, purchase_date, purchase_value, depreciation_type, depreciation_percentage } = req.body;
+    let photoPath = null;
+
+    if (req.file) {
+      const fileName = `asset_${Date.now()}.webp`;
+      const filePath = path.join(uploadsDir, fileName);
+      await sharp(req.file.buffer)
+        .resize(800, 800, { fit: 'inside', withoutEnlargement: true })
+        .webp({ quality: 80 })
+        .toFile(filePath);
+      photoPath = `/uploads/${fileName}`;
+    }
+
+    const result = db.prepare(`
+      INSERT INTO assets (description, asset_number, category, purchase_date, purchase_value, depreciation_type, depreciation_percentage, photo, status)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'ATIVO')
+    `).run(description, asset_number, category, purchase_date, purchase_value, depreciation_type, depreciation_percentage, photoPath);
+
+    logAction(1, 'CREATE_ASSET', `Patrimônio: ${description}`);
+    broadcast({ type: 'ASSETS_UPDATED' });
+    res.json({ id: result.lastInsertRowid });
+  }));
+
+  app.put('/api/assets/:id', upload.single('photo'), wrapAsync(async (req: any, res: any) => {
+    const { description, asset_number, category, purchase_date, purchase_value, depreciation_type, depreciation_percentage, photo } = req.body;
+    let photoPath = photo;
+
+    if (req.file) {
+      const fileName = `asset_${Date.now()}.webp`;
+      const filePath = path.join(uploadsDir, fileName);
+      await sharp(req.file.buffer)
+        .resize(800, 800, { fit: 'inside', withoutEnlargement: true })
+        .webp({ quality: 80 })
+        .toFile(filePath);
+      photoPath = `/uploads/${fileName}`;
+    }
+
+    db.prepare(`
+      UPDATE assets
+      SET description = ?, asset_number = ?, category = ?, purchase_date = ?, purchase_value = ?, depreciation_type = ?, depreciation_percentage = ?, photo = ?
+      WHERE id = ?
+    `).run(description, asset_number, category, purchase_date, purchase_value, depreciation_type, depreciation_percentage, photoPath, req.params.id);
+
+    logAction(1, 'UPDATE_ASSET', `Patrimônio ID: ${req.params.id}`);
+    broadcast({ type: 'ASSETS_UPDATED' });
+    res.json({ success: true });
+  }));
+
+  app.post('/api/assets/:id/disposal', wrapAsync((req: any, res: any) => {
+    const { disposal_type, disposal_date, disposal_value } = req.body;
+    db.prepare(`
+      UPDATE assets
+      SET status = 'BAIXADO', disposal_type = ?, disposal_date = ?, disposal_value = ?
+      WHERE id = ?
+    `).run(disposal_type, disposal_date, disposal_value, req.params.id);
+
+    logAction(1, 'ASSET_DISPOSAL', `Baixa Patrimônio ID: ${req.params.id}, Tipo: ${disposal_type}`);
+    broadcast({ type: 'ASSETS_UPDATED' });
+    res.json({ success: true });
+  }));
+
+  app.delete('/api/assets/:id', wrapAsync((req: any, res: any) => {
+    db.prepare('DELETE FROM assets WHERE id = ?').run(req.params.id);
+    logAction(1, 'DELETE_ASSET', `Patrimônio ID: ${req.params.id}`);
+    broadcast({ type: 'ASSETS_UPDATED' });
     res.json({ success: true });
   }));
 

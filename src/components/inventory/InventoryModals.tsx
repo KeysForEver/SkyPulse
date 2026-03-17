@@ -114,7 +114,6 @@ export const ProductModal = ({
             value={formData.name}
             onChange={e => setFormData({...formData, name: e.target.value.toUpperCase()})}
             className="w-full px-3 py-2 text-sm border border-zinc-200 dark:border-zinc-800 rounded-lg focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-100 outline-none bg-white dark:bg-black text-zinc-900 dark:text-zinc-100"
-            placeholder="EX: CABO DE REDE CAT6"
           />
         </div>
         <div className="space-y-1.5">
@@ -176,7 +175,6 @@ export const ProductModal = ({
             value={formData.min_quantity === null ? '' : formData.min_quantity}
             onChange={e => setFormData({...formData, min_quantity: e.target.value === '' ? null : parseFloat(e.target.value)})}
             className="w-full px-3 py-2 text-sm border border-zinc-200 dark:border-zinc-800 rounded-lg focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-100 outline-none bg-white dark:bg-black text-zinc-900 dark:text-zinc-100"
-            placeholder="DEIXE VAZIO PARA NÃO DEFINIR MÍNIMO"
           />
         </div>
       </div>
@@ -215,7 +213,6 @@ export const ProductModal = ({
               value={newCategoryName}
               onChange={e => setNewCategoryName(e.target.value.toUpperCase())}
               className="w-full px-3 py-2 text-sm border border-zinc-200 dark:border-zinc-800 rounded-lg focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-100 outline-none bg-white dark:bg-black text-zinc-900 dark:text-zinc-100"
-              placeholder="NOME DA CATEGORIA"
               autoFocus
             />
           </div>
@@ -249,7 +246,6 @@ export const ProductModal = ({
               value={newUnitName}
               onChange={e => setNewUnitName(e.target.value.toUpperCase())}
               className="w-full px-3 py-2 text-sm border border-zinc-200 dark:border-zinc-800 rounded-lg focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-100 outline-none bg-white dark:bg-black text-zinc-900 dark:text-zinc-100"
-              placeholder="EX: KG, MT, UN"
               autoFocus
             />
           </div>
@@ -465,7 +461,6 @@ export const StockInModal = ({
                 <Search size={16} className="text-zinc-400" />
                 <input 
                   type="text"
-                  placeholder="Pesquisar produto..."
                   value={isDropdownOpen ? searchTerm : (selectedProduct ? selectedProduct.name : '')}
                   onChange={e => {
                     setSearchTerm(e.target.value.toUpperCase());
@@ -593,7 +588,6 @@ export const StockInModal = ({
                 value={stockInData.doc_number}
                 onChange={e => setStockInData({...stockInData, doc_number: e.target.value.toUpperCase()})}
                 className="w-full px-3 py-2 text-sm border border-zinc-200 dark:border-zinc-800 rounded-lg focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-100 outline-none bg-white dark:bg-black text-zinc-900 dark:text-zinc-100"
-                placeholder="NF-E, RECIBO, ETC"
               />
             </div>
           </div>
@@ -667,7 +661,6 @@ export const StockInModal = ({
                   value={stockInData.xml}
                   onChange={e => setStockInData({...stockInData, xml: e.target.value.toUpperCase()})}
                   className="flex-1 px-3 py-2 text-sm border border-zinc-200 dark:border-zinc-800 rounded-lg focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-100 outline-none bg-white dark:bg-black text-zinc-900 dark:text-zinc-100"
-                  placeholder="CHAVE DA NOTA FISCAL"
                 />
                 <button 
                   type="button"
@@ -749,7 +742,6 @@ export const StockInModal = ({
                 value={newLocationName}
                 onChange={e => setNewLocationName(e.target.value.toUpperCase())}
                 className="w-full px-3 py-2 text-sm border border-zinc-200 dark:border-zinc-800 rounded-lg focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-100 outline-none bg-white dark:bg-black text-zinc-900 dark:text-zinc-100"
-                placeholder="EX: PRATELEIRA A1"
                 autoFocus
               />
             </div>
@@ -783,7 +775,6 @@ export const StockInModal = ({
                 value={newSupplierName}
                 onChange={e => setNewSupplierName(e.target.value.toUpperCase())}
                 className="w-full px-3 py-2 text-sm border border-zinc-200 dark:border-zinc-800 rounded-lg focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-100 outline-none bg-white dark:bg-black text-zinc-900 dark:text-zinc-100"
-                placeholder="NOME DA EMPRESA"
                 autoFocus
               />
             </div>

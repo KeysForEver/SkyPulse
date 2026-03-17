@@ -20,22 +20,71 @@ export interface Product {
 
 export interface Client {
   id: number;
-  name: string;
-  email: string;
-  phone: string;
+  tipo_cliente: 'PF' | 'PJ';
+  // Pessoa Física
+  name: string; // NOME COMPLETO
+  cpf?: string;
+  rg?: string;
+  data_nascimento?: string;
+  // Pessoa Jurídica
+  razao_social?: string;
+  cnpj?: string;
+  nome_fantasia?: string;
+  ie?: string; // RG/IE
+  im?: string;
+  contato_responsavel?: string;
+  // Common
+  endereco?: string;
+  complemento?: string;
+  bairro?: string;
+  cep?: string;
+  cidade?: string;
+  telefone1?: string;
+  telefone2?: string;
+  email?: string;
 }
 
 export interface Supplier {
   id: number;
-  name: string;
-  contact: string;
+  tipo: 'PF' | 'PJ';
+  // Pessoa Física
+  name?: string; // NOME COMPLETO
+  cpf?: string;
+  rg?: string;
+  data_nascimento?: string;
+  // Pessoa Jurídica
+  razao_social?: string;
+  cnpj?: string;
+  nome_fantasia?: string;
+  ie?: string; // RG/IE
+  im?: string;
+  contato_responsavel?: string;
+  // Common
+  endereco?: string;
+  complemento?: string;
+  bairro?: string;
+  cep?: string;
+  cidade?: string;
+  telefone1?: string;
+  telefone2?: string;
+  email?: string;
+  website?: string;
 }
 
 export interface Asset {
   id: number;
-  name: string;
-  code: string;
-  status: string;
+  description: string;
+  asset_number: string;
+  category: string;
+  purchase_date: string;
+  purchase_value: number;
+  depreciation_type: 'DIARIA' | 'MENSAL' | 'ANUAL';
+  depreciation_percentage: number;
+  photo?: string;
+  status: 'ATIVO' | 'BAIXADO';
+  disposal_type?: 'DESCARTE' | 'DOAÇÃO' | 'VENDA' | 'OUTRO';
+  disposal_date?: string;
+  disposal_value?: number;
 }
 
 export type OrderStatus = 'ORDENS DE PRODUÇÃO' | 'SEPARAÇÃO DE MATERIAL' | 'PRODUÇÃO' | 'FINALIZAÇÃO' | 'REVISÃO' | 'CONCLUIDO';
