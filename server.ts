@@ -584,9 +584,10 @@ async function startServer() {
 
   app.get('/api/financial/entries', wrapAsync((req: any, res: any) => {
     const entries = db.prepare(`
-      SELECT m.*, strftime('%Y-%m-%dT%H:%M:%SZ', m.date) as date, p.name as product_name
+      SELECT m.*, strftime('%Y-%m-%dT%H:%M:%SZ', m.date) as date, p.name as product_name, s.name as supplier_name
       FROM movements m
       JOIN products p ON m.product_id = p.id
+      LEFT JOIN suppliers s ON m.supplier_id = s.id
       WHERE m.type = 'IN'
       ORDER BY m.issue_date DESC, m.date DESC
     `).all();
@@ -625,10 +626,12 @@ async function startServer() {
 
   app.post('/api/orders', wrapAsync((req: any, res: any) => {
     const { title, description, client_id, status, details } = req.body;
+    const detailsString = typeof details === 'string' ? details : (details ? JSON.stringify(details) : null);
+    
     const result = db.prepare(`
       INSERT INTO orders (title, description, client_id, status, details)
       VALUES (?, ?, ?, ?, ?)
-    `).run(title, description, client_id, status || 'ORDENS DE PRODUÇÃO', details ? JSON.stringify(details) : null);
+    `).run(title, description, client_id, status || 'ORDENS DE PRODUÇÃO', detailsString);
     
     logAction(1, 'CREATE_ORDER', `Ordem: ${title}`);
     broadcast({ type: 'ORDER_UPDATED' });
@@ -639,18 +642,21 @@ async function startServer() {
     const { title, description, client_id, status, details } = req.body;
     const oldOrder = db.prepare('SELECT details FROM orders WHERE id = ?').get(req.params.id) as { details: string } | undefined;
     
+    const detailsString = typeof details === 'string' ? details : (details ? JSON.stringify(details) : null);
+    const detailsObj = typeof details === 'string' ? (details ? JSON.parse(details) : null) : details;
+
     db.prepare(`
       UPDATE orders
       SET title = ?, description = ?, client_id = ?, status = ?, details = ?
       WHERE id = ?
-    `).run(title, description, client_id, status, details ? JSON.stringify(details) : null, req.params.id);
+    `).run(title, description, client_id, status, detailsString, req.params.id);
     
     // Check if a checklist item was completed
-    if (oldOrder && details && details.completed_items) {
+    if (oldOrder && detailsObj && detailsObj.completed_items) {
       try {
         const oldDetails = oldOrder.details ? JSON.parse(oldOrder.details) : {};
         const oldCompleted = oldDetails.completed_items || [];
-        const newCompleted = details.completed_items || [];
+        const newCompleted = detailsObj.completed_items || [];
         
         if (newCompleted.length > oldCompleted.length) {
           const added = newCompleted.filter((item: string) => !oldCompleted.includes(item));

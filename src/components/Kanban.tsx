@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
-import { Search, MoreVertical, ChevronRight, Plus, Edit, Trash2 } from 'lucide-react';
+import { Search, MoreVertical, ChevronRight, Plus, Edit, Trash2, CheckCircle2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Order, OrderStatus } from '../types';
+import { Order, OrderStatus, OrderDetails } from '../types';
 import { KANBAN_COLUMNS } from '../constants';
 import { cn } from './Common';
 
@@ -20,6 +20,52 @@ export const Kanban = ({ orders, onUpdateStatus, onEdit, onDelete, onAdd, onItem
   const [draggedOverColumn, setDraggedOverColumn] = useState<string | null>(null);
   const [activeMenuId, setActiveMenuId] = useState<number | null>(null);
   const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0 });
+
+  const getOrderProgress = (order: Order) => {
+    if (!order.details) return 0;
+    try {
+      let details: OrderDetails = typeof order.details === 'string' ? JSON.parse(order.details) : order.details;
+      
+      // Handle potential double-encoding
+      if (typeof details === 'string') {
+        details = JSON.parse(details);
+      }
+
+      const sections = [
+        'impression_3d', 'cuts_folds', 'welds', 'rough_finish', 
+        'painting', 'final_finish', 'lighting', 'accessories', 'gluing'
+      ];
+      
+      let totalItems = 0;
+      sections.forEach(section => {
+        totalItems += (details[section as keyof OrderDetails] as any)?.items?.length || 0;
+      });
+
+      if (totalItems === 0) return 0;
+      
+      const completedCount = details.completed_items?.length || 0;
+      return Math.min(Math.round((completedCount / totalItems) * 100), 100);
+    } catch (e) {
+      return 0;
+    }
+  };
+
+  const validateStatusChange = (orderId: number, newStatus: OrderStatus) => {
+    const order = orders.find(o => o.id === orderId);
+    if (!order) return false;
+
+    const statusIndex = KANBAN_COLUMNS.indexOf(newStatus);
+    const finalizationIndex = KANBAN_COLUMNS.indexOf('FINALIZAÇÃO');
+
+    if (statusIndex >= finalizationIndex) {
+      const progress = getOrderProgress(order);
+      if (progress < 100) {
+        alert(`BLOQUEADO: Não é possível mover para "${newStatus}". Todos os itens do Processo de Produção devem estar concluídos (100%).`);
+        return false;
+      }
+    }
+    return true;
+  };
 
   const filteredOrders = useMemo(() => {
     return orders.filter(o => 
@@ -51,7 +97,9 @@ export const Kanban = ({ orders, onUpdateStatus, onEdit, onDelete, onAdd, onItem
     
     const orderId = draggedOrderId || parseInt(e.dataTransfer.getData('orderId'));
     if (orderId && !isNaN(orderId)) {
-      onUpdateStatus(orderId, status);
+      if (validateStatusChange(orderId, status)) {
+        onUpdateStatus(orderId, status);
+      }
     }
     setDraggedOrderId(null);
   };
@@ -148,6 +196,30 @@ export const Kanban = ({ orders, onUpdateStatus, onEdit, onDelete, onAdd, onItem
                 </div>
                 <h4 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100 mb-1 uppercase">{order.title}</h4>
                 <p className="text-xs text-zinc-500 dark:text-zinc-400 mb-3 line-clamp-2 uppercase">{order.description || 'SEM DESCRIÇÃO'}</p>
+                
+                {/* Progress Indicator */}
+                <div className="mb-4 space-y-1.5">
+                  <div className="flex justify-between items-center">
+                    <span className="text-[9px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-tighter">Progresso de Produção</span>
+                    <span className={cn(
+                      "text-[10px] font-bold",
+                      getOrderProgress(order) === 100 ? "text-emerald-500" : "text-zinc-900 dark:text-zinc-100"
+                    )}>
+                      {getOrderProgress(order)}%
+                    </span>
+                  </div>
+                  <div className="h-1.5 w-full bg-zinc-100 dark:bg-zinc-800 rounded-full overflow-hidden">
+                    <motion.div 
+                      initial={{ width: 0 }}
+                      animate={{ width: `${getOrderProgress(order)}%` }}
+                      className={cn(
+                        "h-full transition-all duration-500",
+                        getOrderProgress(order) === 100 ? "bg-emerald-500" : "bg-zinc-900 dark:bg-zinc-100"
+                      )}
+                    />
+                  </div>
+                </div>
+
                 <div className="flex items-center justify-between pt-3 border-t border-zinc-50 dark:border-zinc-800">
                   <div className="flex items-center gap-1.5">
                     <div className="w-5 h-5 rounded-full bg-zinc-900 dark:bg-zinc-100 flex items-center justify-center text-[8px] text-white dark:text-zinc-900 font-bold">
@@ -158,7 +230,13 @@ export const Kanban = ({ orders, onUpdateStatus, onEdit, onDelete, onAdd, onItem
                   <div className="flex gap-1">
                     {KANBAN_COLUMNS.indexOf(col) < KANBAN_COLUMNS.length - 1 && (
                       <button 
-                        onClick={() => onUpdateStatus(order.id, KANBAN_COLUMNS[KANBAN_COLUMNS.indexOf(col) + 1])}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          const nextStatus = KANBAN_COLUMNS[KANBAN_COLUMNS.indexOf(col) + 1];
+                          if (validateStatusChange(order.id, nextStatus)) {
+                            onUpdateStatus(order.id, nextStatus);
+                          }
+                        }}
                         className="p-1 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100"
                       >
                         <ChevronRight size={14} />

@@ -29,7 +29,16 @@ export const OrderDetailModal = ({
 
   let details: OrderDetails | null = null;
   try {
-    details = order.details ? JSON.parse(order.details) : null;
+    if (order.details) {
+      details = typeof order.details === 'string' 
+        ? JSON.parse(order.details) 
+        : order.details;
+      
+      // Handle potential double-encoding
+      if (typeof details === 'string') {
+        details = JSON.parse(details);
+      }
+    }
   } catch (e) {
     console.error("Error parsing order details", e);
   }
@@ -51,7 +60,7 @@ export const OrderDetailModal = ({
 
       await apiService.updateOrder(order.id, {
         ...order,
-        details: JSON.stringify(updatedDetails)
+        details: updatedDetails as any // Pass as object, backend handles stringification
       });
 
       if (onUpdate) onUpdate();
@@ -236,25 +245,25 @@ export const OrderDetailModal = ({
                   )}
 
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-10 p-6 bg-white dark:bg-zinc-900/50 border border-zinc-100 dark:border-zinc-800 rounded-3xl shadow-sm">
-                    {renderSection('1. Impressão 3D', details.impression_3d.items)}
-                    {renderSection('2. Cortes / Dobra', details.cuts_folds.items)}
-                    {renderSection('3. Soldas', details.welds.items)}
-                    {renderSection('4. Acabamento Grosso', details.rough_finish.items)}
-                    {renderSection('5. Pintura', details.painting.items, details.painting.shipping_date && (
+                    {renderSection('1. Impressão 3D', details.impression_3d?.items || [])}
+                    {renderSection('2. Cortes / Dobra', details.cuts_folds?.items || [])}
+                    {renderSection('3. Soldas', details.welds?.items || [])}
+                    {renderSection('4. Acabamento Grosso', details.rough_finish?.items || [])}
+                    {renderSection('5. Pintura', details.painting?.items || [], details.painting?.shipping_date && (
                       <div className="mt-2 p-2 bg-zinc-100 dark:bg-zinc-800 rounded-lg">
                         <p className="text-[9px] font-bold text-zinc-400 uppercase">Data de Envio</p>
                         <p className="text-[10px] font-bold text-zinc-900 dark:text-zinc-100">{new Date(details.painting.shipping_date).toLocaleDateString('pt-BR')}</p>
                       </div>
                     ))}
-                    {renderSection('6. Acabamento Final', details.final_finish.items)}
-                    {renderSection('7. Iluminação', details.lighting.items, (details.lighting.temperature || details.lighting.model) && (
+                    {renderSection('6. Acabamento Final', details.final_finish?.items || [])}
+                    {renderSection('7. Iluminação', details.lighting?.items || [], (details.lighting?.temperature || details.lighting?.model) && (
                       <div className="mt-2 p-2 bg-zinc-100 dark:bg-zinc-800 rounded-lg grid grid-cols-2 gap-2">
                         {details.lighting.temperature && <div><p className="text-[9px] font-bold text-zinc-400 uppercase">Temp</p><p className="text-[10px] font-bold">{details.lighting.temperature}K</p></div>}
                         {details.lighting.model && <div><p className="text-[9px] font-bold text-zinc-400 uppercase">Modelo</p><p className="text-[10px] font-bold uppercase truncate">{details.lighting.model}</p></div>}
                       </div>
                     ))}
-                    {renderSection('8. Acessórios', details.accessories.items)}
-                    {renderSection('9. Colagem', details.gluing.items)}
+                    {renderSection('8. Acessórios', details.accessories?.items || [])}
+                    {renderSection('9. Colagem', details.gluing?.items || [])}
                   </div>
                 </div>
               )}

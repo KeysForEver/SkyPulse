@@ -1021,8 +1021,6 @@ export const PdfOptionsModal = ({
   onClose,
   selectedPdfFields,
   setSelectedPdfFields,
-  includeTotalValue,
-  setIncludeTotalValue,
   onExport,
   ALL_COLUMNS,
   onClear
@@ -1032,37 +1030,41 @@ export const PdfOptionsModal = ({
       <div className="space-y-3">
         <label className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-widest">Colunas para incluir</label>
         <div className="grid grid-cols-2 gap-2">
-          {ALL_COLUMNS.map((col: any) => (
-            <label key={col.id} className="flex items-center gap-3 p-3 rounded-xl border border-zinc-100 dark:border-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-800 cursor-pointer transition-colors">
-              <input 
-                type="checkbox"
-                checked={selectedPdfFields.includes(col.id)}
-                onChange={() => {
-                  if (selectedPdfFields.includes(col.id)) {
-                    setSelectedPdfFields(selectedPdfFields.filter((f: string) => f !== col.id));
-                  } else {
-                    setSelectedPdfFields([...selectedPdfFields, col.id]);
-                  }
-                }}
-                className="w-4 h-4 rounded border-zinc-300 dark:border-zinc-700 text-zinc-900 dark:text-zinc-100 focus:ring-zinc-900 dark:focus:ring-zinc-100"
-              />
-              <span className="text-sm font-medium text-zinc-700 dark:text-zinc-300 uppercase">{col.label}</span>
-            </label>
-          ))}
+            {ALL_COLUMNS.map((col: any) => {
+              const selectedIndex = selectedPdfFields.indexOf(col.id);
+              const isSelected = selectedIndex !== -1;
+              
+              return (
+                <label key={col.id} className={cn(
+                  "flex items-center justify-between p-3 rounded-xl border cursor-pointer transition-all",
+                  isSelected 
+                    ? "border-zinc-900 bg-zinc-50 dark:border-zinc-100 dark:bg-zinc-800/50" 
+                    : "border-zinc-100 dark:border-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-800"
+                )}>
+                  <div className="flex items-center gap-3">
+                    <input 
+                      type="checkbox"
+                      checked={isSelected}
+                      onChange={() => {
+                        if (isSelected) {
+                          setSelectedPdfFields(selectedPdfFields.filter((f: string) => f !== col.id));
+                        } else {
+                          setSelectedPdfFields([...selectedPdfFields, col.id]);
+                        }
+                      }}
+                      className="w-4 h-4 rounded border-zinc-300 dark:border-zinc-700 text-zinc-900 dark:text-zinc-100 focus:ring-zinc-900 dark:focus:ring-zinc-100"
+                    />
+                    <span className="text-sm font-medium text-zinc-700 dark:text-zinc-300 uppercase">{col.label}</span>
+                  </div>
+                  {isSelected && (
+                    <div className="flex items-center justify-center w-5 h-5 rounded-full bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 text-[10px] font-bold">
+                      {selectedIndex + 1}
+                    </div>
+                  )}
+                </label>
+              );
+            })}
         </div>
-      </div>
-
-      <div className="space-y-3">
-        <label className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-widest">Informações Adicionais</label>
-        <label className="flex items-center gap-3 p-3 rounded-xl border border-zinc-100 dark:border-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-800 cursor-pointer transition-colors">
-          <input 
-            type="checkbox"
-            checked={includeTotalValue}
-            onChange={(e) => setIncludeTotalValue(e.target.checked)}
-            className="w-4 h-4 rounded border-zinc-300 dark:border-zinc-700 text-zinc-900 dark:text-zinc-100 focus:ring-zinc-900 dark:focus:ring-zinc-100"
-          />
-          <span className="text-sm font-medium text-zinc-700 dark:text-zinc-300 uppercase">Incluir Valor Total do Estoque</span>
-        </label>
       </div>
 
       <div className="flex justify-end gap-3 pt-4 border-t border-zinc-100 dark:border-zinc-800">
@@ -1271,54 +1273,7 @@ export const ProductDetailModal = ({
                             {m.type === 'IN' ? (m.supplier_name || m.location || '-') : (m.destination || '-')}
                           </td>
                           <td className="px-4 py-3 text-xs text-zinc-500 dark:text-zinc-400 truncate max-w-[100px]">
-                            <div className="flex flex-col gap-1">
-                              <span>{m.type === 'IN' ? (m.doc_number || '-') : (m.reason || '-')}</span>
-                              {m.invoice_pdf && (
-                                <div className="flex flex-wrap gap-1">
-                                  {(() => {
-                                    try {
-                                      const invoices = JSON.parse(m.invoice_pdf);
-                                      if (Array.isArray(invoices)) {
-                                        return invoices.map((file: any, idx: number) => (
-                                          <button 
-                                            key={idx}
-                                            onClick={() => {
-                                              const link = document.createElement('a');
-                                              link.href = file.data;
-                                              link.target = '_blank';
-                                              link.download = file.name;
-                                              link.click();
-                                            }}
-                                            className="inline-flex items-center gap-1 px-1 py-0.5 bg-zinc-100 dark:bg-zinc-800 text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100 rounded text-[8px] transition-colors"
-                                            title={`Baixar ${file.name}`}
-                                          >
-                                            <FileText size={8} />
-                                            <span className="truncate max-w-[40px]">{file.name}</span>
-                                          </button>
-                                        ));
-                                      }
-                                    } catch (e) {
-                                      return (
-                                        <button 
-                                          onClick={() => {
-                                            const link = document.createElement('a');
-                                            link.href = m.invoice_pdf!;
-                                            link.target = '_blank';
-                                            link.download = `NF-${m.doc_number || m.id}.pdf`;
-                                            link.click();
-                                          }}
-                                          className="inline-flex items-center gap-1 px-1 py-0.5 bg-zinc-100 dark:bg-zinc-800 text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100 rounded text-[8px] transition-colors"
-                                          title="Baixar Nota Fiscal"
-                                        >
-                                          <FileText size={8} />
-                                          <span>NF-PDF</span>
-                                        </button>
-                                      );
-                                    }
-                                  })()}
-                                </div>
-                              )}
-                            </div>
+                            {m.type === 'IN' ? (m.doc_number || '-') : (m.reason || '-')}
                           </td>
                         </tr>
                       ))

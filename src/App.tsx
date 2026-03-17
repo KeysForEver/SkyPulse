@@ -16,8 +16,9 @@ import {
   Trash2
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Product, Client, Supplier, Asset, Order, Movement, OrderStatus } from './types';
+import { Product, Client, Supplier, Asset, Order, Movement, OrderStatus, OrderDetails } from './types';
 import { apiService } from './services/apiService';
+import { KANBAN_COLUMNS } from './constants';
 import { Dashboard } from './components/Dashboard';
 import { Inventory } from './components/Inventory';
 import { Kanban } from './components/Kanban';
@@ -27,6 +28,7 @@ import { SidebarItem, cn } from './components/Common';
 import { OrderModal } from './components/OrderModal';
 import { OrderDetailModal } from './components/OrderDetailModal';
 import { ClientModal, SupplierModal, AssetModal } from './components/EntityModals';
+import { FinancialDetailModal } from './components/FinancialDetailModal';
 
 // --- Main App ---
 
@@ -152,6 +154,7 @@ export default function App() {
   const [isAssetModalOpen, setIsAssetModalOpen] = useState(false);
   const [editingAsset, setEditingAsset] = useState<Asset | null>(null);
   const [selectedOrderForDetail, setSelectedOrderForDetail] = useState<Order | null>(null);
+  const [selectedFinancialEntry, setSelectedFinancialEntry] = useState<any | null>(null);
   const [activeGenericMenuId, setActiveGenericMenuId] = useState<number | null>(null);
   const [genericMenuPosition, setGenericMenuPosition] = useState<{ top: number, left: number } | null>(null);
 
@@ -235,6 +238,48 @@ export default function App() {
 
   const updateOrderStatus = async (id: number, status: OrderStatus) => {
     try {
+      const order = orders.find(o => o.id === id);
+      if (order) {
+        const statusIndex = KANBAN_COLUMNS.indexOf(status);
+        const finalizationIndex = KANBAN_COLUMNS.indexOf('FINALIZAÇÃO');
+
+        if (statusIndex >= finalizationIndex) {
+          let progress = 0;
+          if (order.details) {
+            try {
+              let details: OrderDetails = typeof order.details === 'string' ? JSON.parse(order.details) : order.details;
+              
+              // Handle potential double-encoding
+              if (typeof details === 'string') {
+                details = JSON.parse(details);
+              }
+
+              const sections = [
+                'impression_3d', 'cuts_folds', 'welds', 'rough_finish', 
+                'painting', 'final_finish', 'lighting', 'accessories', 'gluing'
+              ];
+              let totalItems = 0;
+              sections.forEach(section => {
+                totalItems += (details[section as keyof OrderDetails] as any)?.items?.length || 0;
+              });
+              if (totalItems > 0) {
+                const completedCount = details.completed_items?.length || 0;
+                progress = Math.min(Math.round((completedCount / totalItems) * 100), 100);
+              } else {
+                progress = 100; // No items to complete
+              }
+            } catch (e) {
+              progress = 0;
+            }
+          }
+
+          if (progress < 100) {
+            alert(`BLOQUEADO: Não é possível mover para "${status}". Todos os itens do Processo de Produção devem estar concluídos (100%).`);
+            return;
+          }
+        }
+      }
+
       await apiService.patchOrder(id, { status });
       fetchData();
     } catch (err) {
@@ -594,7 +639,7 @@ export default function App() {
             ...e,
             total_value: `R$ ${(e.quantity * e.unit_price).toFixed(2)}`,
             unit_price_fmt: `R$ ${e.unit_price.toFixed(2)}`,
-            issue_date_fmt: e.issue_date ? new Date(e.issue_date).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '-',
+            issue_date_fmt: e.issue_date ? new Date(e.issue_date + 'T12:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '-',
             date_fmt: new Date(e.date).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })
           }))} 
           columns={[
@@ -606,6 +651,7 @@ export default function App() {
             { key: 'unit_price_fmt', label: 'V. UNITÁRIO' },
             { key: 'total_value', label: 'V. TOTAL' }
           ]} 
+          onItemClick={(entry) => setSelectedFinancialEntry(entry)}
         />
       );
       case 'audit': return (
@@ -902,6 +948,11 @@ export default function App() {
         )}
       </AnimatePresence>
     </div>
+      <FinancialDetailModal 
+        isOpen={!!selectedFinancialEntry}
+        onClose={() => setSelectedFinancialEntry(null)}
+        entry={selectedFinancialEntry}
+      />
     </>
   );
 }

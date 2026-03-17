@@ -49,58 +49,7 @@ export const MovementTable = ({ movements }: MovementTableProps) => {
               {m.type === 'IN' ? (m.supplier_name || m.location || '-') : (m.destination || '-')}
             </td>
             <td className="px-6 py-4 text-sm text-zinc-500 dark:text-zinc-400">
-              <div className="flex items-center justify-between gap-2">
-                <div className="flex flex-col gap-0.5">
-                  <span>{m.type === 'IN' ? (m.doc_number || '-') : (m.reason || '-')}</span>
-                  {m.xml && <span className="text-[10px] text-zinc-400 dark:text-zinc-600 font-mono truncate max-w-[150px]" title={m.xml}>XML: {m.xml}</span>}
-                  {m.invoice_pdf && (
-                    <div className="flex flex-wrap gap-1 mt-1">
-                      {(() => {
-                        try {
-                          const invoices = JSON.parse(m.invoice_pdf);
-                          if (Array.isArray(invoices)) {
-                            return invoices.map((file: any, idx: number) => (
-                              <button 
-                                key={idx}
-                                onClick={() => {
-                                  const link = document.createElement('a');
-                                  link.href = file.data;
-                                  link.target = '_blank';
-                                  link.download = file.name;
-                                  link.click();
-                                }}
-                                className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-zinc-100 dark:bg-zinc-800 text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100 rounded text-[9px] transition-colors"
-                                title={`Baixar ${file.name}`}
-                              >
-                                <FileText size={10} />
-                                <span className="truncate max-w-[60px]">{file.name}</span>
-                              </button>
-                            ));
-                          }
-                        } catch (e) {
-                          // Fallback for old single-file format
-                          return (
-                            <button 
-                              onClick={() => {
-                                const link = document.createElement('a');
-                                link.href = m.invoice_pdf!;
-                                link.target = '_blank';
-                                link.download = `NF-${m.doc_number || m.id}.pdf`;
-                                link.click();
-                              }}
-                              className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-zinc-100 dark:bg-zinc-800 text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100 rounded text-[9px] transition-colors"
-                              title="Baixar Nota Fiscal"
-                            >
-                              <FileText size={10} />
-                              <span>NF-PDF</span>
-                            </button>
-                          );
-                        }
-                      })()}
-                    </div>
-                  )}
-                </div>
-              </div>
+              {m.type === 'IN' ? (m.doc_number || '-') : (m.reason || '-')}
             </td>
           </tr>
         ))}

@@ -83,8 +83,7 @@ export const Inventory = ({
   const [isStockInModalOpen, setIsStockInModalOpen] = useState(false);
   const [isStockOutModalOpen, setIsStockOutModalOpen] = useState(false);
   const [isPdfOptionsModalOpen, setIsPdfOptionsModalOpen] = useState(false);
-  const [selectedPdfFields, setSelectedPdfFields] = useState<string[]>(['name', 'category', 'quantity', 'unit', 'cost_price', 'status']);
-  const [includeTotalValue, setIncludeTotalValue] = useState(false);
+  const [selectedPdfFields, setSelectedPdfFields] = useState<string[]>([]);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [stockOutError, setStockOutError] = useState<string | null>(null);
   const [productError, setProductError] = useState<string | null>(null);
@@ -141,6 +140,8 @@ export const Inventory = ({
     { id: 'name', label: 'Produto' },
     { id: 'category', label: 'Categoria' },
     { id: 'quantity', label: 'Estoque' },
+    { id: 'unit', label: 'Unidade' },
+    { id: 'cost_price', label: 'V. Unitário' },
     { id: 'total_value', label: 'Valor Total' },
     { id: 'min_quantity', label: 'Mínimo' },
     { id: 'status', label: 'Status' }
@@ -304,8 +305,7 @@ export const Inventory = ({
   };
 
   const resetPdfOptions = () => {
-    setSelectedPdfFields(['id', 'name', 'category', 'quantity', 'unit', 'cost_price', 'status']);
-    setIncludeTotalValue(false);
+    setSelectedPdfFields([]);
   };
 
   const handleStockInSubmit = (e: React.FormEvent) => {
@@ -595,7 +595,10 @@ export const Inventory = ({
             )}
             <ExportButtons 
               activeSubTab={activeSubTab}
-              onPdfClick={() => setIsPdfOptionsModalOpen(true)}
+              onPdfClick={() => {
+                setSelectedPdfFields([]);
+                setIsPdfOptionsModalOpen(true);
+              }}
               onCsvClick={() => exportToCSV(filteredProducts)}
               onImportCsvClick={() => importFileInputRef.current?.click()}
               onStockOutClick={() => setIsStockOutModalOpen(true)}
@@ -694,10 +697,8 @@ export const Inventory = ({
         onClose={() => setIsPdfOptionsModalOpen(false)}
         selectedPdfFields={selectedPdfFields}
         setSelectedPdfFields={setSelectedPdfFields}
-        includeTotalValue={includeTotalValue}
-        setIncludeTotalValue={setIncludeTotalValue}
         onExport={() => {
-          exportToPDF(filteredProducts, selectedPdfFields, includeTotalValue);
+          exportToPDF(filteredProducts, selectedPdfFields, false);
           setIsPdfOptionsModalOpen(false);
         }}
         ALL_COLUMNS={ALL_COLUMNS}
