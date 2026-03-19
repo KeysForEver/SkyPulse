@@ -31,6 +31,7 @@ import { OrderDetailModal } from './components/OrderDetailModal';
 import { ClientModal, SupplierModal } from './components/EntityModals';
 import { AssetModal } from './components/assets/AssetModals';
 import { FinancialDetailModal } from './components/FinancialDetailModal';
+import { ConfirmModal } from './components/Common';
 
 // --- Main App ---
 
@@ -157,6 +158,32 @@ export default function App() {
   const [editingAsset, setEditingAsset] = useState<Asset | null>(null);
   const [selectedOrderForDetail, setSelectedOrderForDetail] = useState<Order | null>(null);
   const [selectedFinancialEntry, setSelectedFinancialEntry] = useState<any | null>(null);
+  const [confirmModal, setConfirmModal] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    onConfirm: () => void;
+    variant?: 'primary' | 'danger';
+  }>({
+    isOpen: false,
+    title: '',
+    message: '',
+    onConfirm: () => {},
+  });
+
+  const showConfirm = (title: string, message: string, onConfirm: () => void, variant: 'primary' | 'danger' = 'danger') => {
+    setConfirmModal({
+      isOpen: true,
+      title,
+      message,
+      onConfirm: () => {
+        onConfirm();
+        setConfirmModal(prev => ({ ...prev, isOpen: false }));
+      },
+      variant
+    });
+  };
+
   const [activeGenericMenuId, setActiveGenericMenuId] = useState<number | null>(null);
   const [genericMenuPosition, setGenericMenuPosition] = useState<{ top: number, left: number } | null>(null);
 
@@ -308,13 +335,18 @@ export default function App() {
   };
 
   const deleteOrder = async (id: number) => {
-    if (!confirm('Tem certeza que deseja excluir esta ordem de produção?')) return;
-    try {
-      await apiService.deleteOrder(id);
-      fetchData();
-    } catch (err) {
-      console.error('Error deleting order:', err);
-    }
+    showConfirm(
+      'Excluir Ordem',
+      'Tem certeza que deseja excluir esta ordem de produção? Esta ação não pode ser desfeita.',
+      async () => {
+        try {
+          await apiService.deleteOrder(id);
+          fetchData();
+        } catch (err) {
+          console.error('Error deleting order:', err);
+        }
+      }
+    );
   };
 
   const addClient = async (data: any) => {
@@ -336,13 +368,18 @@ export default function App() {
   };
 
   const deleteClient = async (id: number) => {
-    if (!confirm('Tem certeza que deseja excluir este cliente?')) return;
-    try {
-      await apiService.deleteClient(id);
-      fetchData();
-    } catch (err) {
-      console.error('Error deleting client:', err);
-    }
+    showConfirm(
+      'Excluir Cliente',
+      'Tem certeza que deseja excluir este cliente? Esta ação não pode ser desfeita.',
+      async () => {
+        try {
+          await apiService.deleteClient(id);
+          fetchData();
+        } catch (err) {
+          console.error('Error deleting client:', err);
+        }
+      }
+    );
   };
 
   const updateSupplierEntity = async (id: number, data: any) => {
@@ -355,13 +392,18 @@ export default function App() {
   };
 
   const deleteSupplier = async (id: number) => {
-    if (!confirm('Tem certeza que deseja excluir este fornecedor?')) return;
-    try {
-      await apiService.deleteSupplier(id);
-      fetchData();
-    } catch (err) {
-      console.error('Error deleting supplier:', err);
-    }
+    showConfirm(
+      'Excluir Fornecedor',
+      'Tem certeza que deseja excluir este fornecedor? Esta ação não pode ser desfeita.',
+      async () => {
+        try {
+          await apiService.deleteSupplier(id);
+          fetchData();
+        } catch (err) {
+          console.error('Error deleting supplier:', err);
+        }
+      }
+    );
   };
 
   const addAsset = async (formData: FormData) => {
@@ -392,13 +434,18 @@ export default function App() {
   };
 
   const deleteAsset = async (id: number) => {
-    if (!confirm('Tem certeza que deseja excluir este patrimônio?')) return;
-    try {
-      await apiService.deleteAsset(id);
-      fetchData();
-    } catch (err) {
-      console.error('Error deleting asset:', err);
-    }
+    showConfirm(
+      'Excluir Patrimônio',
+      'Tem certeza que deseja excluir este patrimônio? Esta ação não pode ser desfeita.',
+      async () => {
+        try {
+          await apiService.deleteAsset(id);
+          fetchData();
+        } catch (err) {
+          console.error('Error deleting asset:', err);
+        }
+      }
+    );
   };
 
   const addProduct = async (formData: FormData) => {
@@ -500,14 +547,19 @@ export default function App() {
   };
 
   const handleDeleteProduct = async (id: number) => {
-    if (!confirm('Tem certeza que deseja excluir este produto?')) return;
-    try {
-      await apiService.deleteProduct(id);
-      fetchData();
-    } catch (err: any) {
-      alert(err.message || 'Erro ao excluir produto');
-      console.error('Error deleting product:', err);
-    }
+    showConfirm(
+      'Excluir Produto',
+      'Tem certeza que deseja excluir este produto? Esta ação não pode ser desfeita.',
+      async () => {
+        try {
+          await apiService.deleteProduct(id);
+          fetchData();
+        } catch (err: any) {
+          alert(err.message || 'Erro ao excluir produto');
+          console.error('Error deleting product:', err);
+        }
+      }
+    );
   };
 
   const renderContent = () => {
@@ -560,6 +612,7 @@ export default function App() {
             setEditingOrder(null);
             setIsOrderModalOpen(true);
           }}
+          addButtonLabel="NOVA ORDEM DE PRODUÇÃO"
           onItemClick={(order) => setSelectedOrderForDetail(order)}
         />
       );
@@ -599,6 +652,7 @@ export default function App() {
             setEditingClient(null);
             setIsClientModalOpen(true);
           }}
+          addButtonLabel="NOVO CLIENTE"
           onItemClick={(client) => {
             setEditingClient(client);
             setIsClientModalOpen(true);
@@ -947,12 +1001,20 @@ export default function App() {
               <button 
                 onClick={(e) => {
                   e.stopPropagation();
-                  if (confirm('Tem certeza que deseja excluir este item?')) {
-                    if (activeTab === 'production') deleteOrder(activeGenericMenuId);
-                    else if (activeTab === 'clients') deleteClient(activeGenericMenuId);
-                    else if (activeTab === 'suppliers') deleteSupplier(activeGenericMenuId);
-                    else if (activeTab === 'assets') deleteAsset(activeGenericMenuId);
-                  }
+                  const title = activeTab === 'production' ? 'Excluir Ordem' :
+                                activeTab === 'clients' ? 'Excluir Cliente' :
+                                activeTab === 'suppliers' ? 'Excluir Fornecedor' : 'Excluir Item';
+                  
+                  showConfirm(
+                    title,
+                    'Tem certeza que deseja excluir este item? Esta ação não pode ser desfeita.',
+                    () => {
+                      if (activeTab === 'production') deleteOrder(activeGenericMenuId!);
+                      else if (activeTab === 'clients') deleteClient(activeGenericMenuId!);
+                      else if (activeTab === 'suppliers') deleteSupplier(activeGenericMenuId!);
+                      else if (activeTab === 'assets') deleteAsset(activeGenericMenuId!);
+                    }
+                  );
                   setActiveGenericMenuId(null);
                 }}
                 className="flex items-center gap-2 w-full px-3 py-2 text-xs font-medium text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-500/10 rounded-lg transition-colors"
@@ -969,6 +1031,15 @@ export default function App() {
         isOpen={!!selectedFinancialEntry}
         onClose={() => setSelectedFinancialEntry(null)}
         entry={selectedFinancialEntry}
+      />
+
+      <ConfirmModal 
+        isOpen={confirmModal.isOpen}
+        onClose={() => setConfirmModal(prev => ({ ...prev, isOpen: false }))}
+        onConfirm={confirmModal.onConfirm}
+        title={confirmModal.title}
+        message={confirmModal.message}
+        variant={confirmModal.variant}
       />
     </>
   );

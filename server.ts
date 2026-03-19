@@ -30,201 +30,202 @@ try {
 } catch {}
 
 // Initialize Database (APENAS SQL aqui dentro)
-db.exec(`
-  CREATE TABLE IF NOT EXISTS users (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    name TEXT NOT NULL,
-    email TEXT UNIQUE NOT NULL,
-    role TEXT NOT NULL
-  );
+function initDb() {
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS users (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL,
+      email TEXT UNIQUE NOT NULL,
+      role TEXT NOT NULL
+    );
 
-  CREATE TABLE IF NOT EXISTS products (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    name TEXT UNIQUE NOT NULL,
-    category TEXT,
-    unit TEXT DEFAULT 'un',
-    cost_price REAL DEFAULT 0,
-    quantity REAL DEFAULT 0,
-    min_quantity REAL,
-    photo TEXT
-  );
+    CREATE TABLE IF NOT EXISTS products (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT UNIQUE NOT NULL,
+      category TEXT,
+      unit TEXT DEFAULT 'un',
+      cost_price REAL DEFAULT 0,
+      quantity REAL DEFAULT 0,
+      min_quantity REAL,
+      photo TEXT
+    );
 
-  CREATE UNIQUE INDEX IF NOT EXISTS idx_product_name ON products(name);
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_product_name ON products(name);
 
-  CREATE TABLE IF NOT EXISTS clients (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    tipo_cliente TEXT DEFAULT 'PF',
-    name TEXT NOT NULL,
-    cpf TEXT,
-    rg TEXT,
-    data_nascimento TEXT,
-    razao_social TEXT,
-    cnpj TEXT,
-    nome_fantasia TEXT,
-    ie TEXT,
-    im TEXT,
-    contato_responsavel TEXT,
-    endereco TEXT,
-    complemento TEXT,
-    bairro TEXT,
-    cep TEXT,
-    cidade TEXT,
-    telefone1 TEXT,
-    telefone2 TEXT,
-    email TEXT
-  );
+    CREATE TABLE IF NOT EXISTS clients (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      tipo_cliente TEXT DEFAULT 'PF',
+      name TEXT NOT NULL,
+      cpf TEXT,
+      rg TEXT,
+      data_nascimento TEXT,
+      razao_social TEXT,
+      cnpj TEXT,
+      nome_fantasia TEXT,
+      ie TEXT,
+      im TEXT,
+      contato_responsavel TEXT,
+      endereco TEXT,
+      complemento TEXT,
+      bairro TEXT,
+      cep TEXT,
+      cidade TEXT,
+      telefone1 TEXT,
+      telefone2 TEXT,
+      email TEXT
+    );
 
-  CREATE TABLE IF NOT EXISTS suppliers (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    tipo TEXT DEFAULT 'PF',
-    name TEXT,
-    cpf TEXT,
-    rg TEXT,
-    data_nascimento TEXT,
-    razao_social TEXT,
-    cnpj TEXT,
-    nome_fantasia TEXT,
-    ie TEXT,
-    im TEXT,
-    contato_responsavel TEXT,
-    endereco TEXT,
-    complemento TEXT,
-    bairro TEXT,
-    cep TEXT,
-    cidade TEXT,
-    telefone1 TEXT,
-    telefone2 TEXT,
-    email TEXT,
-    website TEXT
-  );
+    CREATE TABLE IF NOT EXISTS suppliers (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      tipo TEXT DEFAULT 'PF',
+      name TEXT,
+      cpf TEXT,
+      rg TEXT,
+      data_nascimento TEXT,
+      razao_social TEXT,
+      cnpj TEXT,
+      nome_fantasia TEXT,
+      ie TEXT,
+      im TEXT,
+      contato_responsavel TEXT,
+      endereco TEXT,
+      complemento TEXT,
+      bairro TEXT,
+      cep TEXT,
+      cidade TEXT,
+      telefone1 TEXT,
+      telefone2 TEXT,
+      email TEXT,
+      website TEXT
+    );
 
-  CREATE TABLE IF NOT EXISTS assets (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    description TEXT NOT NULL,
-    asset_number TEXT UNIQUE,
-    category TEXT,
-    purchase_date TEXT,
-    purchase_value REAL,
-    depreciation_type TEXT,
-    depreciation_percentage REAL,
-    photo TEXT,
-    status TEXT DEFAULT 'ATIVO',
-    disposal_type TEXT,
-    disposal_date TEXT,
-    disposal_value REAL
-  );
+    CREATE TABLE IF NOT EXISTS assets (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      description TEXT NOT NULL,
+      asset_number TEXT UNIQUE,
+      category TEXT,
+      purchase_date TEXT,
+      purchase_value REAL,
+      depreciation_type TEXT,
+      depreciation_percentage REAL,
+      photo TEXT,
+      status TEXT DEFAULT 'ATIVO',
+      disposal_type TEXT,
+      disposal_date TEXT,
+      disposal_value REAL
+    );
 
-  CREATE TABLE IF NOT EXISTS orders (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    title TEXT NOT NULL,
-    description TEXT,
-    status TEXT DEFAULT 'ORDENS DE PRODUÇÃO',
-    client_id INTEGER,
-    details TEXT,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (client_id) REFERENCES clients(id)
-  );
+    CREATE TABLE IF NOT EXISTS orders (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      title TEXT NOT NULL,
+      description TEXT,
+      status TEXT DEFAULT 'ORDENS DE PRODUÇÃO',
+      client_id INTEGER,
+      details TEXT,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (client_id) REFERENCES clients(id)
+    );
 
-  CREATE TABLE IF NOT EXISTS movements (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    product_id INTEGER,
-    type TEXT CHECK(type IN ('IN', 'OUT')),
-    quantity REAL,
-    date DATETIME DEFAULT CURRENT_TIMESTAMP,
-    supplier_id INTEGER,
-    doc_number TEXT,
-    issue_date TEXT,
-    location TEXT,
-    unit_price REAL,
-    reason TEXT,
-    destination TEXT,
-    xml TEXT,
-    invoice_pdf TEXT,
-    FOREIGN KEY (product_id) REFERENCES products(id),
-    FOREIGN KEY (supplier_id) REFERENCES suppliers(id)
-  );
+    CREATE TABLE IF NOT EXISTS movements (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      product_id INTEGER,
+      type TEXT CHECK(type IN ('IN', 'OUT')),
+      quantity REAL,
+      date DATETIME DEFAULT CURRENT_TIMESTAMP,
+      supplier_id INTEGER,
+      doc_number TEXT,
+      issue_date TEXT,
+      location TEXT,
+      unit_price REAL,
+      reason TEXT,
+      destination TEXT,
+      xml TEXT,
+      invoice_pdf TEXT,
+      FOREIGN KEY (product_id) REFERENCES products(id),
+      FOREIGN KEY (supplier_id) REFERENCES suppliers(id)
+    );
 
-  CREATE TABLE IF NOT EXISTS categories (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    name TEXT UNIQUE NOT NULL
-  );
+    CREATE TABLE IF NOT EXISTS categories (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT UNIQUE NOT NULL
+    );
 
-  CREATE TABLE IF NOT EXISTS locations (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    name TEXT UNIQUE NOT NULL
-  );
+    CREATE TABLE IF NOT EXISTS locations (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT UNIQUE NOT NULL
+    );
 
-  CREATE TABLE IF NOT EXISTS units (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    name TEXT UNIQUE NOT NULL
-  );
+    CREATE TABLE IF NOT EXISTS units (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT UNIQUE NOT NULL
+    );
 
-  CREATE TABLE IF NOT EXISTS audit_logs (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    user_id INTEGER,
-    action TEXT NOT NULL,
-    details TEXT,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (user_id) REFERENCES users(id)
-  );
-`);
+    CREATE TABLE IF NOT EXISTS audit_logs (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER,
+      action TEXT NOT NULL,
+      details TEXT,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (user_id) REFERENCES users(id)
+    );
+  `);
 
-// Migrations (para bancos antigos que não tinham colunas)
-// Observação: em SQLite não existe "ADD COLUMN IF NOT EXISTS", então usamos try/catch.
-try { db.exec("ALTER TABLE clients ADD COLUMN tipo_cliente TEXT DEFAULT 'PF'"); } catch {}
-try { db.exec("ALTER TABLE clients ADD COLUMN cpf TEXT"); } catch {}
-try { db.exec("ALTER TABLE clients ADD COLUMN rg TEXT"); } catch {}
-try { db.exec("ALTER TABLE clients ADD COLUMN data_nascimento TEXT"); } catch {}
-try { db.exec("ALTER TABLE clients ADD COLUMN razao_social TEXT"); } catch {}
-try { db.exec("ALTER TABLE clients ADD COLUMN cnpj TEXT"); } catch {}
-try { db.exec("ALTER TABLE clients ADD COLUMN nome_fantasia TEXT"); } catch {}
-try { db.exec("ALTER TABLE clients ADD COLUMN ie TEXT"); } catch {}
-try { db.exec("ALTER TABLE clients ADD COLUMN im TEXT"); } catch {}
-try { db.exec("ALTER TABLE clients ADD COLUMN contato_responsavel TEXT"); } catch {}
-try { db.exec("ALTER TABLE clients ADD COLUMN endereco TEXT"); } catch {}
-try { db.exec("ALTER TABLE clients ADD COLUMN complemento TEXT"); } catch {}
-try { db.exec("ALTER TABLE clients ADD COLUMN bairro TEXT"); } catch {}
-try { db.exec("ALTER TABLE clients ADD COLUMN cep TEXT"); } catch {}
-try { db.exec("ALTER TABLE clients ADD COLUMN cidade TEXT"); } catch {}
-try { db.exec("ALTER TABLE clients ADD COLUMN telefone1 TEXT"); } catch {}
-try { db.exec("ALTER TABLE suppliers ADD COLUMN tipo TEXT DEFAULT 'PF'"); } catch {}
-try { db.exec("ALTER TABLE suppliers ADD COLUMN cpf TEXT"); } catch {}
-try { db.exec("ALTER TABLE suppliers ADD COLUMN rg TEXT"); } catch {}
-try { db.exec("ALTER TABLE suppliers ADD COLUMN data_nascimento TEXT"); } catch {}
-try { db.exec("ALTER TABLE suppliers ADD COLUMN razao_social TEXT"); } catch {}
-try { db.exec("ALTER TABLE suppliers ADD COLUMN cnpj TEXT"); } catch {}
-try { db.exec("ALTER TABLE suppliers ADD COLUMN nome_fantasia TEXT"); } catch {}
-try { db.exec("ALTER TABLE suppliers ADD COLUMN ie TEXT"); } catch {}
-try { db.exec("ALTER TABLE suppliers ADD COLUMN im TEXT"); } catch {}
-try { db.exec("ALTER TABLE suppliers ADD COLUMN contato_responsavel TEXT"); } catch {}
-try { db.exec("ALTER TABLE suppliers ADD COLUMN endereco TEXT"); } catch {}
-try { db.exec("ALTER TABLE suppliers ADD COLUMN complemento TEXT"); } catch {}
-try { db.exec("ALTER TABLE suppliers ADD COLUMN bairro TEXT"); } catch {}
-try { db.exec("ALTER TABLE suppliers ADD COLUMN cep TEXT"); } catch {}
-try { db.exec("ALTER TABLE suppliers ADD COLUMN cidade TEXT"); } catch {}
-try { db.exec("ALTER TABLE suppliers ADD COLUMN telefone1 TEXT"); } catch {}
-try { db.exec("ALTER TABLE suppliers ADD COLUMN telefone2 TEXT"); } catch {}
-try { db.exec("ALTER TABLE suppliers ADD COLUMN website TEXT"); } catch {}
+  // Migrations (para bancos antigos que não tinham colunas)
+  try { db.exec("ALTER TABLE clients ADD COLUMN tipo_cliente TEXT DEFAULT 'PF'"); } catch {}
+  try { db.exec("ALTER TABLE clients ADD COLUMN cpf TEXT"); } catch {}
+  try { db.exec("ALTER TABLE clients ADD COLUMN rg TEXT"); } catch {}
+  try { db.exec("ALTER TABLE clients ADD COLUMN data_nascimento TEXT"); } catch {}
+  try { db.exec("ALTER TABLE clients ADD COLUMN razao_social TEXT"); } catch {}
+  try { db.exec("ALTER TABLE clients ADD COLUMN cnpj TEXT"); } catch {}
+  try { db.exec("ALTER TABLE clients ADD COLUMN nome_fantasia TEXT"); } catch {}
+  try { db.exec("ALTER TABLE clients ADD COLUMN ie TEXT"); } catch {}
+  try { db.exec("ALTER TABLE clients ADD COLUMN im TEXT"); } catch {}
+  try { db.exec("ALTER TABLE clients ADD COLUMN contato_responsavel TEXT"); } catch {}
+  try { db.exec("ALTER TABLE clients ADD COLUMN endereco TEXT"); } catch {}
+  try { db.exec("ALTER TABLE clients ADD COLUMN complemento TEXT"); } catch {}
+  try { db.exec("ALTER TABLE clients ADD COLUMN bairro TEXT"); } catch {}
+  try { db.exec("ALTER TABLE clients ADD COLUMN cep TEXT"); } catch {}
+  try { db.exec("ALTER TABLE clients ADD COLUMN cidade TEXT"); } catch {}
+  try { db.exec("ALTER TABLE clients ADD COLUMN telefone1 TEXT"); } catch {}
+  try { db.exec("ALTER TABLE suppliers ADD COLUMN tipo TEXT DEFAULT 'PF'"); } catch {}
+  try { db.exec("ALTER TABLE suppliers ADD COLUMN cpf TEXT"); } catch {}
+  try { db.exec("ALTER TABLE suppliers ADD COLUMN rg TEXT"); } catch {}
+  try { db.exec("ALTER TABLE suppliers ADD COLUMN data_nascimento TEXT"); } catch {}
+  try { db.exec("ALTER TABLE suppliers ADD COLUMN razao_social TEXT"); } catch {}
+  try { db.exec("ALTER TABLE suppliers ADD COLUMN cnpj TEXT"); } catch {}
+  try { db.exec("ALTER TABLE suppliers ADD COLUMN nome_fantasia TEXT"); } catch {}
+  try { db.exec("ALTER TABLE suppliers ADD COLUMN ie TEXT"); } catch {}
+  try { db.exec("ALTER TABLE suppliers ADD COLUMN im TEXT"); } catch {}
+  try { db.exec("ALTER TABLE suppliers ADD COLUMN contato_responsavel TEXT"); } catch {}
+  try { db.exec("ALTER TABLE suppliers ADD COLUMN endereco TEXT"); } catch {}
+  try { db.exec("ALTER TABLE suppliers ADD COLUMN complemento TEXT"); } catch {}
+  try { db.exec("ALTER TABLE suppliers ADD COLUMN bairro TEXT"); } catch {}
+  try { db.exec("ALTER TABLE suppliers ADD COLUMN cep TEXT"); } catch {}
+  try { db.exec("ALTER TABLE suppliers ADD COLUMN cidade TEXT"); } catch {}
+  try { db.exec("ALTER TABLE suppliers ADD COLUMN telefone1 TEXT"); } catch {}
+  try { db.exec("ALTER TABLE suppliers ADD COLUMN telefone2 TEXT"); } catch {}
+  try { db.exec("ALTER TABLE suppliers ADD COLUMN website TEXT"); } catch {}
 
-// Seed initial data if empty
-const userCount = db.prepare('SELECT count(*) as count FROM users').get() as { count: number };
-if (userCount.count === 0) {
-  db.prepare('INSERT INTO users (name, email, role) VALUES (?, ?, ?)').run('Admin', 'admin@example.com', 'Admin');
-  db.prepare('INSERT INTO categories (name) VALUES (?)').run('Cabeamento');
-  db.prepare('INSERT INTO categories (name) VALUES (?)').run('Conectores');
-  db.prepare('INSERT INTO locations (name) VALUES (?)').run('Almoxarifado Central');
-  db.prepare('INSERT INTO locations (name) VALUES (?)').run('Depósito A');
-  db.prepare('INSERT INTO products (name, category, quantity, cost_price) VALUES (?, ?, ?, ?)').run('Cabo de Rede CAT6', 'Cabeamento', 100, 2.50);
-  db.prepare('INSERT INTO products (name, category, quantity, cost_price) VALUES (?, ?, ?, ?)').run('Conector RJ45', 'Conectores', 500, 0.50);
-  db.prepare('INSERT INTO clients (name, email) VALUES (?, ?)').run('Empresa ABC', 'contato@abc.com');
-  db.prepare('INSERT INTO suppliers (name, contact) VALUES (?, ?)').run('Fornecedor Tech', 'vendas@tech.com');
-  db.prepare('INSERT INTO orders (title, status, client_id) VALUES (?, ?, ?)').run('Instalação Rede Escritório', 'ORDENS DE PRODUÇÃO', 1);
-  
-  db.prepare('INSERT INTO units (name) VALUES (?)').run('UN');
-  db.prepare('INSERT INTO units (name) VALUES (?)').run('MT');
-  db.prepare('INSERT INTO units (name) VALUES (?)').run('KG');
-  db.prepare('INSERT INTO units (name) VALUES (?)').run('PC');
-  db.prepare('INSERT INTO units (name) VALUES (?)').run('CX');
+  // Seed initial data if empty
+  const userCount = db.prepare('SELECT count(*) as count FROM users').get() as { count: number };
+  if (userCount.count === 0) {
+    db.prepare('INSERT INTO users (name, email, role) VALUES (?, ?, ?)').run('Admin', 'admin@example.com', 'Admin');
+    db.prepare('INSERT INTO categories (name) VALUES (?)').run('Cabeamento');
+    db.prepare('INSERT INTO categories (name) VALUES (?)').run('Conectores');
+    db.prepare('INSERT INTO locations (name) VALUES (?)').run('Almoxarifado Central');
+    db.prepare('INSERT INTO locations (name) VALUES (?)').run('Depósito A');
+    db.prepare('INSERT INTO products (name, category, quantity, cost_price) VALUES (?, ?, ?, ?)').run('Cabo de Rede CAT6', 'Cabeamento', 100, 2.50);
+    db.prepare('INSERT INTO products (name, category, quantity, cost_price) VALUES (?, ?, ?, ?)').run('Conector RJ45', 'Conectores', 500, 0.50);
+    db.prepare('INSERT INTO clients (name, email) VALUES (?, ?)').run('Empresa ABC', 'contato@abc.com');
+    db.prepare('INSERT INTO suppliers (name, email) VALUES (?, ?)').run('Fornecedor Tech', 'vendas@tech.com');
+    db.prepare('INSERT INTO orders (title, status, client_id) VALUES (?, ?, ?)').run('Instalação Rede Escritório', 'ORDENS DE PRODUÇÃO', 1);
+    
+    db.prepare('INSERT INTO units (name) VALUES (?)').run('UN');
+    db.prepare('INSERT INTO units (name) VALUES (?)').run('MT');
+    db.prepare('INSERT INTO units (name) VALUES (?)').run('KG');
+    db.prepare('INSERT INTO units (name) VALUES (?)').run('PC');
+    db.prepare('INSERT INTO units (name) VALUES (?)').run('CX');
+  }
 }
 
 // WebSocket Server
@@ -257,6 +258,9 @@ const wrapAsync = (fn: Function) => (req: express.Request, res: express.Response
 async function startServer() {
   const app = express();
   const PORT = 3000;
+
+  // Initialize DB
+  initDb();
 
   app.use(express.json({ limit: '50mb' }));
   app.use(express.urlencoded({ limit: '50mb', extended: true }));
@@ -997,31 +1001,12 @@ async function startServer() {
   });
 
   // WebSocket Server
-  const wss = new WebSocketServer({ server });
-  const clients = new Set<WebSocket>();
+  wss = new WebSocketServer({ server });
 
   wss.on('connection', (ws) => {
     clients.add(ws);
     ws.on('close', () => clients.delete(ws));
   });
-
-  function logAction(userId: number, action: string, details: string) {
-    try {
-      db.prepare('INSERT INTO audit_logs (user_id, action, details) VALUES (?, ?, ?)').run(userId, action, details);
-      broadcast({ type: 'AUDIT_LOG_UPDATED' });
-    } catch (error) {
-      console.error('Error logging action:', error);
-    }
-  }
-
-  function broadcast(data: any) {
-    const message = JSON.stringify(data);
-    clients.forEach((client) => {
-      if (client.readyState === WebSocket.OPEN) {
-        client.send(message);
-      }
-    });
-  }
 }
 
 startServer();

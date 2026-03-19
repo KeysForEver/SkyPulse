@@ -69,7 +69,7 @@ export const ExportButtons = ({
           className="flex-shrink-0 flex items-center gap-2 px-4 py-2 text-sm font-bold text-white bg-zinc-900 rounded-xl hover:bg-zinc-800 transition-colors shadow-lg shadow-zinc-900/10 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200 dark:shadow-none"
         >
           <Plus size={18} />
-          Novo Produto
+          NOVO PRODUTO
         </button>
       </>
     );

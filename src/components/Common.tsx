@@ -57,7 +57,7 @@ export const StatCard = ({ label, value, icon: Icon, trend, color, onClick }: { 
   </Card>
 );
 
-export const Modal = ({ isOpen, onClose, title, children, zIndex = 200 }: { isOpen: boolean, onClose: () => void, title: string, children: React.ReactNode, zIndex?: number }) => (
+export const Modal = ({ isOpen, onClose, title, children, zIndex = 200, noPadding = false }: { isOpen: boolean, onClose: () => void, title: string, children: React.ReactNode, zIndex?: number, noPadding?: boolean }) => (
   <AnimatePresence>
     {isOpen && (
       <div className={cn("fixed inset-0 flex items-center justify-center p-4 sm:p-6", zIndex === 200 ? "z-[200]" : "z-[300]")}>
@@ -80,8 +80,73 @@ export const Modal = ({ isOpen, onClose, title, children, zIndex = 200 }: { isOp
               <X size={20} />
             </button>
           </div>
-          <div className="p-6 overflow-y-auto flex-1 custom-scrollbar">
+          <div className={cn("overflow-y-auto flex-1 custom-scrollbar", !noPadding && "p-6")}>
             {children}
+          </div>
+        </motion.div>
+      </div>
+    )}
+  </AnimatePresence>
+);
+
+export const ConfirmModal = ({ 
+  isOpen, 
+  onClose, 
+  onConfirm, 
+  title, 
+  message, 
+  confirmText = "Confirmar", 
+  cancelText = "Cancelar", 
+  variant = "danger", 
+  isLoading = false 
+}: { 
+  isOpen: boolean, 
+  onClose: () => void, 
+  onConfirm: () => void, 
+  title: string, 
+  message: string, 
+  confirmText?: string, 
+  cancelText?: string, 
+  variant?: "primary" | "danger", 
+  isLoading?: boolean 
+}) => (
+  <AnimatePresence>
+    {isOpen && (
+      <div className="fixed inset-0 z-[300] flex items-center justify-center p-4">
+        <motion.div 
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          onClick={onClose}
+          className="absolute inset-0 bg-zinc-900/60 backdrop-blur-sm"
+        />
+        <motion.div 
+          initial={{ opacity: 0, scale: 0.95, y: 20 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          exit={{ opacity: 0, scale: 0.95, y: 20 }}
+          className="relative w-full max-w-md bg-white dark:bg-zinc-900 rounded-2xl shadow-2xl p-6 overflow-hidden"
+        >
+          <div className="flex flex-col gap-4">
+            <h3 className="text-lg font-bold text-zinc-900 dark:text-zinc-100 uppercase tracking-widest">{title}</h3>
+            <p className="text-sm text-zinc-500 dark:text-zinc-400 leading-relaxed uppercase">{message}</p>
+            <div className="flex gap-3 mt-4">
+              <Button 
+                variant="ghost" 
+                onClick={onClose} 
+                className="flex-1"
+                disabled={isLoading}
+              >
+                {cancelText}
+              </Button>
+              <Button 
+                variant={variant} 
+                onClick={onConfirm} 
+                className="flex-1"
+                disabled={isLoading}
+              >
+                {isLoading ? "PROCESSANDO..." : confirmText}
+              </Button>
+            </div>
           </div>
         </motion.div>
       </div>
@@ -136,6 +201,7 @@ export const Button = ({ children, variant = 'primary', className, ...props }: a
   const variants = {
     primary: "bg-zinc-900 text-white hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200",
     secondary: "bg-zinc-100 text-zinc-600 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700",
+    danger: "bg-rose-600 text-white hover:bg-rose-700 dark:bg-rose-500 dark:hover:bg-rose-600",
     outline: "bg-transparent border border-zinc-200 text-zinc-600 hover:bg-zinc-50 dark:border-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-800/50",
     ghost: "bg-transparent text-zinc-500 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-800/50"
   };

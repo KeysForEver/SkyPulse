@@ -91,7 +91,7 @@ export const AssetModal = ({ isOpen, onClose, onSave, asset, categories }: Asset
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title={asset ? 'Editar Patrimônio' : 'Novo Patrimônio'}>
+    <Modal isOpen={isOpen} onClose={onClose} title={asset ? 'EDITAR PATRIMÔNIO' : 'NOVO PATRIMÔNIO'} noPadding>
       <form onSubmit={handleSubmit} className="p-6 space-y-6 overflow-y-auto flex-1">
         <div className="flex flex-col items-center gap-4">
           <div className="relative group">
@@ -121,104 +121,86 @@ export const AssetModal = ({ isOpen, onClose, onSave, asset, categories }: Asset
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="space-y-1.5 md:col-span-2">
-            <label className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase">
-              Descrição <span className="text-rose-500 ml-0.5">*</span>
-            </label>
-            <input 
-              required
-              type="text" 
+          <div className="md:col-span-2">
+            <Input 
+              label="Descrição" 
+              icon={<FileText size={18} />}
               value={formData.description}
-              onChange={e => setFormData({...formData, description: e.target.value.toUpperCase()})}
-              className="w-full px-3 py-2 text-sm border border-zinc-200 dark:border-zinc-800 rounded-lg focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-100 outline-none bg-white dark:bg-black text-zinc-900 dark:text-zinc-100"
+              onChange={(e: any) => setFormData({ ...formData, description: e.target.value.toUpperCase() })}
+              required
             />
           </div>
-          <div className="space-y-1.5">
-            <label className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase">Número Patrimônio</label>
-            <input 
-              type="text" 
-              value={formData.asset_number}
-              onChange={e => setFormData({...formData, asset_number: e.target.value.toUpperCase()})}
-              className="w-full px-3 py-2 text-sm border border-zinc-200 dark:border-zinc-800 rounded-lg focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-100 outline-none bg-white dark:bg-black text-zinc-900 dark:text-zinc-100"
-            />
-          </div>
-          <div className="space-y-1.5">
-            <label className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase">Categoria</label>
-            <select 
-              value={formData.category}
-              onChange={e => setFormData({...formData, category: e.target.value})}
-              className="w-full px-3 py-2 text-sm border border-zinc-200 dark:border-zinc-800 rounded-lg focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-100 outline-none bg-white dark:bg-black text-zinc-900 dark:text-zinc-100 uppercase"
-            >
-              <option value="">SELECIONE</option>
-              {categories.map(c => (
-                <option key={c.id} value={c.name}>{c.name.toUpperCase()}</option>
-              ))}
-            </select>
-          </div>
-          <div className="space-y-1.5">
-            <label className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase">Data Compra</label>
-            <input 
-              type="date" 
-              value={formData.purchase_date}
-              onChange={e => setFormData({...formData, purchase_date: e.target.value})}
-              className="w-full px-3 py-2 text-sm border border-zinc-200 dark:border-zinc-800 rounded-lg focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-100 outline-none bg-white dark:bg-black text-zinc-900 dark:text-zinc-100"
-            />
-          </div>
-          <div className="space-y-1.5">
-            <label className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase">Valor Compra (R$)</label>
-            <input 
-              type="number" 
-              step="0.01"
-              value={formData.purchase_value}
-              onChange={e => setFormData({...formData, purchase_value: e.target.value})}
-              className="w-full px-3 py-2 text-sm border border-zinc-200 dark:border-zinc-800 rounded-lg focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-100 outline-none bg-white dark:bg-black text-zinc-900 dark:text-zinc-100"
-            />
-          </div>
-          <div className="space-y-1.5">
-            <label className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase">Tipo Depreciação</label>
-            <select 
-              value={formData.depreciation_type}
-              onChange={e => setFormData({...formData, depreciation_type: e.target.value})}
-              className="w-full px-3 py-2 text-sm border border-zinc-200 dark:border-zinc-800 rounded-lg focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-100 outline-none bg-white dark:bg-black text-zinc-900 dark:text-zinc-100 uppercase"
-            >
-              <option value="DIARIA">DIÁRIA</option>
-              <option value="MENSAL">MENSAL</option>
-              <option value="ANUAL">ANUAL</option>
-            </select>
-          </div>
-          <div className="space-y-1.5">
-            <label className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase">% Depreciação</label>
-            <input 
-              type="number" 
-              step="0.01"
-              value={formData.depreciation_percentage}
-              onChange={e => setFormData({...formData, depreciation_percentage: e.target.value})}
-              className="w-full px-3 py-2 text-sm border border-zinc-200 dark:border-zinc-800 rounded-lg focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-100 outline-none bg-white dark:bg-black text-zinc-900 dark:text-zinc-100"
-            />
-          </div>
+          <Input 
+            label="Número Patrimônio" 
+            icon={<Hash size={18} />}
+            value={formData.asset_number}
+            onChange={(e: any) => setFormData({ ...formData, asset_number: e.target.value.toUpperCase() })}
+          />
+          <Select 
+            label="Categoria" 
+            icon={<Tag size={18} />}
+            value={formData.category}
+            onChange={(e: any) => setFormData({ ...formData, category: e.target.value })}
+            options={[
+              { value: '', label: 'SELECIONE' },
+              ...categories.map(c => ({ value: c.name, label: c.name.toUpperCase() }))
+            ]}
+          />
+          <Input 
+            label="Data Compra" 
+            icon={<Calendar size={18} />}
+            type="date"
+            value={formData.purchase_date}
+            onChange={(e: any) => setFormData({ ...formData, purchase_date: e.target.value })}
+          />
+          <Input 
+            label="Valor Compra (R$)" 
+            icon={<DollarSign size={18} />}
+            type="number"
+            step="0.01"
+            value={formData.purchase_value}
+            onChange={(e: any) => setFormData({ ...formData, purchase_value: e.target.value })}
+          />
+          <Select 
+            label="Tipo Depreciação" 
+            icon={<Percent size={18} />}
+            value={formData.depreciation_type}
+            onChange={(e: any) => setFormData({ ...formData, depreciation_type: e.target.value })}
+            options={[
+              { value: 'DIARIA', label: 'DIÁRIA' },
+              { value: 'MENSAL', label: 'MENSAL' },
+              { value: 'ANUAL', label: 'ANUAL' }
+            ]}
+          />
+          <Input 
+            label="% Depreciação" 
+            icon={<Percent size={18} />}
+            type="number"
+            step="0.01"
+            value={formData.depreciation_percentage}
+            onChange={(e: any) => setFormData({ ...formData, depreciation_percentage: e.target.value })}
+          />
         </div>
 
         <div className="flex justify-end gap-3 pt-4 border-t border-zinc-100 dark:border-zinc-800">
-          <button 
+          <Button 
             type="button"
+            variant="ghost"
             onClick={onClear}
-            className="px-4 py-2 text-sm font-bold text-zinc-400 hover:text-zinc-600 dark:text-zinc-500 dark:hover:text-zinc-300 transition-colors mr-auto uppercase"
+            className="mr-auto"
           >
             Limpar Campos
-          </button>
-          <button 
+          </Button>
+          <Button 
             type="button"
+            variant="ghost"
             onClick={onClose}
-            className="px-6 py-2 text-sm font-bold text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100 transition-colors uppercase"
           >
             Cancelar
-          </button>
-          <button 
-            type="submit"
-            className="px-8 py-2 bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 text-sm font-bold rounded-xl hover:bg-zinc-800 dark:hover:bg-zinc-200 transition-all shadow-lg shadow-zinc-900/10 uppercase"
-          >
-            {asset ? 'ATUALIZAR PATRIMÔNIO' : 'CRIAR PATRIMÔNIO'}
-          </button>
+          </Button>
+          <Button type="submit">
+            {asset ? 'ATUALIZAR' : 'SALVAR'}
+          </Button>
         </div>
       </form>
     </Modal>
@@ -284,23 +266,23 @@ export const AssetDisposalModal = ({ isOpen, onClose, onConfirm, asset, assets =
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Baixa de Patrimônio">
+    <Modal isOpen={isOpen} onClose={onClose} title="BAIXA DE PATRIMÔNIO" noPadding>
       <form onSubmit={handleSubmit} className="p-6 space-y-6 overflow-y-auto flex-1">
         {!asset ? (
-          <div className="space-y-1.5">
-            <label className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase">Selecionar Patrimônio</label>
-            <select 
-              required
-              value={selectedAssetId}
-              onChange={e => setSelectedAssetId(e.target.value)}
-              className="w-full px-3 py-2 text-sm border border-zinc-200 dark:border-zinc-800 rounded-lg focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-100 outline-none bg-white dark:bg-black text-zinc-900 dark:text-zinc-100 uppercase"
-            >
-              <option value="">SELECIONE UM PATRIMÔNIO ATIVO</option>
-              {assets.filter(a => a.status === 'ATIVO').map(a => (
-                <option key={a.id} value={a.id.toString()}>{`${a.description} (${a.asset_number || 'S/N'})`.toUpperCase()}</option>
-              ))}
-            </select>
-          </div>
+          <Select 
+            label="Selecionar Patrimônio" 
+            icon={<ArrowDownLeft size={18} />}
+            value={selectedAssetId}
+            onChange={(e: any) => setSelectedAssetId(e.target.value)}
+            options={[
+              { value: '', label: 'SELECIONE UM PATRIMÔNIO ATIVO' },
+              ...assets.filter(a => a.status === 'ATIVO').map(a => ({
+                value: a.id.toString(),
+                label: `${a.description} (${a.asset_number || 'S/N'})`.toUpperCase()
+              }))
+            ]}
+            required
+          />
         ) : (
           <div className="p-4 bg-zinc-50 dark:bg-zinc-900/50 rounded-xl border border-zinc-100 dark:border-zinc-800">
             <div className="flex items-center gap-3">
@@ -316,35 +298,32 @@ export const AssetDisposalModal = ({ isOpen, onClose, onConfirm, asset, assets =
         )}
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="space-y-1.5">
-            <label className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase">Tipo de Baixa</label>
-            <select 
-              value={disposalType}
-              onChange={e => setDisposalType(e.target.value)}
-              className="w-full px-3 py-2 text-sm border border-zinc-200 dark:border-zinc-800 rounded-lg focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-100 outline-none bg-white dark:bg-black text-zinc-900 dark:text-zinc-100 uppercase"
-            >
-              <option value="DESCARTE">DESCARTE</option>
-              <option value="DOAÇÃO">DOAÇÃO</option>
-              <option value="VENDA">VENDA</option>
-              <option value="OUTRO">OUTRO</option>
-            </select>
-          </div>
-          <div className="space-y-1.5">
-            <label className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase">Data da Baixa</label>
-            <input 
-              type="date" 
-              value={disposalDate}
-              onChange={e => setDisposalDate(e.target.value)}
-              className="w-full px-3 py-2 text-sm border border-zinc-200 dark:border-zinc-800 rounded-lg focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-100 outline-none bg-white dark:bg-black text-zinc-900 dark:text-zinc-100"
-            />
-          </div>
-          <div className="md:col-span-2 space-y-1.5">
-            <label className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase">Valor da Baixa (Calculado)</label>
-            <input 
-              type="text" 
+          <Select 
+            label="Tipo de Baixa" 
+            icon={<Tag size={18} />}
+            value={disposalType}
+            onChange={(e: any) => setDisposalType(e.target.value)}
+            options={[
+              { value: 'DESCARTE', label: 'DESCARTE' },
+              { value: 'DOAÇÃO', label: 'DOAÇÃO' },
+              { value: 'VENDA', label: 'VENDA' },
+              { value: 'OUTRO', label: 'OUTRO' }
+            ]}
+          />
+          <Input 
+            label="Data da Baixa" 
+            icon={<Calendar size={18} />}
+            type="date"
+            value={disposalDate}
+            onChange={(e: any) => setDisposalDate(e.target.value)}
+          />
+          <div className="md:col-span-2">
+            <Input 
+              label="Valor da Baixa (Calculado)" 
+              icon={<DollarSign size={18} />}
               value={`R$ ${calculatedValue.toFixed(2)}`}
               readOnly
-              className="w-full px-3 py-2 text-sm border border-zinc-200 dark:border-zinc-800 rounded-lg outline-none bg-zinc-50 dark:bg-zinc-800/50 font-bold text-emerald-600 dark:text-emerald-400"
+              className="font-bold text-emerald-600 dark:text-emerald-400"
             />
             <p className="mt-2 text-[10px] text-zinc-400 uppercase tracking-widest font-bold">
               * Valor calculado automaticamente com base na depreciação ({asset?.depreciation_percentage}% {asset?.depreciation_type.toLowerCase()})
@@ -353,19 +332,16 @@ export const AssetDisposalModal = ({ isOpen, onClose, onConfirm, asset, assets =
         </div>
 
         <div className="flex justify-end gap-3 pt-4 border-t border-zinc-100 dark:border-zinc-800">
-          <button 
+          <Button 
             type="button"
+            variant="ghost"
             onClick={onClose}
-            className="px-6 py-2 text-sm font-bold text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100 transition-colors uppercase"
           >
             Cancelar
-          </button>
-          <button 
-            type="submit"
-            className="px-8 py-2 bg-rose-600 text-white text-sm font-bold rounded-xl hover:bg-rose-700 transition-all shadow-lg shadow-rose-900/10 uppercase"
-          >
+          </Button>
+          <Button type="submit" variant="danger">
             Confirmar Baixa
-          </button>
+          </Button>
         </div>
       </form>
     </Modal>

@@ -1,12 +1,14 @@
 import React, { useState, useRef } from 'react';
 import { Download, ShieldCheck, Database as DbIcon, Loader2, Upload } from 'lucide-react';
-import { Card } from './Common';
+import { Card, ConfirmModal } from './Common';
 import { motion } from 'motion/react';
 import { apiService } from '../services/apiService';
 
 export const Settings = () => {
   const [isBackingUp, setIsBackingUp] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
+  const [showConfirmRestore, setShowConfirmRestore] = useState(false);
+  const [pendingFile, setPendingFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleBackup = async () => {
@@ -46,18 +48,18 @@ export const Settings = () => {
       return;
     }
 
-    const confirmRestore = window.confirm(
-      'ATENÇÃO: A importação irá SUBSTITUIR TODO o banco de dados atual. Esta ação não pode ser desfeita. Deseja continuar?'
-    );
+    setPendingFile(file);
+    setShowConfirmRestore(true);
+    e.target.value = '';
+  };
 
-    if (!confirmRestore) {
-      e.target.value = '';
-      return;
-    }
+  const confirmRestore = async () => {
+    if (!pendingFile) return;
 
     setIsImporting(true);
+    setShowConfirmRestore(false);
     try {
-      await apiService.importDatabase(file);
+      await apiService.importDatabase(pendingFile);
       alert('Banco de dados restaurado com sucesso! O sistema será atualizado.');
       window.location.reload();
     } catch (error: any) {
@@ -65,7 +67,7 @@ export const Settings = () => {
       alert('Erro ao importar banco de dados: ' + error.message);
     } finally {
       setIsImporting(false);
-      e.target.value = '';
+      setPendingFile(null);
     }
   };
 
@@ -139,6 +141,18 @@ export const Settings = () => {
           </div>
         </Card>
       </div>
+
+      <ConfirmModal 
+        isOpen={showConfirmRestore}
+        onClose={() => setShowConfirmRestore(false)}
+        onConfirm={confirmRestore}
+        title="RESTAURAR BACKUP"
+        message="ATENÇÃO: A importação irá SUBSTITUIR TODO o banco de dados atual. Esta ação não pode ser desfeita. Deseja continuar?"
+        confirmText="RESTAURAR AGORA"
+        cancelText="CANCELAR"
+        variant="danger"
+        isLoading={isImporting}
+      />
     </div>
   );
 };

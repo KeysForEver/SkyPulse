@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { X, ChevronLeft, ChevronRight, Plus, Trash2, Check, AlertTriangle } from 'lucide-react';
+import { X, ChevronLeft, ChevronRight, Plus, Trash2, Check, AlertTriangle, Type, User, Calendar, FileText, Thermometer, Box } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Client, Order, OrderStatus, OrderDetails } from '../types';
 import { KANBAN_COLUMNS } from '../constants';
-import { cn } from './Common';
+import { cn, Input, Select, Button, Modal } from './Common';
 
 interface OrderModalProps {
   isOpen: boolean;
@@ -169,6 +169,21 @@ export const OrderModal = ({
   };
 
   const validateStep = () => {
+    if (step === 1) {
+      if (!formData.details.delivery_date) {
+        setError('Por favor, informe a data de entrega.');
+        return false;
+      }
+      
+      const entry = new Date(formData.details.entry_date);
+      const delivery = new Date(formData.details.delivery_date);
+      
+      if (delivery < entry) {
+        setError('A data de entrega não pode ser anterior à data de entrada.');
+        return false;
+      }
+    }
+
     // Steps 3-11 are mostly checkboxes, but custom items must have names
     const keys = [
       '', '', 'impression_3d', 'cuts_folds', 'welds', 'rough_finish', 
@@ -275,68 +290,48 @@ export const OrderModal = ({
       case 1:
         return (
           <div className="space-y-4">
-            {/* Line 1: TITULO DA ORDEM */}
-            <div className="space-y-1.5">
-              <label className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
-                Título da Ordem <span className="text-rose-500 ml-0.5">*</span>
-              </label>
-              <input 
-                type="text" 
+            <Input
+              label="Título da Ordem"
+              icon={<Type size={18} />}
+              required
+              value={formData.title}
+              onChange={e => setFormData({...formData, title: e.target.value.toUpperCase()})}
+            />
+
+            <Select
+              label="Cliente"
+              icon={<User size={18} />}
+              required
+              value={formData.client_id}
+              onChange={e => setFormData({...formData, client_id: e.target.value})}
+              options={[
+                { value: '', label: 'SELECIONE O CLIENTE' },
+                ...clients.map(c => ({ value: c.id.toString(), label: c.name }))
+              ]}
+            />
+
+            <div className="grid grid-cols-2 gap-4">
+              <Input
+                label="Data de Entrada"
+                icon={<Calendar size={18} />}
+                type="date"
                 required
-                value={formData.title}
-                onChange={e => setFormData({...formData, title: e.target.value.toUpperCase()})}
-                className="w-full px-4 py-2 text-sm border border-zinc-200 dark:border-zinc-800 rounded-xl focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-100 outline-none bg-white dark:bg-black text-zinc-900 dark:text-zinc-100 uppercase"
-                placeholder="EX: INSTALAÇÃO DE REDE"
+                value={formData.details.entry_date}
+                onChange={e => setFormData({...formData, details: {...formData.details, entry_date: e.target.value}})}
+              />
+              <Input
+                label="Data de Entrega"
+                icon={<Calendar size={18} />}
+                type="date"
+                required
+                value={formData.details.delivery_date}
+                onChange={e => setFormData({...formData, details: {...formData.details, delivery_date: e.target.value}})}
               />
             </div>
 
-            {/* Line 2: CLIENTE */}
             <div className="space-y-1.5">
-              <label className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
-                Cliente <span className="text-rose-500 ml-0.5">*</span>
-              </label>
-              <select 
-                required
-                value={formData.client_id}
-                onChange={e => setFormData({...formData, client_id: e.target.value})}
-                className="w-full px-4 py-2 text-sm border border-zinc-200 dark:border-zinc-800 rounded-xl focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-100 outline-none bg-white dark:bg-black text-zinc-900 dark:text-zinc-100 uppercase"
-              >
-                <option value="">SELECIONE...</option>
-                {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-              </select>
-            </div>
-
-            {/* Line 3: DATA ENTRADA, DATA ENTREGA */}
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-1.5">
-                <label className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
-                  Data de Entrada <span className="text-rose-500 ml-0.5">*</span>
-                </label>
-                <input 
-                  type="date" 
-                  required
-                  value={formData.details.entry_date}
-                  onChange={e => setFormData({...formData, details: {...formData.details, entry_date: e.target.value}})}
-                  className="w-full px-4 py-2 text-sm border border-zinc-200 dark:border-zinc-800 rounded-xl focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-100 outline-none bg-white dark:bg-black text-zinc-900 dark:text-zinc-100"
-                />
-              </div>
-              <div className="space-y-1.5">
-                <label className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
-                  Data de Entrega <span className="text-rose-500 ml-0.5">*</span>
-                </label>
-                <input 
-                  type="date" 
-                  required
-                  value={formData.details.delivery_date}
-                  onChange={e => setFormData({...formData, details: {...formData.details, delivery_date: e.target.value}})}
-                  className="w-full px-4 py-2 text-sm border border-zinc-200 dark:border-zinc-800 rounded-xl focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-100 outline-none bg-white dark:bg-black text-zinc-900 dark:text-zinc-100"
-                />
-              </div>
-            </div>
-
-            {/* Line 4: DESCRIÇÃO */}
-            <div className="space-y-1.5">
-              <label className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
+              <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest ml-1 flex items-center gap-2">
+                <FileText size={14} />
                 Descrição <span className="text-rose-500 ml-0.5">*</span>
               </label>
               <textarea 
@@ -344,7 +339,6 @@ export const OrderModal = ({
                 value={formData.description}
                 onChange={e => setFormData({...formData, description: e.target.value.toUpperCase()})}
                 className="w-full px-4 py-2 text-sm border border-zinc-200 dark:border-zinc-800 rounded-xl focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-100 outline-none bg-white dark:bg-black text-zinc-900 dark:text-zinc-100 min-h-[80px] uppercase"
-                placeholder="DETALHES DA ORDEM..."
               />
             </div>
           </div>
@@ -384,12 +378,14 @@ export const OrderModal = ({
               </div>
             </div>
             <div className="space-y-1.5">
-              <label className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">Descrição Opcional</label>
+              <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest ml-1 flex items-center gap-2">
+                <FileText size={14} />
+                Descrição Opcional
+              </label>
               <textarea 
                 value={formData.details.kanban_description}
                 onChange={e => setFormData({...formData, details: {...formData.details, kanban_description: e.target.value.toUpperCase()}})}
                 className="w-full px-4 py-2 text-sm border border-zinc-200 dark:border-zinc-800 rounded-xl focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-100 outline-none bg-white dark:bg-black text-zinc-900 dark:text-zinc-100 min-h-[80px] uppercase"
-                placeholder="OBSERVAÇÕES DO KANBAN..."
               />
             </div>
           </div>
@@ -445,8 +441,7 @@ export const OrderModal = ({
                       type="text"
                       value={item}
                       onChange={(e) => updateCustomItem(config.key, idx, e.target.value)}
-                      placeholder="NOME DO ITEM PERSONALIZADO"
-                      className="flex-1 bg-transparent border-none outline-none text-xs font-bold uppercase placeholder:text-white/50 dark:placeholder:text-black/50"
+                      className="flex-1 bg-transparent border-none outline-none text-xs font-bold uppercase"
                       autoFocus={!item}
                     />
                   </div>
@@ -471,40 +466,32 @@ export const OrderModal = ({
             </button>
 
             {step === 7 && (
-              <div className="pt-4 border-t border-zinc-100 dark:border-zinc-800 space-y-1.5">
-                <label className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">Data de Envio</label>
-                <input 
-                  type="date" 
-                  value={formData.details.painting.shipping_date}
-                  onChange={e => setFormData({...formData, details: {...formData.details, painting: {...formData.details.painting, shipping_date: e.target.value}}})}
-                  className="w-full px-4 py-2 text-sm border border-zinc-200 dark:border-zinc-800 rounded-xl focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-100 outline-none bg-white dark:bg-black text-zinc-900 dark:text-zinc-100"
-                />
-              </div>
+              <Input
+                label="Data de Envio"
+                icon={<Calendar size={18} />}
+                type="date"
+                value={formData.details.painting.shipping_date}
+                onChange={e => setFormData({...formData, details: {...formData.details, painting: {...formData.details.painting, shipping_date: e.target.value}}})}
+              />
             )}
 
             {step === 9 && (
               <div className="pt-4 border-t border-zinc-100 dark:border-zinc-800 grid grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">Temperatura (K)</label>
-                  <input 
-                    type="number" 
-                    min="0"
-                    value={formData.details.lighting.temperature}
-                    onChange={e => setFormData({...formData, details: {...formData.details, lighting: {...formData.details.lighting, temperature: e.target.value}}})}
-                    className="w-full px-4 py-2 text-sm border border-zinc-200 dark:border-zinc-800 rounded-xl focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-100 outline-none bg-white dark:bg-black text-zinc-900 dark:text-zinc-100"
-                    placeholder="EX: 3000"
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">Modelo</label>
-                  <input 
-                    type="text" 
-                    value={formData.details.lighting.model}
-                    onChange={e => setFormData({...formData, details: {...formData.details, lighting: {...formData.details.lighting, model: e.target.value.toUpperCase()}}})}
-                    className="w-full px-4 py-2 text-sm border border-zinc-200 dark:border-zinc-800 rounded-xl focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-100 outline-none bg-white dark:bg-black text-zinc-900 dark:text-zinc-100 uppercase"
-                    placeholder="EX: FITA LED 2835"
-                  />
-                </div>
+                <Input
+                  label="Temperatura (K)"
+                  icon={<Thermometer size={18} />}
+                  type="number"
+                  min="0"
+                  value={formData.details.lighting.temperature}
+                  onChange={e => setFormData({...formData, details: {...formData.details, lighting: {...formData.details.lighting, temperature: e.target.value}}})}
+                />
+                <Input
+                  label="Modelo"
+                  icon={<Box size={18} />}
+                  type="text"
+                  value={formData.details.lighting.model}
+                  onChange={e => setFormData({...formData, details: {...formData.details, lighting: {...formData.details.lighting, model: e.target.value.toUpperCase()}}})}
+                />
               </div>
             )}
           </div>
@@ -513,127 +500,99 @@ export const OrderModal = ({
   };
 
   return (
-    <AnimatePresence>
-      {isOpen && (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 sm:p-6">
+    <Modal isOpen={isOpen} onClose={onClose} title={editingOrder ? 'EDITAR ORDEM DE PRODUÇÃO' : 'NOVA ORDEM DE PRODUÇÃO'} noPadding>
+      <div className="flex flex-col h-full overflow-hidden">
+        <div className="w-full h-1 bg-zinc-100 dark:bg-zinc-800">
           <motion.div 
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={onClose}
-            className="absolute inset-0 bg-zinc-900/60 backdrop-blur-sm"
+            className="h-full bg-zinc-900 dark:bg-zinc-100"
+            initial={{ width: 0 }}
+            animate={{ width: `${(step / 11) * 100}%` }}
           />
-          <motion.div 
-            initial={{ opacity: 0, scale: 0.95, y: 20 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.95, y: 20 }}
-            className="relative w-full md:w-[60%] lg:w-[50%] max-w-3xl bg-white dark:bg-zinc-900 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]"
-          >
-            <div className="px-6 py-4 border-b border-zinc-100 dark:border-zinc-800 flex items-center justify-between flex-shrink-0">
-              <div className="flex flex-col">
-                <h2 className="text-lg font-bold text-zinc-900 dark:text-zinc-100 uppercase">
-                  {editingOrder ? 'Editar Ordem' : 'Nova Ordem'}
-                </h2>
-                <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Etapa {step} de 11</span>
-              </div>
-              <button onClick={onClose} className="text-zinc-400 hover:text-zinc-600 dark:text-zinc-500 dark:hover:text-zinc-300">
-                <X size={20} />
-              </button>
-            </div>
-
-            <div className="w-full h-1 bg-zinc-100 dark:bg-zinc-800">
-              <motion.div 
-                className="h-full bg-zinc-900 dark:bg-zinc-100"
-                initial={{ width: 0 }}
-                animate={{ width: `${(step / 11) * 100}%` }}
-              />
-            </div>
-
-            <form ref={formRef} onSubmit={(e) => e.preventDefault()} className="p-6 space-y-6 overflow-y-auto flex-1">
-              {error && (
-                <div className="p-3 bg-rose-50 dark:bg-rose-500/10 border border-rose-100 dark:border-rose-500/20 rounded-lg flex items-center gap-3 text-rose-600 dark:text-rose-400 text-sm animate-in fade-in slide-in-from-top-2">
-                  <AlertTriangle size={18} />
-                  {error}
-                </div>
-              )}
-              <div className="min-h-[300px]">
-                <AnimatePresence mode="wait">
-                  <motion.div
-                    key={step}
-                    initial={{ opacity: 0, x: 20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: -20 }}
-                    transition={{ duration: 0.2 }}
-                  >
-                    <div className="mb-6">
-                      <h3 className="text-xl font-bold text-zinc-900 dark:text-zinc-100 uppercase">
-                        {step === 1 && 'Dados Iniciais'}
-                        {step === 2 && 'Kanban'}
-                        {step === 3 && 'Impressão 3D'}
-                        {step === 4 && 'Cortes / Dobra'}
-                        {step === 5 && 'Soldas'}
-                        {step === 6 && 'Acabamento Grosso'}
-                        {step === 7 && 'Pintura'}
-                        {step === 8 && 'Acabamento Final'}
-                        {step === 9 && 'Iluminação'}
-                        {step === 10 && 'Acessórios'}
-                        {step === 11 && 'Colagem'}
-                      </h3>
-                      <p className="text-xs text-zinc-500 dark:text-zinc-400 uppercase mt-1">
-                        {step === 1 && 'Preencha as informações básicas da ordem.'}
-                        {step === 2 && 'Selecione o status inicial no quadro Kanban.'}
-                        {step > 2 && 'Selecione os itens necessários para esta etapa.'}
-                      </p>
-                    </div>
-                    {renderStep()}
-                  </motion.div>
-                </AnimatePresence>
-              </div>
-
-              <div className="flex justify-between items-center pt-6 border-t border-zinc-100 dark:border-zinc-800">
-                <button 
-                  type="button"
-                  onClick={handleBack}
-                  disabled={step === 1}
-                  className="flex items-center gap-2 px-4 py-2 text-sm font-bold text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100 transition-colors uppercase disabled:opacity-0"
-                >
-                  <ChevronLeft size={18} />
-                  Anterior
-                </button>
-                
-                <div className="flex gap-3">
-                  {step < 11 ? (
-                    <button 
-                      type="button"
-                      onClick={handleNext}
-                      className="flex items-center gap-2 px-8 py-2 bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 text-sm font-bold rounded-xl hover:bg-zinc-800 dark:hover:bg-zinc-200 transition-all shadow-lg shadow-zinc-900/10 uppercase"
-                    >
-                      Próximo
-                      <ChevronRight size={18} />
-                    </button>
-                  ) : (
-                    <button 
-                      type="button"
-                      onClick={() => {
-                        if (formRef.current && !formRef.current.reportValidity()) {
-                          return;
-                        }
-                        if (validateStep()) {
-                          onSubmit(formData);
-                          onClose();
-                        }
-                      }}
-                      className="px-10 py-2 bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 text-sm font-bold rounded-xl hover:bg-zinc-800 dark:hover:bg-zinc-200 transition-all shadow-lg shadow-zinc-900/10 uppercase"
-                    >
-                      Finalizar e Criar Ordem
-                    </button>
-                  )}
-                </div>
-              </div>
-            </form>
-          </motion.div>
         </div>
-      )}
-    </AnimatePresence>
+
+        <form ref={formRef} onSubmit={(e) => e.preventDefault()} className="p-6 space-y-6 overflow-y-auto flex-1">
+          {error && (
+            <div className="p-3 bg-rose-50 dark:bg-rose-500/10 border border-rose-100 dark:border-rose-500/20 rounded-lg flex items-center gap-3 text-rose-600 dark:text-rose-400 text-sm animate-in fade-in slide-in-from-top-2">
+              <AlertTriangle size={18} />
+              {error}
+            </div>
+          )}
+          <div className="min-h-[300px]">
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={step}
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+                transition={{ duration: 0.2 }}
+              >
+                <div className="mb-6">
+                  <h3 className="text-xl font-bold text-zinc-900 dark:text-zinc-100 uppercase">
+                    {step === 1 && 'Dados Iniciais'}
+                    {step === 2 && 'Kanban'}
+                    {step === 3 && 'Impressão 3D'}
+                    {step === 4 && 'Cortes / Dobra'}
+                    {step === 5 && 'Soldas'}
+                    {step === 6 && 'Acabamento Grosso'}
+                    {step === 7 && 'Pintura'}
+                    {step === 8 && 'Acabamento Final'}
+                    {step === 9 && 'Iluminação'}
+                    {step === 10 && 'Acessórios'}
+                    {step === 11 && 'Colagem'}
+                  </h3>
+                  <p className="text-xs text-zinc-500 dark:text-zinc-400 uppercase mt-1">
+                    {step === 1 && 'Preencha as informações básicas da ordem.'}
+                    {step === 2 && 'Selecione o status inicial no quadro Kanban.'}
+                    {step > 2 && 'Selecione os itens necessários para esta etapa.'}
+                  </p>
+                </div>
+                {renderStep()}
+              </motion.div>
+            </AnimatePresence>
+          </div>
+
+          <div className="flex justify-between items-center pt-6 border-t border-zinc-100 dark:border-zinc-800">
+            <Button 
+              variant="ghost"
+              onClick={handleBack}
+              disabled={step === 1}
+              className="flex items-center gap-2"
+            >
+              <ChevronLeft size={18} />
+              Anterior
+            </Button>
+            
+            <div className="flex gap-3">
+              {step < 11 ? (
+                <Button 
+                  variant="primary"
+                  onClick={handleNext}
+                  className="flex items-center gap-2 px-8"
+                >
+                  Próximo
+                  <ChevronRight size={18} />
+                </Button>
+              ) : (
+                <Button 
+                  variant="primary"
+                  onClick={() => {
+                    if (formRef.current && !formRef.current.reportValidity()) {
+                      return;
+                    }
+                    if (validateStep()) {
+                      onSubmit(formData);
+                      onClose();
+                    }
+                  }}
+                  className="px-10"
+                >
+                  Finalizar e Criar Ordem
+                </Button>
+              )}
+            </div>
+          </div>
+        </form>
+      </div>
+    </Modal>
   );
 };
