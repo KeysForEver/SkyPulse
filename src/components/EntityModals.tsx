@@ -8,9 +8,10 @@ interface ClientModalProps {
   onClose: () => void;
   onSubmit: (data: any) => void;
   editingClient?: Client | null;
+  fieldErrors?: Record<string, string>;
 }
 
-export const ClientModal = ({ isOpen, onClose, onSubmit, editingClient }: ClientModalProps) => {
+export const ClientModal = ({ isOpen, onClose, onSubmit, editingClient, fieldErrors = {} }: ClientModalProps) => {
   const [formData, setFormData] = useState<Partial<Client>>({
     tipo_cliente: 'PF',
     name: '',
@@ -63,19 +64,12 @@ export const ClientModal = ({ isOpen, onClose, onSubmit, editingClient }: Client
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    // Validation
-    if (formData.tipo_cliente === 'PF') {
-      if (!formData.name || !formData.cpf) return;
-    } else {
-      if (!formData.razao_social || !formData.cnpj) return;
-    }
     onSubmit(formData);
-    onClose();
   };
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={editingClient ? 'EDITAR CLIENTE' : 'NOVO CLIENTE'} noPadding>
-      <form onSubmit={handleSubmit} className="p-6 space-y-4 max-h-[80vh] overflow-y-auto custom-scrollbar">
+      <form onSubmit={handleSubmit} noValidate className="p-6 space-y-4 max-h-[80vh] overflow-y-auto custom-scrollbar">
         <div className="flex gap-6 mb-6 p-4 bg-zinc-50 dark:bg-zinc-900/50 rounded-xl border border-zinc-100 dark:border-zinc-800">
           <label className="flex items-center gap-2 cursor-pointer group">
             <input 
@@ -111,6 +105,7 @@ export const ClientModal = ({ isOpen, onClose, onSubmit, editingClient }: Client
                   required 
                   value={formData.name} 
                   onChange={(e: any) => setFormData({ ...formData, name: e.target.value.toUpperCase() })}
+                  error={fieldErrors.name}
                 />
               </div>
               <Input 
@@ -119,6 +114,7 @@ export const ClientModal = ({ isOpen, onClose, onSubmit, editingClient }: Client
                 required 
                 value={formData.cpf} 
                 onChange={(e: any) => setFormData({ ...formData, cpf: e.target.value })}
+                error={fieldErrors.cpf}
               />
               <Input 
                 label="RG" 
@@ -143,6 +139,7 @@ export const ClientModal = ({ isOpen, onClose, onSubmit, editingClient }: Client
                   required 
                   value={formData.razao_social} 
                   onChange={(e: any) => setFormData({ ...formData, razao_social: e.target.value.toUpperCase() })}
+                  error={fieldErrors.razao_social}
                 />
               </div>
               <Input 
@@ -151,6 +148,7 @@ export const ClientModal = ({ isOpen, onClose, onSubmit, editingClient }: Client
                 required 
                 value={formData.cnpj} 
                 onChange={(e: any) => setFormData({ ...formData, cnpj: e.target.value })}
+                error={fieldErrors.cnpj}
               />
               <Input 
                 label="NOME FANTASIA" 
@@ -185,8 +183,10 @@ export const ClientModal = ({ isOpen, onClose, onSubmit, editingClient }: Client
             <Input 
               label="ENDEREÇO" 
               icon={<MapPin size={18} />}
+              required
               value={formData.endereco} 
               onChange={(e: any) => setFormData({ ...formData, endereco: e.target.value.toUpperCase() })}
+              error={fieldErrors.endereco}
             />
           </div>
           <Input 
@@ -216,8 +216,10 @@ export const ClientModal = ({ isOpen, onClose, onSubmit, editingClient }: Client
           <Input 
             label="TELEFONE 1" 
             icon={<Phone size={18} />}
+            required
             value={formData.telefone1} 
             onChange={(e: any) => setFormData({ ...formData, telefone1: e.target.value })}
+            error={fieldErrors.telefone1}
           />
           <Input 
             label="TELEFONE 2" 
@@ -229,9 +231,11 @@ export const ClientModal = ({ isOpen, onClose, onSubmit, editingClient }: Client
             <Input 
               label="EMAIL" 
               icon={<Mail size={18} />}
+              required
               type="email" 
               value={formData.email} 
               onChange={(e: any) => setFormData({ ...formData, email: e.target.value.toLowerCase() })}
+              error={fieldErrors.email}
             />
           </div>
         </div>
@@ -254,9 +258,10 @@ interface SupplierModalProps {
   onClose: () => void;
   onSubmit: (data: any) => void;
   editingSupplier?: Supplier | null;
+  fieldErrors?: Record<string, string>;
 }
 
-export const SupplierModal = ({ isOpen, onClose, onSubmit, editingSupplier }: SupplierModalProps) => {
+export const SupplierModal = ({ isOpen, onClose, onSubmit, editingSupplier, fieldErrors = {} }: SupplierModalProps) => {
   const [formData, setFormData] = useState<Partial<Supplier>>({
     tipo: 'PF',
     name: '',
@@ -311,18 +316,12 @@ export const SupplierModal = ({ isOpen, onClose, onSubmit, editingSupplier }: Su
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (formData.tipo === 'PF') {
-      if (!formData.name || !formData.cpf) return;
-    } else {
-      if (!formData.razao_social || !formData.cnpj) return;
-    }
     onSubmit(formData);
-    onClose();
   };
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={editingSupplier ? 'EDITAR FORNECEDOR' : 'NOVO FORNECEDOR'} noPadding>
-      <form onSubmit={handleSubmit} className="p-6 space-y-4 max-h-[80vh] overflow-y-auto custom-scrollbar">
+      <form onSubmit={handleSubmit} noValidate className="p-6 space-y-4 max-h-[80vh] overflow-y-auto custom-scrollbar">
         <div className="flex gap-6 mb-6 p-4 bg-zinc-50 dark:bg-zinc-900/50 rounded-xl border border-zinc-100 dark:border-zinc-800">
           <label className="flex items-center gap-2 cursor-pointer group">
             <input 
@@ -358,6 +357,7 @@ export const SupplierModal = ({ isOpen, onClose, onSubmit, editingSupplier }: Su
                   required 
                   value={formData.name} 
                   onChange={(e: any) => setFormData({ ...formData, name: e.target.value.toUpperCase() })}
+                  error={fieldErrors.name}
                 />
               </div>
               <Input 
@@ -366,6 +366,7 @@ export const SupplierModal = ({ isOpen, onClose, onSubmit, editingSupplier }: Su
                 required 
                 value={formData.cpf} 
                 onChange={(e: any) => setFormData({ ...formData, cpf: e.target.value })}
+                error={fieldErrors.cpf}
               />
               <Input 
                 label="RG" 
@@ -390,6 +391,7 @@ export const SupplierModal = ({ isOpen, onClose, onSubmit, editingSupplier }: Su
                   required 
                   value={formData.razao_social} 
                   onChange={(e: any) => setFormData({ ...formData, razao_social: e.target.value.toUpperCase() })}
+                  error={fieldErrors.razao_social}
                 />
               </div>
               <Input 
@@ -398,6 +400,7 @@ export const SupplierModal = ({ isOpen, onClose, onSubmit, editingSupplier }: Su
                 required 
                 value={formData.cnpj} 
                 onChange={(e: any) => setFormData({ ...formData, cnpj: e.target.value })}
+                error={fieldErrors.cnpj}
               />
               <Input 
                 label="NOME FANTASIA" 
@@ -432,8 +435,10 @@ export const SupplierModal = ({ isOpen, onClose, onSubmit, editingSupplier }: Su
             <Input 
               label="ENDEREÇO" 
               icon={<MapPin size={18} />}
+              required
               value={formData.endereco} 
               onChange={(e: any) => setFormData({ ...formData, endereco: e.target.value.toUpperCase() })}
+              error={fieldErrors.endereco}
             />
           </div>
           <Input 
@@ -463,8 +468,10 @@ export const SupplierModal = ({ isOpen, onClose, onSubmit, editingSupplier }: Su
           <Input 
             label="TELEFONE 1" 
             icon={<Phone size={18} />}
+            required
             value={formData.telefone1} 
             onChange={(e: any) => setFormData({ ...formData, telefone1: e.target.value })}
+            error={fieldErrors.telefone1}
           />
           <Input 
             label="TELEFONE 2" 
@@ -475,9 +482,11 @@ export const SupplierModal = ({ isOpen, onClose, onSubmit, editingSupplier }: Su
           <Input 
             label="EMAIL" 
             icon={<Mail size={18} />}
+            required
             type="email" 
             value={formData.email} 
             onChange={(e: any) => setFormData({ ...formData, email: e.target.value.toLowerCase() })}
+            error={fieldErrors.email}
           />
           <Input 
             label="WEBSITE" 

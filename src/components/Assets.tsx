@@ -40,6 +40,8 @@ export const Assets = ({
 }: AssetsProps) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isDisposalModalOpen, setIsDisposalModalOpen] = useState(false);
+  const [assetFieldErrors, setAssetFieldErrors] = useState<Record<string, string>>({});
+  const [disposalFieldErrors, setDisposalFieldErrors] = useState<Record<string, string>>({});
   const [isPdfOptionsModalOpen, setIsPdfOptionsModalOpen] = useState(false);
   const [selectedPdfFields, setSelectedPdfFields] = useState<string[]>([]);
   const [editingAsset, setEditingAsset] = useState<Asset | null>(null);
@@ -258,33 +260,72 @@ export const Assets = ({
 
       <AssetModal 
         isOpen={isModalOpen}
-        onClose={() => { setIsModalOpen(false); setEditingAsset(null); }}
-        onSave={async (formData) => {
-          if (editingAsset) {
-            await onUpdateAsset(editingAsset.id, formData);
-          } else {
-            await onAddAsset(formData);
-          }
-          setIsModalOpen(false);
+        onClose={() => { 
+          setIsModalOpen(false); 
           setEditingAsset(null);
+          setAssetFieldErrors({});
+        }}
+        onSave={async (formData) => {
+          const errors: Record<string, string> = {};
+          if (!formData.get('description')) errors.description = 'DESCRIÇÃO É OBRIGATÓRIA';
+          if (!formData.get('purchase_value')) errors.purchase_value = 'VALOR DE COMPRA É OBRIGATÓRIO';
+          if (!formData.get('depreciation_percentage')) errors.depreciation_percentage = 'PERCENTUAL É OBRIGATÓRIO';
+
+          if (Object.keys(errors).length > 0) {
+            setAssetFieldErrors(errors);
+            return;
+          }
+
+          try {
+            if (editingAsset) {
+              await onUpdateAsset(editingAsset.id, formData);
+            } else {
+              await onAddAsset(formData);
+            }
+            setIsModalOpen(false);
+            setEditingAsset(null);
+            setAssetFieldErrors({});
+          } catch (err: any) {
+            // Error handled by parent or global handler
+          }
         }}
         asset={editingAsset}
         categories={categories}
+        fieldErrors={assetFieldErrors}
       />
 
       <AssetDisposalModal 
         isOpen={isDisposalModalOpen}
-        onClose={() => { setIsDisposalModalOpen(false); setSelectedAssetForDisposal(null); }}
-        onConfirm={async (data) => {
-          const id = data.asset_id || selectedAssetForDisposal?.id;
-          if (id) {
-            await onDisposalAsset(id, data);
-          }
-          setIsDisposalModalOpen(false);
+        onClose={() => { 
+          setIsDisposalModalOpen(false); 
           setSelectedAssetForDisposal(null);
+          setDisposalFieldErrors({});
+        }}
+        onConfirm={async (data) => {
+          const errors: Record<string, string> = {};
+          if (!data.asset_id) errors.asset_id = 'PATRIMÔNIO É OBRIGATÓRIO';
+          if (!data.disposal_date) errors.disposal_date = 'DATA É OBRIGATÓRIA';
+
+          if (Object.keys(errors).length > 0) {
+            setDisposalFieldErrors(errors);
+            return;
+          }
+
+          try {
+            const id = data.asset_id || selectedAssetForDisposal?.id;
+            if (id) {
+              await onDisposalAsset(id, data);
+            }
+            setIsDisposalModalOpen(false);
+            setSelectedAssetForDisposal(null);
+            setDisposalFieldErrors({});
+          } catch (err: any) {
+            // Error handled by parent or global handler
+          }
         }}
         asset={selectedAssetForDisposal}
         assets={assets}
+        fieldErrors={disposalFieldErrors}
       />
 
       <PdfOptionsModal 

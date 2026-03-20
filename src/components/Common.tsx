@@ -2,7 +2,7 @@ import React from 'react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import { motion, AnimatePresence } from 'motion/react';
-import { X, ChevronDown } from 'lucide-react';
+import { X, ChevronDown, AlertTriangle } from 'lucide-react';
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -154,9 +154,30 @@ export const ConfirmModal = ({
   </AnimatePresence>
 );
 
-export const Input = ({ label, icon, className, error, ...props }: any) => (
+export const ErrorText = ({ children, className }: { children: React.ReactNode, className?: string }) => (
+  <p className={cn("text-[10px] font-bold text-rose-500 ml-1 uppercase tracking-wider animate-in fade-in slide-in-from-top-1", className)}>
+    {children}
+  </p>
+);
+
+export const ErrorAlert = ({ children, className }: { children: React.ReactNode, className?: string }) => (
+  <div className={cn(
+    "p-3 bg-rose-50 dark:bg-rose-500/10 border border-rose-100 dark:border-rose-500/20 rounded-xl flex items-center gap-3 text-rose-600 dark:text-rose-400 animate-in fade-in slide-in-from-top-2",
+    className
+  )}>
+    <AlertTriangle size={18} className="flex-shrink-0" />
+    <span className="text-[10px] font-bold uppercase tracking-wider leading-tight">{children}</span>
+  </div>
+);
+
+export const Input = ({ label, icon, className, error, required, ...props }: any) => (
   <div className="space-y-1.5 flex-1">
-    {label && <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest ml-1">{label}</label>}
+    {label && (
+      <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest ml-1">
+        {label}
+        {required && <span className="text-rose-500 ml-0.5">*</span>}
+      </label>
+    )}
     <div className="relative group">
       {icon && <div className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400 group-focus-within:text-zinc-900 dark:group-focus-within:text-zinc-100 transition-colors">{icon}</div>}
       <input 
@@ -169,13 +190,18 @@ export const Input = ({ label, icon, className, error, ...props }: any) => (
         {...props}
       />
     </div>
-    {error && <p className="text-[10px] font-bold text-rose-500 ml-1 uppercase tracking-wider">{error}</p>}
+    {error && <ErrorText>{error}</ErrorText>}
   </div>
 );
 
-export const Select = ({ label, icon, options, className, error, ...props }: any) => (
+export const Select = ({ label, icon, options, className, error, required, ...props }: any) => (
   <div className="space-y-1.5 flex-1">
-    {label && <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest ml-1">{label}</label>}
+    {label && (
+      <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest ml-1">
+        {label}
+        {required && <span className="text-rose-500 ml-0.5">*</span>}
+      </label>
+    )}
     <div className="relative group">
       {icon && <div className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400 group-focus-within:text-zinc-900 dark:group-focus-within:text-zinc-100 transition-colors pointer-events-none">{icon}</div>}
       <select 
@@ -193,7 +219,28 @@ export const Select = ({ label, icon, options, className, error, ...props }: any
         <ChevronDown size={16} />
       </div>
     </div>
-    {error && <p className="text-[10px] font-bold text-rose-500 ml-1 uppercase tracking-wider">{error}</p>}
+    {error && <ErrorText>{error}</ErrorText>}
+  </div>
+);
+
+export const TextArea = ({ label, icon, className, error, required, ...props }: any) => (
+  <div className="space-y-1.5 flex-1">
+    {label && (
+      <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest ml-1 flex items-center gap-2">
+        {icon}
+        {label}
+        {required && <span className="text-rose-500 ml-0.5">*</span>}
+      </label>
+    )}
+    <textarea 
+      className={cn(
+        "w-full bg-zinc-50 border border-zinc-200 rounded-xl px-4 py-2.5 text-sm transition-all focus:ring-2 focus:ring-zinc-900/5 focus:border-zinc-900 dark:bg-zinc-800/50 dark:border-zinc-800 dark:text-zinc-100 dark:focus:border-zinc-100 min-h-[100px] uppercase",
+        error && "border-rose-500 focus:border-rose-500 focus:ring-rose-500/5",
+        className
+      )}
+      {...props}
+    />
+    {error && <ErrorText>{error}</ErrorText>}
   </div>
 );
 

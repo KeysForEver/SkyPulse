@@ -25,7 +25,7 @@ import { Kanban } from './components/Kanban';
 import { GenericList } from './components/GenericList';
 import { Settings as SettingsView } from './components/Settings';
 import { Assets } from './components/Assets';
-import { SidebarItem, cn } from './components/Common';
+import { SidebarItem, cn, ErrorAlert } from './components/Common';
 import { OrderModal } from './components/OrderModal';
 import { OrderDetailModal } from './components/OrderDetailModal';
 import { ClientModal, SupplierModal } from './components/EntityModals';
@@ -89,6 +89,7 @@ export default function App() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [lastScrollY, setLastScrollY] = useState(0);
+  const [globalError, setGlobalError] = useState<string | null>(null);
   const mainContentRef = useRef<HTMLDivElement>(null);
 
   // Handle window resize to ensure sidebar state is consistent
@@ -152,8 +153,10 @@ export default function App() {
   const [editingOrder, setEditingOrder] = useState<Order | null>(null);
   const [isClientModalOpen, setIsClientModalOpen] = useState(false);
   const [editingClient, setEditingClient] = useState<Client | null>(null);
+  const [clientFieldErrors, setClientFieldErrors] = useState<Record<string, string>>({});
   const [isSupplierModalOpen, setIsSupplierModalOpen] = useState(false);
   const [editingSupplier, setEditingSupplier] = useState<Supplier | null>(null);
+  const [supplierFieldErrors, setSupplierFieldErrors] = useState<Record<string, string>>({});
   const [isAssetModalOpen, setIsAssetModalOpen] = useState(false);
   const [editingAsset, setEditingAsset] = useState<Asset | null>(null);
   const [selectedOrderForDetail, setSelectedOrderForDetail] = useState<Order | null>(null);
@@ -303,7 +306,7 @@ export default function App() {
           }
 
           if (progress < 100) {
-            alert(`BLOQUEADO: Não é possível mover para "${status}". Todos os itens do Processo de Produção devem estar concluídos (100%).`);
+            setGlobalError(`BLOQUEADO: Não é possível mover para "${status}". Todos os itens do Processo de Produção devem estar concluídos (100%).`);
             return;
           }
         }
@@ -350,19 +353,53 @@ export default function App() {
   };
 
   const addClient = async (data: any) => {
+    const errors: Record<string, string> = {};
+    if (data.tipo_cliente === 'PF') {
+      if (!data.name) errors.name = 'NOME É OBRIGATÓRIO';
+      if (!data.cpf) errors.cpf = 'CPF É OBRIGATÓRIO';
+    } else {
+      if (!data.razao_social) errors.razao_social = 'RAZÃO SOCIAL É OBRIGATÓRIA';
+      if (!data.cnpj) errors.cnpj = 'CNPJ É OBRIGATÓRIO';
+    }
+
+    if (Object.keys(errors).length > 0) {
+      setClientFieldErrors(errors);
+      return;
+    }
+
     try {
       await apiService.addClient(data);
       fetchData();
-    } catch (err) {
+      setIsClientModalOpen(false);
+      setClientFieldErrors({});
+    } catch (err: any) {
+      setGlobalError(err.message || 'Erro ao adicionar cliente');
       console.error('Error adding client:', err);
     }
   };
 
   const updateClient = async (id: number, data: any) => {
+    const errors: Record<string, string> = {};
+    if (data.tipo_cliente === 'PF') {
+      if (!data.name) errors.name = 'NOME É OBRIGATÓRIO';
+      if (!data.cpf) errors.cpf = 'CPF É OBRIGATÓRIO';
+    } else {
+      if (!data.razao_social) errors.razao_social = 'RAZÃO SOCIAL É OBRIGATÓRIA';
+      if (!data.cnpj) errors.cnpj = 'CNPJ É OBRIGATÓRIO';
+    }
+
+    if (Object.keys(errors).length > 0) {
+      setClientFieldErrors(errors);
+      return;
+    }
+
     try {
       await apiService.updateClient(id, data);
       fetchData();
-    } catch (err) {
+      setIsClientModalOpen(false);
+      setClientFieldErrors({});
+    } catch (err: any) {
+      setGlobalError(err.message || 'Erro ao atualizar cliente');
       console.error('Error updating client:', err);
     }
   };
@@ -383,10 +420,27 @@ export default function App() {
   };
 
   const updateSupplierEntity = async (id: number, data: any) => {
+    const errors: Record<string, string> = {};
+    if (data.tipo === 'PF') {
+      if (!data.name) errors.name = 'NOME É OBRIGATÓRIO';
+      if (!data.cpf) errors.cpf = 'CPF É OBRIGATÓRIO';
+    } else {
+      if (!data.razao_social) errors.razao_social = 'RAZÃO SOCIAL É OBRIGATÓRIA';
+      if (!data.cnpj) errors.cnpj = 'CNPJ É OBRIGATÓRIO';
+    }
+
+    if (Object.keys(errors).length > 0) {
+      setSupplierFieldErrors(errors);
+      return;
+    }
+
     try {
       await apiService.updateSupplier(id, data);
       fetchData();
-    } catch (err) {
+      setIsSupplierModalOpen(false);
+      setSupplierFieldErrors({});
+    } catch (err: any) {
+      setGlobalError(err.message || 'Erro ao atualizar fornecedor');
       console.error('Error updating supplier:', err);
     }
   };
@@ -453,7 +507,7 @@ export default function App() {
       await apiService.addProduct(formData);
       fetchData();
     } catch (err: any) {
-      alert(err.message || 'Erro ao adicionar produto');
+      setGlobalError(err.message || 'Erro ao adicionar produto');
       console.error('Error adding product:', err);
     }
   };
@@ -488,9 +542,30 @@ export default function App() {
   const addSupplier = async (data: any) => {
     try {
       const payload = typeof data === 'string' ? { name: data, contact: '' } : data;
+      
+      // If it's a full object (from SupplierModal), validate it
+      if (typeof data !== 'string') {
+        const errors: Record<string, string> = {};
+        if (data.tipo === 'PF') {
+          if (!data.name) errors.name = 'NOME É OBRIGATÓRIO';
+          if (!data.cpf) errors.cpf = 'CPF É OBRIGATÓRIO';
+        } else {
+          if (!data.razao_social) errors.razao_social = 'RAZÃO SOCIAL É OBRIGATÓRIA';
+          if (!data.cnpj) errors.cnpj = 'CNPJ É OBRIGATÓRIO';
+        }
+
+        if (Object.keys(errors).length > 0) {
+          setSupplierFieldErrors(errors);
+          return;
+        }
+      }
+
       await apiService.addSupplier(payload);
       fetchData();
-    } catch (err) {
+      setIsSupplierModalOpen(false);
+      setSupplierFieldErrors({});
+    } catch (err: any) {
+      setGlobalError(err.message || 'Erro ao adicionar fornecedor');
       console.error('Error adding supplier:', err);
     }
   };
@@ -531,7 +606,7 @@ export default function App() {
       await apiService.stockOut(data);
       fetchData();
     } catch (err: any) {
-      alert(err.message || 'Erro ao processar saída');
+      setGlobalError(err.message || 'Erro ao processar saída');
       console.error('Error in stock out:', err);
     }
   };
@@ -541,7 +616,7 @@ export default function App() {
       await apiService.updateProduct(id, formData);
       fetchData();
     } catch (err: any) {
-      alert(err.message || 'Erro ao atualizar produto');
+      setGlobalError(err.message || 'Erro ao atualizar produto');
       console.error('Error updating product:', err);
     }
   };
@@ -555,7 +630,7 @@ export default function App() {
           await apiService.deleteProduct(id);
           fetchData();
         } catch (err: any) {
-          alert(err.message || 'Erro ao excluir produto');
+          setGlobalError(err.message || 'Erro ao excluir produto');
           console.error('Error deleting product:', err);
         }
       }
@@ -630,6 +705,7 @@ export default function App() {
             setIsOrderModalOpen(true);
           }}
           onItemClick={(order) => setSelectedOrderForDetail(order)}
+          onError={setGlobalError}
         />
       );
       case 'clients': return (
@@ -825,7 +901,21 @@ export default function App() {
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 flex flex-col min-w-0 overflow-hidden">
+      <main className="flex-1 flex flex-col min-w-0 overflow-hidden relative">
+        <AnimatePresence>
+          {globalError && (
+            <div className="absolute top-4 left-1/2 -translate-x-1/2 z-[500] w-full max-w-md px-4">
+              <ErrorAlert className="shadow-2xl border-rose-200 dark:border-rose-500/30">
+                <div className="flex items-center justify-between w-full">
+                  <span>{globalError}</span>
+                  <button onClick={() => setGlobalError(null)} className="ml-2 hover:text-rose-800 dark:hover:text-rose-200">
+                    <X size={14} />
+                  </button>
+                </div>
+              </ErrorAlert>
+            </div>
+          )}
+        </AnimatePresence>
         <header className="h-16 bg-white border-b border-zinc-200 flex items-center justify-between px-6 flex-shrink-0 dark:bg-zinc-950 dark:border-zinc-800">
           <div className="flex items-center gap-4">
             <button onClick={() => setIsSidebarOpen(true)} className="lg:hidden text-zinc-400 dark:text-zinc-500">
@@ -902,6 +992,7 @@ export default function App() {
         onClose={() => {
           setIsClientModalOpen(false);
           setEditingClient(null);
+          setClientFieldErrors({});
         }}
         onSubmit={(data) => {
           if (editingClient) {
@@ -911,6 +1002,7 @@ export default function App() {
           }
         }}
         editingClient={editingClient}
+        fieldErrors={clientFieldErrors}
       />
 
       <SupplierModal 
@@ -918,6 +1010,7 @@ export default function App() {
         onClose={() => {
           setIsSupplierModalOpen(false);
           setEditingSupplier(null);
+          setSupplierFieldErrors({});
         }}
         onSubmit={(data) => {
           if (editingSupplier) {
@@ -927,6 +1020,7 @@ export default function App() {
           }
         }}
         editingSupplier={editingSupplier}
+        fieldErrors={supplierFieldErrors}
       />
 
       <AssetModal 

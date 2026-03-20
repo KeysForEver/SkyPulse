@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { Download, ShieldCheck, Database as DbIcon, Loader2, Upload } from 'lucide-react';
-import { Card, ConfirmModal } from './Common';
+import { Card, ConfirmModal, ErrorAlert } from './Common';
 import { motion } from 'motion/react';
 import { apiService } from '../services/apiService';
 
@@ -9,10 +9,12 @@ export const Settings = () => {
   const [isImporting, setIsImporting] = useState(false);
   const [showConfirmRestore, setShowConfirmRestore] = useState(false);
   const [pendingFile, setPendingFile] = useState<File | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleBackup = async () => {
     setIsBackingUp(true);
+    setError(null);
     try {
       const response = await fetch('/api/backup');
       if (!response.ok) throw new Error('Falha ao baixar backup');
@@ -29,7 +31,7 @@ export const Settings = () => {
       window.URL.revokeObjectURL(url);
     } catch (error) {
       console.error('Erro no backup:', error);
-      alert('Erro ao realizar backup do banco de dados.');
+      setError('Erro ao realizar backup do banco de dados.');
     } finally {
       setIsBackingUp(false);
     }
@@ -44,7 +46,7 @@ export const Settings = () => {
     if (!file) return;
 
     if (!file.name.endsWith('.zip')) {
-      alert('Por favor, selecione um arquivo .zip de backup válido.');
+      setError('Por favor, selecione um arquivo .zip de backup válido.');
       return;
     }
 
@@ -58,13 +60,13 @@ export const Settings = () => {
 
     setIsImporting(true);
     setShowConfirmRestore(false);
+    setError(null);
     try {
       await apiService.importDatabase(pendingFile);
-      alert('Banco de dados restaurado com sucesso! O sistema será atualizado.');
       window.location.reload();
     } catch (error: any) {
       console.error('Erro na importação:', error);
-      alert('Erro ao importar banco de dados: ' + error.message);
+      setError('Erro ao importar banco de dados: ' + error.message);
     } finally {
       setIsImporting(false);
       setPendingFile(null);
@@ -77,6 +79,8 @@ export const Settings = () => {
         <h2 className="text-2xl font-bold tracking-tight uppercase">Configurações</h2>
         <p className="text-zinc-500 dark:text-zinc-400 uppercase">Gerencie as preferências e segurança do sistema.</p>
       </div>
+
+      {error && <ErrorAlert className="max-w-2xl">{error}</ErrorAlert>}
 
       <div className="max-w-2xl space-y-4">
         <Card className="p-6">

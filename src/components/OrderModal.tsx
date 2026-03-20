@@ -3,7 +3,7 @@ import { X, ChevronLeft, ChevronRight, Plus, Trash2, Check, AlertTriangle, Type,
 import { motion, AnimatePresence } from 'motion/react';
 import { Client, Order, OrderStatus, OrderDetails } from '../types';
 import { KANBAN_COLUMNS } from '../constants';
-import { cn, Input, Select, Button, Modal } from './Common';
+import { cn, Input, Select, Button, Modal, ErrorAlert, TextArea } from './Common';
 
 interface OrderModalProps {
   isOpen: boolean;
@@ -31,6 +31,7 @@ export const OrderModal = ({
 }: OrderModalProps) => {
   const [step, setStep] = useState(1);
   const [error, setError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<{ [key: string]: string }>({});
   const formRef = useRef<HTMLFormElement>(null);
   const [formData, setFormData] = useState({
     title: '',
@@ -169,9 +170,28 @@ export const OrderModal = ({
   };
 
   const validateStep = () => {
+    setError(null);
+    setFieldErrors({});
+    const newFieldErrors: { [key: string]: string } = {};
+
     if (step === 1) {
+      let hasError = false;
+      if (!formData.title) {
+        newFieldErrors.title = 'Por favor, informe o título da ordem.';
+        hasError = true;
+      }
+      if (!formData.client_id) {
+        newFieldErrors.client_id = 'Por favor, selecione um cliente.';
+        hasError = true;
+      }
       if (!formData.details.delivery_date) {
-        setError('Por favor, informe a data de entrega.');
+        newFieldErrors.delivery_date = 'Por favor, informe a data de entrega.';
+        hasError = true;
+      }
+      
+      if (hasError) {
+        setFieldErrors(newFieldErrors);
+        setError('Por favor, preencha todos os campos obrigatórios.');
         return false;
       }
       
@@ -179,6 +199,8 @@ export const OrderModal = ({
       const delivery = new Date(formData.details.delivery_date);
       
       if (delivery < entry) {
+        newFieldErrors.delivery_date = 'A data de entrega não pode ser anterior à data de entrada.';
+        setFieldErrors(newFieldErrors);
         setError('A data de entrega não pode ser anterior à data de entrada.');
         return false;
       }
@@ -296,6 +318,7 @@ export const OrderModal = ({
               required
               value={formData.title}
               onChange={e => setFormData({...formData, title: e.target.value.toUpperCase()})}
+              error={fieldErrors.title}
             />
 
             <Select
@@ -306,8 +329,9 @@ export const OrderModal = ({
               onChange={e => setFormData({...formData, client_id: e.target.value})}
               options={[
                 { value: '', label: 'SELECIONE O CLIENTE' },
-                ...clients.map(c => ({ value: c.id.toString(), label: c.name }))
+                ...clients.map(c => ({ value: c.id.toString(), label: (c.tipo_cliente === 'PF' ? c.name : c.razao_social).toUpperCase() }))
               ]}
+              error={fieldErrors.client_id}
             />
 
             <div className="grid grid-cols-2 gap-4">
@@ -318,6 +342,7 @@ export const OrderModal = ({
                 required
                 value={formData.details.entry_date}
                 onChange={e => setFormData({...formData, details: {...formData.details, entry_date: e.target.value}})}
+                error={fieldErrors.entry_date}
               />
               <Input
                 label="Data de Entrega"
@@ -326,28 +351,25 @@ export const OrderModal = ({
                 required
                 value={formData.details.delivery_date}
                 onChange={e => setFormData({...formData, details: {...formData.details, delivery_date: e.target.value}})}
+                error={fieldErrors.delivery_date}
               />
             </div>
 
-            <div className="space-y-1.5">
-              <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest ml-1 flex items-center gap-2">
-                <FileText size={14} />
-                Descrição <span className="text-rose-500 ml-0.5">*</span>
-              </label>
-              <textarea 
-                required
-                value={formData.description}
-                onChange={e => setFormData({...formData, description: e.target.value.toUpperCase()})}
-                className="w-full px-4 py-2 text-sm border border-zinc-200 dark:border-zinc-800 rounded-xl focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-100 outline-none bg-white dark:bg-black text-zinc-900 dark:text-zinc-100 min-h-[80px] uppercase"
-              />
-            </div>
+            <TextArea
+              label="Descrição"
+              icon={<FileText size={14} />}
+              required
+              value={formData.description}
+              onChange={(e: any) => setFormData({...formData, description: e.target.value.toUpperCase()})}
+              error={fieldErrors.description}
+            />
           </div>
         );
       case 2:
         return (
           <div className="space-y-6">
             <div className="space-y-3">
-              <label className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
+              <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest ml-1">
                 Status Kanban (Selecione 1) <span className="text-rose-500 ml-0.5">*</span>
               </label>
               <div className="grid grid-cols-1 gap-2">
@@ -377,17 +399,12 @@ export const OrderModal = ({
                 ))}
               </div>
             </div>
-            <div className="space-y-1.5">
-              <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest ml-1 flex items-center gap-2">
-                <FileText size={14} />
-                Descrição Opcional
-              </label>
-              <textarea 
-                value={formData.details.kanban_description}
-                onChange={e => setFormData({...formData, details: {...formData.details, kanban_description: e.target.value.toUpperCase()}})}
-                className="w-full px-4 py-2 text-sm border border-zinc-200 dark:border-zinc-800 rounded-xl focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-100 outline-none bg-white dark:bg-black text-zinc-900 dark:text-zinc-100 min-h-[80px] uppercase"
-              />
-            </div>
+            <TextArea
+              label="Descrição Opcional"
+              icon={<FileText size={14} />}
+              value={formData.details.kanban_description}
+              onChange={(e: any) => setFormData({...formData, details: {...formData.details, kanban_description: e.target.value.toUpperCase()}})}
+            />
           </div>
         );
       default:
@@ -510,13 +527,8 @@ export const OrderModal = ({
           />
         </div>
 
-        <form ref={formRef} onSubmit={(e) => e.preventDefault()} className="p-6 space-y-6 overflow-y-auto flex-1">
-          {error && (
-            <div className="p-3 bg-rose-50 dark:bg-rose-500/10 border border-rose-100 dark:border-rose-500/20 rounded-lg flex items-center gap-3 text-rose-600 dark:text-rose-400 text-sm animate-in fade-in slide-in-from-top-2">
-              <AlertTriangle size={18} />
-              {error}
-            </div>
-          )}
+        <form ref={formRef} noValidate onSubmit={(e) => e.preventDefault()} className="p-6 space-y-6 overflow-y-auto flex-1">
+          {error && <ErrorAlert>{error}</ErrorAlert>}
           <div className="min-h-[300px]">
             <AnimatePresence mode="wait">
               <motion.div
@@ -576,9 +588,6 @@ export const OrderModal = ({
                 <Button 
                   variant="primary"
                   onClick={() => {
-                    if (formRef.current && !formRef.current.reportValidity()) {
-                      return;
-                    }
                     if (validateStep()) {
                       onSubmit(formData);
                       onClose();

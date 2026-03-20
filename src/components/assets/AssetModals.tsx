@@ -9,9 +9,10 @@ interface AssetModalProps {
   onSave: (formData: FormData) => void;
   asset?: Asset | null;
   categories: { id: number, name: string }[];
+  fieldErrors?: Record<string, string>;
 }
 
-export const AssetModal = ({ isOpen, onClose, onSave, asset, categories }: AssetModalProps) => {
+export const AssetModal = ({ isOpen, onClose, onSave, asset, categories, fieldErrors = {} }: AssetModalProps) => {
   const [formData, setFormData] = useState({
     description: '',
     asset_number: '',
@@ -92,7 +93,7 @@ export const AssetModal = ({ isOpen, onClose, onSave, asset, categories }: Asset
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={asset ? 'EDITAR PATRIMÔNIO' : 'NOVO PATRIMÔNIO'} noPadding>
-      <form onSubmit={handleSubmit} className="p-6 space-y-6 overflow-y-auto flex-1">
+      <form onSubmit={handleSubmit} noValidate className="p-6 space-y-6 overflow-y-auto flex-1">
         <div className="flex flex-col items-center gap-4">
           <div className="relative group">
             <div className="w-24 h-24 rounded-2xl bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center overflow-hidden border-2 border-dashed border-zinc-200 dark:border-zinc-700 group-hover:border-zinc-400 transition-colors">
@@ -127,6 +128,7 @@ export const AssetModal = ({ isOpen, onClose, onSave, asset, categories }: Asset
               icon={<FileText size={18} />}
               value={formData.description}
               onChange={(e: any) => setFormData({ ...formData, description: e.target.value.toUpperCase() })}
+              error={fieldErrors.description}
               required
             />
           </div>
@@ -135,6 +137,8 @@ export const AssetModal = ({ isOpen, onClose, onSave, asset, categories }: Asset
             icon={<Hash size={18} />}
             value={formData.asset_number}
             onChange={(e: any) => setFormData({ ...formData, asset_number: e.target.value.toUpperCase() })}
+            error={fieldErrors.asset_number}
+            required
           />
           <Select 
             label="Categoria" 
@@ -145,6 +149,8 @@ export const AssetModal = ({ isOpen, onClose, onSave, asset, categories }: Asset
               { value: '', label: 'SELECIONE' },
               ...categories.map(c => ({ value: c.name, label: c.name.toUpperCase() }))
             ]}
+            error={fieldErrors.category}
+            required
           />
           <Input 
             label="Data Compra" 
@@ -152,6 +158,8 @@ export const AssetModal = ({ isOpen, onClose, onSave, asset, categories }: Asset
             type="date"
             value={formData.purchase_date}
             onChange={(e: any) => setFormData({ ...formData, purchase_date: e.target.value })}
+            error={fieldErrors.purchase_date}
+            required
           />
           <Input 
             label="Valor Compra (R$)" 
@@ -160,6 +168,8 @@ export const AssetModal = ({ isOpen, onClose, onSave, asset, categories }: Asset
             step="0.01"
             value={formData.purchase_value}
             onChange={(e: any) => setFormData({ ...formData, purchase_value: e.target.value })}
+            error={fieldErrors.purchase_value}
+            required
           />
           <Select 
             label="Tipo Depreciação" 
@@ -171,6 +181,8 @@ export const AssetModal = ({ isOpen, onClose, onSave, asset, categories }: Asset
               { value: 'MENSAL', label: 'MENSAL' },
               { value: 'ANUAL', label: 'ANUAL' }
             ]}
+            error={fieldErrors.depreciation_type}
+            required
           />
           <Input 
             label="% Depreciação" 
@@ -179,6 +191,8 @@ export const AssetModal = ({ isOpen, onClose, onSave, asset, categories }: Asset
             step="0.01"
             value={formData.depreciation_percentage}
             onChange={(e: any) => setFormData({ ...formData, depreciation_percentage: e.target.value })}
+            error={fieldErrors.depreciation_percentage}
+            required
           />
         </div>
 
@@ -213,9 +227,10 @@ interface AssetDisposalModalProps {
   onConfirm: (data: { disposal_type: string, disposal_date: string, disposal_value: number, asset_id?: number }) => void;
   asset: Asset | null;
   assets?: Asset[];
+  fieldErrors?: Record<string, string>;
 }
 
-export const AssetDisposalModal = ({ isOpen, onClose, onConfirm, asset, assets = [] }: AssetDisposalModalProps) => {
+export const AssetDisposalModal = ({ isOpen, onClose, onConfirm, asset, assets = [], fieldErrors = {} }: AssetDisposalModalProps) => {
   const [selectedAssetId, setSelectedAssetId] = useState<string>('');
   const [disposalType, setDisposalType] = useState('DESCARTE');
   const [disposalDate, setDisposalDate] = useState(new Date().toISOString().split('T')[0]);
@@ -267,7 +282,7 @@ export const AssetDisposalModal = ({ isOpen, onClose, onConfirm, asset, assets =
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="BAIXA DE PATRIMÔNIO" noPadding>
-      <form onSubmit={handleSubmit} className="p-6 space-y-6 overflow-y-auto flex-1">
+      <form onSubmit={handleSubmit} noValidate className="p-6 space-y-6 overflow-y-auto flex-1">
         {!asset ? (
           <Select 
             label="Selecionar Patrimônio" 
@@ -281,6 +296,7 @@ export const AssetDisposalModal = ({ isOpen, onClose, onConfirm, asset, assets =
                 label: `${a.description} (${a.asset_number || 'S/N'})`.toUpperCase()
               }))
             ]}
+            error={fieldErrors.asset_id}
             required
           />
         ) : (
@@ -309,6 +325,8 @@ export const AssetDisposalModal = ({ isOpen, onClose, onConfirm, asset, assets =
               { value: 'VENDA', label: 'VENDA' },
               { value: 'OUTRO', label: 'OUTRO' }
             ]}
+            error={fieldErrors.disposal_type}
+            required
           />
           <Input 
             label="Data da Baixa" 
@@ -316,6 +334,8 @@ export const AssetDisposalModal = ({ isOpen, onClose, onConfirm, asset, assets =
             type="date"
             value={disposalDate}
             onChange={(e: any) => setDisposalDate(e.target.value)}
+            error={fieldErrors.disposal_date}
+            required
           />
           <div className="md:col-span-2">
             <Input 

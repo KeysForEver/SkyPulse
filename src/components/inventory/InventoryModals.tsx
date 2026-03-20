@@ -3,7 +3,7 @@ import { X, Camera, Package, AlertTriangle, Plus, Edit, Trash2, ArrowDownLeft, A
 import { motion, AnimatePresence } from 'motion/react';
 import { Html5Qrcode } from 'html5-qrcode';
 import { Product, Supplier, Order, Movement } from '../../types';
-import { Card, cn, Input, Select, Button, Modal, ConfirmModal } from '../Common';
+import { Card, cn, Input, Select, Button, Modal, ConfirmModal, ErrorAlert } from '../Common';
 import { useDebounce } from '../../hooks/useDebounce';
 
 interface ProductModalProps {
@@ -26,6 +26,7 @@ interface ProductModalProps {
   setNewUnitName: (val: string) => void;
   onAddUnit: () => void;
   productError: string | null;
+  fieldErrors: { [key: string]: string };
   fileInputRef: React.RefObject<HTMLInputElement>;
   handleFileChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onClear: () => void;
@@ -51,18 +52,14 @@ export const ProductModal = ({
   setNewUnitName,
   onAddUnit,
   productError,
+  fieldErrors,
   fileInputRef,
   handleFileChange,
   onClear
 }: ProductModalProps) => (
   <Modal isOpen={isOpen} onClose={onClose} title={editingProduct ? 'EDITAR PRODUTO' : 'NOVO PRODUTO'} noPadding>
-    <form onSubmit={onSubmit} className="p-6 space-y-6 overflow-y-auto flex-1">
-      {productError && (
-        <div className="p-3 bg-rose-50 dark:bg-rose-500/10 border border-rose-100 dark:border-rose-500/20 rounded-lg flex items-center gap-3 text-rose-600 dark:text-rose-400 text-sm">
-          <AlertTriangle size={18} />
-          {productError}
-        </div>
-      )}
+    <form onSubmit={onSubmit} noValidate className="p-6 space-y-6 overflow-y-auto flex-1">
+      {productError && <ErrorAlert>{productError}</ErrorAlert>}
       <div className="flex flex-col items-center gap-4">
         <div className="relative group">
           <div className="w-24 h-24 rounded-2xl bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center overflow-hidden border-2 border-dashed border-zinc-200 dark:border-zinc-700 group-hover:border-zinc-400 transition-colors">
@@ -98,20 +95,24 @@ export const ProductModal = ({
             value={formData.name}
             onChange={(e: any) => setFormData({ ...formData, name: e.target.value.toUpperCase() })}
             required
+            error={fieldErrors.name}
           />
         </div>
         <div className="flex gap-2 items-end">
-          <Select 
-            label="Categoria" 
-            icon={<Tag size={18} />}
-            value={formData.category}
-            onChange={(e: any) => setFormData({ ...formData, category: e.target.value })}
-            options={[
-              { value: '', label: 'SELECIONE' },
-              ...categories.map((c: any) => ({ value: c.name, label: c.name.toUpperCase() }))
-            ]}
-            required
-          />
+          <div className="flex-1">
+            <Select 
+              label="Categoria" 
+              icon={<Tag size={18} />}
+              value={formData.category}
+              onChange={(e: any) => setFormData({ ...formData, category: e.target.value })}
+              options={[
+                { value: '', label: 'SELECIONE' },
+                ...categories.map((c: any) => ({ value: c.name, label: c.name.toUpperCase() }))
+              ]}
+              required
+              error={fieldErrors.category}
+            />
+          </div>
           <button 
             type="button"
             onClick={() => setIsAddingCategory(true)}
@@ -121,17 +122,20 @@ export const ProductModal = ({
           </button>
         </div>
         <div className="flex gap-2 items-end">
-          <Select 
-            label="Unidade" 
-            icon={<FileText size={18} />}
-            value={formData.unit}
-            onChange={(e: any) => setFormData({ ...formData, unit: e.target.value })}
-            options={[
-              { value: '', label: 'SELECIONE...' },
-              ...(units || []).map((u: any) => ({ value: u.name, label: u.name }))
-            ]}
-            required
-          />
+          <div className="flex-1">
+            <Select 
+              label="Unidade" 
+              icon={<FileText size={18} />}
+              value={formData.unit}
+              onChange={(e: any) => setFormData({ ...formData, unit: e.target.value })}
+              options={[
+                { value: '', label: 'SELECIONE...' },
+                ...(units || []).map((u: any) => ({ value: u.name, label: u.name }))
+              ]}
+              required
+              error={fieldErrors.unit}
+            />
+          </div>
           <button 
             type="button"
             onClick={() => setIsAddingUnit(true)}
@@ -149,6 +153,7 @@ export const ProductModal = ({
             step="0.01"
             value={formData.min_quantity === null ? '' : formData.min_quantity}
             onChange={(e: any) => setFormData({ ...formData, min_quantity: e.target.value === '' ? null : parseFloat(e.target.value) })}
+            error={fieldErrors.min_quantity}
           />
         </div>
       </div>
@@ -246,6 +251,7 @@ export const StockInModal = ({
   onAddLocation,
   products,
   stockInError,
+  fieldErrors,
   onClear
 }: any) => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -346,13 +352,8 @@ export const StockInModal = ({
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="ENTRADA DE ESTOQUE" noPadding>
-      <form onSubmit={onSubmit} className="p-6 space-y-4 overflow-y-auto flex-1">
-        {stockInError && (
-          <div className="p-3 bg-rose-50 dark:bg-rose-500/10 border border-rose-100 dark:border-rose-500/20 rounded-lg flex items-center gap-3 text-rose-600 dark:text-rose-400 text-sm">
-            <AlertTriangle size={18} />
-            {stockInError}
-          </div>
-        )}
+      <form onSubmit={onSubmit} noValidate className="p-6 space-y-4 overflow-y-auto flex-1">
+        {stockInError && <ErrorAlert>{stockInError}</ErrorAlert>}
 
         <AnimatePresence>
           {(isScanning || cameraError) && (
@@ -405,7 +406,7 @@ export const StockInModal = ({
         <div className="space-y-4">
           {/* Linha 1: Produto */}
           <div className="space-y-1.5 relative" ref={dropdownRef}>
-            <label className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase">
+            <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest ml-1">
               Produto <span className="text-rose-500 ml-0.5">*</span>
             </label>
             <div className="relative">
@@ -463,6 +464,11 @@ export const StockInModal = ({
                 )}
               </AnimatePresence>
             </div>
+            {fieldErrors.product_id && (
+              <p className="text-[10px] font-bold text-rose-500 uppercase tracking-wider mt-1">
+                {fieldErrors.product_id}
+              </p>
+            )}
             <input type="hidden" required value={stockInData.product_id} />
           </div>
 
@@ -477,6 +483,7 @@ export const StockInModal = ({
               step="0.01"
               value={stockInData.quantity || ''}
               onChange={(e: any) => setStockInData({...stockInData, quantity: parseFloat(e.target.value) || 0})}
+              error={fieldErrors.quantity}
             />
             <div className="flex gap-2 items-end">
               <div className="flex-1">
@@ -490,6 +497,7 @@ export const StockInModal = ({
                     { value: '', label: 'SELECIONE' },
                     ...locations.map((l: any) => ({ value: l.name, label: l.name.toUpperCase() }))
                   ]}
+                  error={fieldErrors.location}
                 />
               </div>
               <button 
@@ -516,6 +524,7 @@ export const StockInModal = ({
                     { value: '', label: 'SELECIONE' },
                     ...suppliers.map((s: Supplier) => ({ value: s.id.toString(), label: s.name.toUpperCase() }))
                   ]}
+                  error={fieldErrors.supplier_id}
                 />
               </div>
               <button 
@@ -614,6 +623,7 @@ export const StockInModal = ({
               type="date"
               value={stockInData.issue_date}
               onChange={e => setStockInData({...stockInData, issue_date: e.target.value})}
+              error={fieldErrors.issue_date}
             />
             <Input
               label="Valor Unitário (R$)"
@@ -723,6 +733,7 @@ export const StockOutModal = ({
   orders,
   stockOutError,
   setStockOutError,
+  fieldErrors,
   onClear
 }: any) => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -754,16 +765,11 @@ export const StockOutModal = ({
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="SAÍDA DE ESTOQUE" noPadding>
-      <form onSubmit={onSubmit} className="p-6 space-y-4 overflow-y-auto flex-1">
-        {stockOutError && (
-          <div className="p-3 bg-rose-50 dark:bg-rose-500/10 border border-rose-100 dark:border-rose-500/20 rounded-lg flex items-center gap-3 text-rose-600 dark:text-rose-400 text-sm">
-            <AlertTriangle size={18} />
-            {stockOutError}
-          </div>
-        )}
+      <form onSubmit={onSubmit} noValidate className="p-6 space-y-4 overflow-y-auto flex-1">
+        {stockOutError && <ErrorAlert>{stockOutError}</ErrorAlert>}
         
         <div className="space-y-1.5 relative" ref={dropdownRef}>
-          <label className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase">
+          <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest ml-1">
             Produto <span className="text-rose-500 ml-0.5">*</span> {selectedProduct && (
               <span className="ml-2 text-zinc-400 uppercase">
                 (Saldo: {selectedProduct.quantity > 0 ? selectedProduct.quantity : '-'})

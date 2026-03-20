@@ -14,7 +14,7 @@ import {
 import { motion, AnimatePresence } from 'motion/react';
 import { Product, Supplier, Order, Movement } from '../types';
 import { apiService } from '../services/apiService';
-import { Card, cn } from './Common';
+import { Card, cn, ErrorAlert } from './Common';
 import { ProductTable } from './inventory/ProductTable';
 import { MovementTable } from './inventory/MovementTable';
 import { InventoryFilters } from './inventory/InventoryFilters';
@@ -88,6 +88,9 @@ export const Inventory = ({
   const [stockOutError, setStockOutError] = useState<string | null>(null);
   const [productError, setProductError] = useState<string | null>(null);
   const [stockInError, setStockInError] = useState<string | null>(null);
+  const [productFieldErrors, setProductFieldErrors] = useState<{ [key: string]: string }>({});
+  const [stockInFieldErrors, setStockInFieldErrors] = useState<{ [key: string]: string }>({});
+  const [stockOutFieldErrors, setStockOutFieldErrors] = useState<{ [key: string]: string }>({});
   const [isAddingCategory, setIsAddingCategory] = useState(false);
   const [isAddingUnit, setIsAddingUnit] = useState(false);
   const [isEditingCategory, setIsEditingCategory] = useState(false);
@@ -101,6 +104,7 @@ export const Inventory = ({
   const [newSupplierName, setNewSupplierName] = useState('');
   const [newLocationName, setNewLocationName] = useState('');
   const [searchTerm, setSearchTerm] = useState(initialSearchTerm);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     setSearchTerm(initialSearchTerm);
@@ -216,9 +220,26 @@ export const Inventory = ({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setProductError(null);
+    setProductFieldErrors({});
+    const newFieldErrors: { [key: string]: string } = {};
 
     // Manual validation
-    if (!formData.name || !formData.category || !formData.unit) {
+    let hasError = false;
+    if (!formData.name) {
+      newFieldErrors.name = 'O nome do produto é obrigatório.';
+      hasError = true;
+    }
+    if (!formData.category) {
+      newFieldErrors.category = 'A categoria é obrigatória.';
+      hasError = true;
+    }
+    if (!formData.unit) {
+      newFieldErrors.unit = 'A unidade é obrigatória.';
+      hasError = true;
+    }
+
+    if (hasError) {
+      setProductFieldErrors(newFieldErrors);
       setProductError('Por favor, preencha todos os campos obrigatórios (*).');
       return;
     }
@@ -311,6 +332,36 @@ export const Inventory = ({
   const handleStockInSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setStockInError(null);
+    setStockInFieldErrors({});
+    const newFieldErrors: { [key: string]: string } = {};
+
+    let hasError = false;
+    if (!stockInData.product_id) {
+      newFieldErrors.product_id = 'O produto é obrigatório.';
+      hasError = true;
+    }
+    if (!stockInData.quantity || stockInData.quantity <= 0) {
+      newFieldErrors.quantity = 'A quantidade deve ser maior que zero.';
+      hasError = true;
+    }
+    if (!stockInData.location) {
+      newFieldErrors.location = 'A localização é obrigatória.';
+      hasError = true;
+    }
+    if (!stockInData.supplier_id) {
+      newFieldErrors.supplier_id = 'O fornecedor é obrigatório.';
+      hasError = true;
+    }
+    if (!stockInData.issue_date) {
+      newFieldErrors.issue_date = 'A data de emissão é obrigatória.';
+      hasError = true;
+    }
+
+    if (hasError) {
+      setStockInFieldErrors(newFieldErrors);
+      setStockInError('Por favor, preencha todos os campos obrigatórios (*).');
+      return;
+    }
 
     onStockIn(stockInData);
     setIsStockInModalOpen(false);
@@ -320,9 +371,29 @@ export const Inventory = ({
   const handleStockOutSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setStockOutError(null);
+    setStockOutFieldErrors({});
+    const newFieldErrors: { [key: string]: string } = {};
+
+    let hasError = false;
+    if (!stockOutData.product_id) {
+      newFieldErrors.product_id = 'O produto é obrigatório.';
+      hasError = true;
+    }
+    if (!stockOutData.quantity || stockOutData.quantity <= 0) {
+      newFieldErrors.quantity = 'A quantidade deve ser maior que zero.';
+      hasError = true;
+    }
+
+    if (hasError) {
+      setStockOutFieldErrors(newFieldErrors);
+      setStockOutError('Por favor, preencha todos os campos obrigatórios (*).');
+      return;
+    }
 
     const product = products.find(p => p.id === parseInt(stockOutData.product_id));
     if (product && product.quantity < stockOutData.quantity) {
+      newFieldErrors.quantity = `Saldo insuficiente (${product.quantity})`;
+      setStockOutFieldErrors(newFieldErrors);
       setStockOutError(`Não é possível realizar a saída: Quantidade solicitada (${stockOutData.quantity}) é maior que o saldo atual (${product.quantity}).`);
       return;
     }
@@ -393,13 +464,13 @@ export const Inventory = ({
       try {
         const result = await apiService.importProducts(csvData);
         if (result.success) {
-          alert(`Importação concluída! ${result.imported} produtos importados.${result.errors.length > 0 ? '\n\nErros:\n' + result.errors.join('\n') : ''}`);
+          setError(`Importação concluída! ${result.imported} produtos importados.${result.errors.length > 0 ? '\n\nErros:\n' + result.errors.join('\n') : ''}`);
         } else {
-          alert(`Erro na importação: ${result.success}`);
+          setError(`Erro na importação: ${result.success}`);
         }
       } catch (error: any) {
         console.error('Erro ao importar CSV:', error);
-        alert(error.message || 'Erro ao importar arquivo CSV.');
+        setError(error.message || 'Erro ao importar arquivo CSV.');
       } finally {
         if (importFileInputRef.current) importFileInputRef.current.value = '';
       }
@@ -532,6 +603,8 @@ export const Inventory = ({
           Movimentações
         </button>
       </div>
+      
+      {error && <ErrorAlert className="mb-6">{error}</ErrorAlert>}
 
       <Card className="p-0 overflow-visible">
         <div className="p-6 border-b border-zinc-100 dark:border-zinc-800 flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -651,6 +724,7 @@ export const Inventory = ({
         newUnitName={newUnitName}
         setNewUnitName={setNewUnitName}
         productError={productError}
+        fieldErrors={productFieldErrors}
         fileInputRef={fileInputRef}
         handleFileChange={handleFileChange}
         onClear={resetProductForm}
@@ -676,6 +750,7 @@ export const Inventory = ({
         onAddLocation={handleAddLocation}
         products={products}
         stockInError={stockInError}
+        fieldErrors={stockInFieldErrors}
         onClear={resetStockInForm}
       />
 
@@ -689,6 +764,7 @@ export const Inventory = ({
         orders={orders}
         stockOutError={stockOutError}
         setStockOutError={setStockOutError}
+        fieldErrors={stockOutFieldErrors}
         onClear={resetStockOutForm}
       />
 

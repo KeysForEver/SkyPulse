@@ -12,9 +12,10 @@ interface KanbanProps {
   onDelete: (id: number) => void;
   onAdd: () => void;
   onItemClick: (order: Order) => void;
+  onError?: (message: string) => void;
 }
 
-export const Kanban = ({ orders, onUpdateStatus, onEdit, onDelete, onAdd, onItemClick }: KanbanProps) => {
+export const Kanban = ({ orders, onUpdateStatus, onEdit, onDelete, onAdd, onItemClick, onError }: KanbanProps) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [draggedOrderId, setDraggedOrderId] = useState<number | null>(null);
   const [draggedOverColumn, setDraggedOverColumn] = useState<string | null>(null);
@@ -60,7 +61,9 @@ export const Kanban = ({ orders, onUpdateStatus, onEdit, onDelete, onAdd, onItem
     if (statusIndex >= finalizationIndex) {
       const progress = getOrderProgress(order);
       if (progress < 100) {
-        alert(`BLOQUEADO: Não é possível mover para "${newStatus}". Todos os itens do Processo de Produção devem estar concluídos (100%).`);
+        if (onError) {
+          onError(`BLOQUEADO: Não é possível mover para "${newStatus}". Todos os itens do Processo de Produção devem estar concluídos (100%).`);
+        }
         return false;
       }
     }
