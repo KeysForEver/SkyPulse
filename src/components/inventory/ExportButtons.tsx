@@ -55,14 +55,14 @@ export const ExportButtons = ({
           className="flex-shrink-0 flex items-center gap-2 px-4 py-2 text-sm font-bold text-rose-600 bg-rose-50 rounded-xl hover:bg-rose-100 transition-colors dark:bg-rose-500/10 dark:text-rose-400 dark:hover:bg-rose-500/20"
         >
           <ArrowUpRight size={18} />
-          Saída
+          SAÍDA
         </button>
         <button 
           onClick={onStockInClick}
           className="flex-shrink-0 flex items-center gap-2 px-4 py-2 text-sm font-bold text-emerald-600 bg-emerald-50 rounded-xl hover:bg-emerald-100 transition-colors dark:bg-emerald-500/10 dark:text-emerald-400 dark:hover:bg-emerald-500/20"
         >
           <ArrowDownLeft size={18} />
-          Entrada
+          ENTRADA
         </button>
         <button 
           onClick={onNewProductClick}

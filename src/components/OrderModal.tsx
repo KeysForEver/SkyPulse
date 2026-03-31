@@ -336,7 +336,7 @@ export const OrderModal = ({
 
             <div className="grid grid-cols-2 gap-4">
               <Input
-                label="Data de Entrada"
+                label="DATA DE ENTRADA"
                 icon={<Calendar size={18} />}
                 type="date"
                 required

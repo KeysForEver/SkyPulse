@@ -3,7 +3,7 @@ import { Search, MoreVertical, ChevronRight, Plus, Edit, Trash2, CheckCircle2 } 
 import { motion, AnimatePresence } from 'motion/react';
 import { Order, OrderStatus, OrderDetails } from '../types';
 import { KANBAN_COLUMNS } from '../constants';
-import { cn } from './Common';
+import { cn, SearchBar } from './Common';
 
 interface KanbanProps {
   orders: Order[];
@@ -72,10 +72,9 @@ export const Kanban = ({ orders, onUpdateStatus, onEdit, onDelete, onAdd, onItem
 
   const filteredOrders = useMemo(() => {
     return orders.filter(o => 
-      o.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      o.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      o.client_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      o.id.toString().includes(searchTerm)
+      Object.values(o).some(val => 
+        val !== null && val !== undefined && val.toString().toLowerCase().includes(searchTerm.toLowerCase())
+      )
     );
   }, [orders, searchTerm]);
 
@@ -121,16 +120,10 @@ export const Kanban = ({ orders, onUpdateStatus, onEdit, onDelete, onAdd, onItem
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between gap-4">
-        <div className="relative flex-1 max-w-md">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400 dark:text-zinc-500" size={16} />
-          <input 
-            type="text" 
-            placeholder="BUSCAR ORDENS..." 
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value.toUpperCase())}
-            className="w-full pl-10 pr-4 py-2 text-sm border border-zinc-200 dark:border-zinc-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-100 focus:border-transparent bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 uppercase transition-all"
-          />
-        </div>
+        <SearchBar 
+          value={searchTerm}
+          onChange={setSearchTerm}
+        />
         <button 
           onClick={onAdd}
           className="flex items-center gap-2 px-4 py-2 bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 text-sm font-bold rounded-xl hover:bg-zinc-800 dark:hover:bg-zinc-200 transition-all shadow-lg shadow-zinc-900/10 uppercase"

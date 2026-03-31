@@ -485,9 +485,9 @@ export const Inventory = ({
       result = result.filter(p => p.min_quantity !== null && p.quantity <= p.min_quantity);
     } else {
       result = result.filter(p => 
-        p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        p.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        p.id.toString().includes(searchTerm)
+        Object.values(p).some(val => 
+          val !== null && val !== undefined && val.toString().toLowerCase().includes(searchTerm.toLowerCase())
+        )
       );
     }
 
@@ -553,11 +553,9 @@ export const Inventory = ({
 
   const filteredMovements = useMemo(() => {
     return movements.filter(m => {
-      const matchesSearch = 
-        m.product_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        m.doc_number?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        m.reason?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        m.destination?.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesSearch = Object.values(m).some(val => 
+        val !== null && val !== undefined && val.toString().toLowerCase().includes(searchTerm.toLowerCase())
+      );
       
       const movementDate = new Date(m.date);
       const start = startDate ? new Date(startDate.replace(/-/g, '\/')) : null;

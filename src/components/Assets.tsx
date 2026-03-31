@@ -15,7 +15,7 @@ import {
 import { motion, AnimatePresence } from 'motion/react';
 import { Asset } from '../types';
 import { apiService } from '../services/apiService';
-import { Card, cn, Button } from './Common';
+import { Card, cn, Button, SearchBar } from './Common';
 import { AssetTable } from './assets/AssetTable';
 import { AssetModal, AssetDisposalModal } from './assets/AssetModals';
 import { PdfOptionsModal } from './inventory/InventoryModals';
@@ -24,6 +24,7 @@ import { exportGenericToCSV, exportGenericToPDF } from '../services/exportServic
 interface AssetsProps {
   assets: Asset[];
   categories: {id: number, name: string}[];
+  hideTitle?: boolean;
   onAddAsset: (formData: FormData) => Promise<void>;
   onUpdateAsset: (id: number, formData: FormData) => Promise<void>;
   onDeleteAsset: (id: number) => Promise<void>;
@@ -33,6 +34,7 @@ interface AssetsProps {
 export const Assets = ({ 
   assets, 
   categories,
+  hideTitle = false,
   onAddAsset, 
   onUpdateAsset,
   onDeleteAsset,
@@ -79,9 +81,9 @@ export const Assets = ({
 
   const filteredAssets = useMemo(() => {
     let result = assets.filter(a => 
-      a.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      a.asset_number?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      a.category?.toLowerCase().includes(searchTerm.toLowerCase())
+      Object.values(a).some(val => 
+        val !== null && val !== undefined && val.toString().toLowerCase().includes(searchTerm.toLowerCase())
+      )
     );
 
     if (sortConfig) {
@@ -143,21 +145,14 @@ export const Assets = ({
 
   return (
     <>
-      <div className="flex items-center gap-4 mb-6">
-        <h2 className="text-lg font-bold text-zinc-900 dark:text-zinc-100 uppercase tracking-widest">Gestão de Patrimônio</h2>
-      </div>
-
       <Card className="p-0 overflow-visible">
-        <div className="p-6 border-b border-zinc-100 dark:border-zinc-800 flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div className="flex-1 max-w-md relative">
-            <input
-              type="text"
-              placeholder="Pesquisar patrimônio..."
-              className="w-full pl-10 pr-4 py-2 bg-zinc-100 dark:bg-zinc-800 border-none rounded-xl text-sm focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-100 transition-all"
+        <div className="px-6 py-4 border-b border-zinc-100 dark:border-zinc-800 flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="flex items-center gap-4 flex-1">
+            {!hideTitle && <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100 whitespace-nowrap uppercase">Gestão de Patrimônio</h3>}
+            <SearchBar 
               value={searchTerm}
-              onChange={e => setSearchTerm(e.target.value)}
+              onChange={setSearchTerm}
             />
-            <Settings className="absolute left-3 top-2.5 text-zinc-400" size={18} />
           </div>
 
           <div className="flex items-center gap-3 flex-wrap">
@@ -224,7 +219,7 @@ export const Assets = ({
               className="flex items-center gap-2 px-4 py-2 text-sm font-bold text-rose-600 bg-rose-50 rounded-xl hover:bg-rose-100 transition-colors dark:text-rose-400 dark:bg-rose-500/10 dark:hover:bg-rose-500/20 uppercase"
             >
               <ArrowUpRight size={18} />
-              Saída
+              SAÍDA
             </button>
 
             <button 
@@ -232,7 +227,7 @@ export const Assets = ({
               className="flex items-center gap-2 px-4 py-2 text-sm font-bold text-emerald-600 bg-emerald-50 rounded-xl hover:bg-emerald-100 transition-colors dark:text-emerald-400 dark:bg-emerald-500/10 dark:hover:bg-emerald-500/20 uppercase"
             >
               <ArrowDownLeft size={18} />
-              Entrada
+              ENTRADA
             </button>
 
             <button 

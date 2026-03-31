@@ -40,7 +40,7 @@ export const MovementTable = ({ movements }: MovementTableProps) => {
                   : "bg-rose-100 text-rose-700 dark:bg-rose-500/20 dark:text-rose-400"
               )}>
                 {m.type === 'IN' ? <ArrowDownLeft size={10} /> : <ArrowUpRight size={10} />}
-                {m.type === 'IN' ? 'Entrada' : 'Saída'}
+                {m.type === 'IN' ? 'ENTRADA' : 'SAÍDA'}
               </span>
             </td>
             <td className="px-6 py-4 text-sm font-medium text-zinc-900 dark:text-zinc-100">{m.product_name}</td>

@@ -661,7 +661,7 @@ export const StockInModal = ({
             variant="primary"
             className="bg-emerald-600 hover:bg-emerald-700 shadow-emerald-600/10"
           >
-            Confirmar Entrada
+            CONFIRMAR ENTRADA
           </Button>
         </div>
 
@@ -849,7 +849,7 @@ export const StockOutModal = ({
         />
 
         <Select
-          label="Motivo da Saída"
+          label="MOTIVO DA SAÍDA"
           required
           value={stockOutData.reason}
           onChange={e => setStockOutData({...stockOutData, reason: e.target.value, destination: ''})}
@@ -902,7 +902,7 @@ export const StockOutModal = ({
             variant="primary"
             className="bg-rose-600 hover:bg-rose-700 shadow-rose-600/10"
           >
-            Confirmar Saída
+            CONFIRMAR SAÍDA
           </Button>
         </div>
       </form>
@@ -1155,7 +1155,7 @@ export const ProductDetailModal = ({
                                 : "bg-rose-100 text-rose-700 dark:bg-rose-500/20 dark:text-rose-400"
                             )}>
                               {m.type === 'IN' ? <ArrowDownLeft size={8} /> : <ArrowUpRight size={8} />}
-                              {m.type === 'IN' ? 'Entrada' : 'Saída'}
+                              {m.type === 'IN' ? 'ENTRADA' : 'SAÍDA'}
                             </span>
                           </td>
                           <td className="px-4 py-3 text-xs font-bold text-zinc-900 dark:text-zinc-100">{m.quantity}</td>

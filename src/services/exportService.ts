@@ -86,7 +86,7 @@ export const exportMovementsToPDF = (movements: Movement[]) => {
   const tableColumn = ['Data', 'Tipo', 'Produto', 'Qtd', 'Origem/Destino', 'Doc/Motivo'];
   const tableRows = movements.map(m => {
     const date = new Date(m.date).toLocaleString('pt-BR');
-    const type = m.type === 'IN' ? 'Entrada' : 'Saída';
+    const type = m.type === 'IN' ? 'ENTRADA' : 'SAÍDA';
     const origin = m.type === 'IN' ? (m.supplier_name || m.location) : m.destination;
     const docVal = m.type === 'IN' ? m.doc_number : m.reason;
     return [date, type, m.product_name, m.quantity, origin, docVal];
@@ -109,7 +109,7 @@ export const exportMovementsToCSV = (movements: Movement[]) => {
   const headers = "Data,Tipo,Produto,Quantidade,Origem/Destino,Documento/Motivo\n";
   const rows = movements.map(m => {
     const date = new Date(m.date).toLocaleString('pt-BR');
-    const type = m.type === 'IN' ? 'Entrada' : 'Saída';
+    const type = m.type === 'IN' ? 'ENTRADA' : 'SAÍDA';
     const origin = m.type === 'IN' ? (m.supplier_name || m.location) : m.destination;
     const doc = m.type === 'IN' ? m.doc_number : m.reason;
     return `"${date}","${type}","${m.product_name}","${m.quantity}","${origin}","${doc}"`;

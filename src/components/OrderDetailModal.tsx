@@ -181,7 +181,7 @@ export const OrderDetailModal = ({
               </h3>
               <div className="grid grid-cols-3 gap-4">
                 <div>
-                  <p className="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase">Entrada</p>
+                  <p className="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase">ENTRADA</p>
                   <p className="text-xs font-medium text-zinc-900 dark:text-zinc-100">
                     {details?.entry_date ? new Date(details.entry_date).toLocaleDateString('pt-BR') : '-'}
                   </p>

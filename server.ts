@@ -210,15 +210,7 @@ function initDb() {
   const userCount = db.prepare('SELECT count(*) as count FROM users').get() as { count: number };
   if (userCount.count === 0) {
     db.prepare('INSERT INTO users (name, email, role) VALUES (?, ?, ?)').run('Admin', 'admin@example.com', 'Admin');
-    db.prepare('INSERT INTO categories (name) VALUES (?)').run('Cabeamento');
-    db.prepare('INSERT INTO categories (name) VALUES (?)').run('Conectores');
     db.prepare('INSERT INTO locations (name) VALUES (?)').run('Almoxarifado Central');
-    db.prepare('INSERT INTO locations (name) VALUES (?)').run('Depósito A');
-    db.prepare('INSERT INTO products (name, category, quantity, cost_price) VALUES (?, ?, ?, ?)').run('Cabo de Rede CAT6', 'Cabeamento', 100, 2.50);
-    db.prepare('INSERT INTO products (name, category, quantity, cost_price) VALUES (?, ?, ?, ?)').run('Conector RJ45', 'Conectores', 500, 0.50);
-    db.prepare('INSERT INTO clients (name, email) VALUES (?, ?)').run('Empresa ABC', 'contato@abc.com');
-    db.prepare('INSERT INTO suppliers (name, email) VALUES (?, ?)').run('Fornecedor Tech', 'vendas@tech.com');
-    db.prepare('INSERT INTO orders (title, status, client_id) VALUES (?, ?, ?)').run('Instalação Rede Escritório', 'ORDENS DE PRODUÇÃO', 1);
     
     db.prepare('INSERT INTO units (name) VALUES (?)').run('UN');
     db.prepare('INSERT INTO units (name) VALUES (?)').run('MT');

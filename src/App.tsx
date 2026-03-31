@@ -676,6 +676,7 @@ export default function App() {
       case 'production': return (
         <GenericList 
           title="ORDENS DE PRODUÇÃO" 
+          hideTitle={true}
           items={orders} 
           columns={[
             { key: 'id', label: 'ID', mono: true },
@@ -711,6 +712,7 @@ export default function App() {
       case 'clients': return (
         <GenericList 
           title="CLIENTES" 
+          hideTitle={true}
           items={clients.map(c => ({
             ...c,
             display_name: c.tipo_cliente === 'PF' ? c.name : c.razao_social,
@@ -740,6 +742,7 @@ export default function App() {
       case 'suppliers': return (
         <GenericList 
           title="FORNECEDORES" 
+          hideTitle={true}
           items={suppliers.map(s => ({
             ...s,
             display_name: s.tipo === 'PF' ? s.name : s.razao_social,
@@ -770,6 +773,7 @@ export default function App() {
         <Assets 
           assets={assets}
           categories={categories}
+          hideTitle={true}
           onAddAsset={addAsset}
           onUpdateAsset={updateAsset}
           onDeleteAsset={deleteAsset}
@@ -779,6 +783,7 @@ export default function App() {
       case 'financial': return (
         <GenericList 
           title="FINANCEIRO (ENTRADAS DE ESTOQUE)" 
+          hideTitle={true}
           showAddButton={false}
           showActions={false}
           items={financialEntries.map(e => ({
@@ -803,6 +808,7 @@ export default function App() {
       case 'audit': return (
         <GenericList 
           title="HISTÓRICO DE AÇÕES NO SISTEMA" 
+          hideTitle={true}
           showAddButton={false}
           showActions={false}
           items={auditLogs.map(l => ({
@@ -880,8 +886,8 @@ export default function App() {
             <SidebarItem icon={HardDrive} label="Patrimônios" active={activeTab === 'assets'} isCollapsed={isSidebarCollapsed} onClick={() => { setActiveTab('assets'); setIsSidebarOpen(false); }} />
             <SidebarItem icon={Package} label="Estoque" active={activeTab === 'inventory'} isCollapsed={isSidebarCollapsed} onClick={() => { setActiveTab('inventory'); setIsSidebarOpen(false); }} />
             <SidebarItem icon={DollarSign} label="Financeiro" active={activeTab === 'financial'} isCollapsed={isSidebarCollapsed} onClick={() => { setActiveTab('financial'); setIsSidebarOpen(false); }} />
-            <SidebarItem icon={Settings} label="Configurações" active={activeTab === 'settings'} isCollapsed={isSidebarCollapsed} onClick={() => { setActiveTab('settings'); setIsSidebarOpen(false); }} />
             <SidebarItem icon={RotateCcw} label="Histórico" active={activeTab === 'audit'} isCollapsed={isSidebarCollapsed} onClick={() => { setActiveTab('audit'); setIsSidebarOpen(false); }} />
+            <SidebarItem icon={Settings} label="Configurações" active={activeTab === 'settings'} isCollapsed={isSidebarCollapsed} onClick={() => { setActiveTab('settings'); setIsSidebarOpen(false); }} />
           </nav>
 
           <div className="p-4 border-t border-zinc-100 dark:border-zinc-800">

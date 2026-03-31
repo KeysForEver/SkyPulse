@@ -2,7 +2,7 @@ import React from 'react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import { motion, AnimatePresence } from 'motion/react';
-import { X, ChevronDown, AlertTriangle } from 'lucide-react';
+import { X, ChevronDown, AlertTriangle, Search } from 'lucide-react';
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -241,6 +241,27 @@ export const TextArea = ({ label, icon, className, error, required, ...props }: 
       {...props}
     />
     {error && <ErrorText>{error}</ErrorText>}
+  </div>
+);
+
+export const SearchBar = ({ value, onChange, placeholder = "BUSCAR...", className }: { value: string, onChange: (val: string) => void, placeholder?: string, className?: string }) => (
+  <div className={cn("relative flex-1 max-w-xs", className)}>
+    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400 dark:text-zinc-500" size={14} />
+    <input 
+      type="text" 
+      placeholder={placeholder}
+      value={value}
+      onChange={(e) => onChange(e.target.value.toUpperCase())}
+      className="w-full pl-9 pr-10 py-1.5 text-xs border border-zinc-200 dark:border-zinc-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-100 focus:border-transparent bg-white dark:bg-black text-zinc-900 dark:text-zinc-100 uppercase transition-all"
+    />
+    {value && (
+      <button 
+        onClick={() => onChange('')}
+        className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-rose-600 transition-colors"
+      >
+        <X size={14} />
+      </button>
+    )}
   </div>
 );
 

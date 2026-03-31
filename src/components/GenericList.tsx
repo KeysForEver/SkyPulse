@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { Search, Plus, MoreVertical, Settings, FileText, Download } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Card, cn } from './Common';
+import { Card, cn, SearchBar } from './Common';
 import { useDebounce } from '../hooks/useDebounce';
 import { exportGenericToCSV, exportGenericToPDF } from '../services/exportService';
 
@@ -14,6 +14,7 @@ interface Column {
 
 interface GenericListProps {
   title: string;
+  hideTitle?: boolean;
   items: any[];
   columns: Column[];
   showAddButton?: boolean;
@@ -26,6 +27,7 @@ interface GenericListProps {
 
 export const GenericList = ({ 
   title, 
+  hideTitle = false,
   items, 
   columns, 
   showAddButton = true, 
@@ -58,9 +60,10 @@ export const GenericList = ({
 
   const filteredItems = useMemo(() => {
     return items.filter(item => 
-      columns.some(col => 
-        item[col.key]?.toString().toLowerCase().includes(searchTerm.toLowerCase())
-      )
+      columns.some(col => {
+        const val = item[col.key];
+        return val !== null && val !== undefined && val.toString().toLowerCase().includes(searchTerm.toLowerCase());
+      })
     );
   }, [items, searchTerm, columns]);
 
@@ -70,17 +73,11 @@ export const GenericList = ({
     <Card className="p-0 overflow-visible">
       <div className="px-6 py-4 border-b border-zinc-100 dark:border-zinc-800 flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="flex items-center gap-4 flex-1">
-          <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100 whitespace-nowrap uppercase">{title}</h3>
-          <div className="relative flex-1 max-w-xs">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400 dark:text-zinc-500" size={14} />
-            <input 
-              type="text" 
-              placeholder="BUSCAR..." 
-              value={inputValue}
-              onChange={(e) => setInputValue(e.target.value.toUpperCase())}
-              className="w-full pl-9 pr-4 py-1.5 text-xs border border-zinc-200 dark:border-zinc-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-100 focus:border-transparent bg-white dark:bg-black text-zinc-900 dark:text-zinc-100 uppercase transition-all"
-            />
-          </div>
+          {!hideTitle && title && <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100 whitespace-nowrap uppercase">{title}</h3>}
+          <SearchBar 
+            value={inputValue}
+            onChange={setInputValue}
+          />
         </div>
         
         <div className="flex items-center gap-2 flex-wrap">
