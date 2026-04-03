@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { X, ChevronLeft, ChevronRight, Plus, Trash2, Check, AlertTriangle, Type, User, Calendar, FileText, Thermometer, Box } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Client, Order, OrderStatus, OrderDetails } from '../types';
+import { Client, Order, OrderStatus, OrderDetails, ProductionItem } from '../types';
 import { KANBAN_COLUMNS } from '../constants';
 import { cn, Input, Select, Button, Modal, ErrorAlert, TextArea } from './Common';
 
@@ -79,15 +79,15 @@ export const OrderModal = ({
         entry_date: details?.entry_date || new Date().toISOString().split('T')[0],
         delivery_date: details?.delivery_date || '',
         kanban_description: details?.kanban_description || '',
-        impression_3d: details?.impression_3d || { items: [] },
-        cuts_folds: details?.cuts_folds || { items: [] },
-        welds: details?.welds || { items: [] },
-        rough_finish: details?.rough_finish || { items: [] },
-        painting: details?.painting || { items: [], shipping_date: '' },
-        final_finish: details?.final_finish || { items: [] },
-        lighting: details?.lighting || { items: [], temperature: '', model: '' },
-        accessories: details?.accessories || { items: [] },
-        gluing: details?.gluing || { items: [] }
+        impression_3d: details?.impression_3d ? { items: details.impression_3d.items.map((i: any) => typeof i === 'string' ? { name: i, quantity: 1 } : i) } : { items: [] },
+        cuts_folds: details?.cuts_folds ? { items: details.cuts_folds.items.map((i: any) => typeof i === 'string' ? { name: i, quantity: 1 } : i) } : { items: [] },
+        welds: details?.welds ? { items: details.welds.items.map((i: any) => typeof i === 'string' ? { name: i, quantity: 1 } : i) } : { items: [] },
+        rough_finish: details?.rough_finish ? { items: details.rough_finish.items.map((i: any) => typeof i === 'string' ? { name: i, quantity: 1 } : i) } : { items: [] },
+        painting: details?.painting ? { items: details.painting.items.map((i: any) => typeof i === 'string' ? { name: i, quantity: 1 } : i), shipping_date: details.painting.shipping_date || '' } : { items: [], shipping_date: '' },
+        final_finish: details?.final_finish ? { items: details.final_finish.items.map((i: any) => typeof i === 'string' ? { name: i, quantity: 1 } : i) } : { items: [] },
+        lighting: details?.lighting ? { items: details.lighting.items.map((i: any) => typeof i === 'string' ? { name: i, quantity: 1 } : i), temperature: details.lighting.temperature || '', model: details.lighting.model || '' } : { items: [], temperature: '', model: '' },
+        accessories: details?.accessories ? { items: details.accessories.items.map((i: any) => typeof i === 'string' ? { name: i, quantity: 1 } : i) } : { items: [] },
+        gluing: details?.gluing ? { items: details.gluing.items.map((i: any) => typeof i === 'string' ? { name: i, quantity: 1 } : i) } : { items: [] }
       };
 
       setFormData({
@@ -101,9 +101,11 @@ export const OrderModal = ({
       // Identify custom items
       const newCustomItems: { [key: string]: string[] } = {};
       
-      const checkCustom = (key: string, options: string[], items: string[]) => {
+      const checkCustom = (key: string, options: string[], items: ProductionItem[]) => {
         const upperOptions = options.map(o => o.toUpperCase());
-        newCustomItems[key] = items.filter(item => !upperOptions.includes(item.toUpperCase()));
+        newCustomItems[key] = items
+          .filter(item => !upperOptions.includes(item.name.toUpperCase()))
+          .map(item => item.name);
       };
 
       checkCustom('impression_3d', ['Impressão 3D'], initialDetails.impression_3d.items);
@@ -222,13 +224,33 @@ export const OrderModal = ({
     return true;
   };
 
-  const toggleItem = (key: keyof OrderDetails, item: string) => {
+  const toggleItem = (key: keyof OrderDetails, itemName: string) => {
     setError(null);
-    const currentItems = (formData.details[key] as any).items as string[];
-    const newItems = currentItems.includes(item)
-      ? currentItems.filter(i => i !== item)
-      : [...currentItems, item];
+    const currentItems = (formData.details[key] as any).items as ProductionItem[];
+    const isSelected = currentItems.some(i => i.name === itemName);
     
+    const newItems = isSelected
+      ? currentItems.filter(i => i.name !== itemName)
+      : [...currentItems, { name: itemName, quantity: 1 }];
+    
+    setFormData(prev => ({
+      ...prev,
+      details: {
+        ...prev.details,
+        [key]: {
+          ...(prev.details[key] as any),
+          items: newItems
+        }
+      }
+    }));
+  };
+
+  const updateItemQuantity = (key: keyof OrderDetails, itemName: string, quantity: number) => {
+    const currentItems = (formData.details[key] as any).items as ProductionItem[];
+    const newItems = currentItems.map(i => 
+      i.name === itemName ? { ...i, quantity: Math.max(1, quantity) } : i
+    );
+
     setFormData(prev => ({
       ...prev,
       details: {
@@ -258,26 +280,32 @@ export const OrderModal = ({
     const config = Object.values(stepConfigs).find(c => c.key === key);
     if (!config) return;
 
-    const currentItems = (formData.details[config.key] as any).items as string[];
+    const currentItems = (formData.details[config.key] as any).items as ProductionItem[];
     const upperOptions = config.options.map(o => o.toUpperCase());
     
     // Keep only predefined items that were already selected
     const predefinedSelected = currentItems.filter(item => 
-      config.options.includes(item) || upperOptions.includes(item.toUpperCase())
+      config.options.includes(item.name) || upperOptions.includes(item.name.toUpperCase())
     );
 
     // Filter out any predefined items from the custom list to avoid duplicates
-    const actualCustom = customList.filter(item => 
-      item.trim() !== '' && !upperOptions.includes(item.toUpperCase())
+    const actualCustomNames = customList.filter(name => 
+      name.trim() !== '' && !upperOptions.includes(name.toUpperCase())
     );
 
-    const newItems = [...new Set([...predefinedSelected, ...actualCustom])];
+    // Merge: keep existing quantities for custom items if they already existed
+    const newCustomItems = actualCustomNames.map(name => {
+      const existing = currentItems.find(i => i.name.toUpperCase() === name.toUpperCase());
+      return existing || { name: name.toUpperCase(), quantity: 1 };
+    });
+
+    const newItems = [...predefinedSelected, ...newCustomItems];
 
     setFormData(prev => ({
       ...prev,
       details: {
         ...prev.details,
-        [config.key]: {
+        [key]: {
           ...(prev.details[config.key] as any),
           items: newItems
         }
@@ -424,53 +452,91 @@ export const OrderModal = ({
 
         return (
           <div className="space-y-6">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-              {config.options.map(opt => (
-                <label key={opt} className={cn(
-                  "flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-all",
-                  (formData.details[config.key] as any).items.includes(opt)
-                    ? "bg-zinc-900 text-white border-zinc-900 dark:bg-zinc-100 dark:text-zinc-900 dark:border-zinc-100" 
-                    : "bg-white dark:bg-black border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-400 hover:border-zinc-400"
-                )}>
-                  <input 
-                    type="checkbox" 
-                    className="hidden"
-                    checked={(formData.details[config.key] as any).items.includes(opt)}
-                    onChange={() => toggleItem(config.key, opt)}
-                  />
-                  <div className={cn(
-                    "w-4 h-4 rounded border flex items-center justify-center",
-                    (formData.details[config.key] as any).items.includes(opt) ? "border-white dark:border-zinc-900 bg-white dark:bg-zinc-900" : "border-zinc-300"
-                  )}>
-                    {(formData.details[config.key] as any).items.includes(opt) && <Check size={12} className="text-zinc-900 dark:text-zinc-100" />}
+            <div className="grid grid-cols-1 gap-3">
+              {config.options.map(opt => {
+                const selectedItem = (formData.details[config.key] as any).items.find((i: any) => i.name === opt);
+                const isSelected = !!selectedItem;
+
+                return (
+                  <div key={opt} className="flex gap-2">
+                    <label className={cn(
+                      "flex-1 flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-all",
+                      isSelected
+                        ? "bg-zinc-900 text-white border-zinc-900 dark:bg-zinc-100 dark:text-zinc-900 dark:border-zinc-100" 
+                        : "bg-white dark:bg-black border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-400 hover:border-zinc-400"
+                    )}>
+                      <input 
+                        type="checkbox" 
+                        className="hidden"
+                        checked={isSelected}
+                        onChange={() => toggleItem(config.key, opt)}
+                      />
+                      <div className={cn(
+                        "w-4 h-4 rounded border flex items-center justify-center",
+                        isSelected ? "border-white dark:border-zinc-900 bg-white dark:bg-zinc-900" : "border-zinc-300"
+                      )}>
+                        {isSelected && <Check size={12} className="text-zinc-900 dark:text-zinc-100" />}
+                      </div>
+                      <span className="text-xs font-bold uppercase">{opt}</span>
+                    </label>
+
+                    {isSelected && (
+                      <div className="w-24 flex items-center gap-2 bg-zinc-100 dark:bg-zinc-800 rounded-xl px-3 border border-zinc-200 dark:border-zinc-700">
+                        <span className="text-[10px] font-bold text-zinc-400 uppercase">Qtd</span>
+                        <input 
+                          type="number"
+                          min="1"
+                          value={selectedItem.quantity}
+                          onChange={(e) => updateItemQuantity(config.key, opt, parseInt(e.target.value) || 1)}
+                          className="w-full bg-transparent border-none outline-none text-xs font-bold text-zinc-900 dark:text-zinc-100"
+                        />
+                      </div>
+                    )}
                   </div>
-                  <span className="text-xs font-bold uppercase">{opt}</span>
-                </label>
-              ))}
+                );
+              })}
               
-              {customItems[config.key].map((item, idx) => (
-                <div key={idx} className="flex gap-2 col-span-full">
-                  <div className={cn(
-                    "flex-1 flex items-center gap-3 p-3 rounded-xl border bg-zinc-900 text-white border-zinc-900 dark:bg-zinc-100 dark:text-zinc-900 dark:border-zinc-100"
-                  )}>
-                    <Check size={16} />
-                    <input 
-                      type="text"
-                      value={item}
-                      onChange={(e) => updateCustomItem(config.key, idx, e.target.value)}
-                      className="flex-1 bg-transparent border-none outline-none text-xs font-bold uppercase"
-                      autoFocus={!item}
-                    />
+              {customItems[config.key].map((item, idx) => {
+                const selectedItem = (formData.details[config.key] as any).items.find((i: any) => i.name === item);
+                
+                return (
+                  <div key={idx} className="flex gap-2">
+                    <div className={cn(
+                      "flex-1 flex items-center gap-3 p-3 rounded-xl border bg-zinc-900 text-white border-zinc-900 dark:bg-zinc-100 dark:text-zinc-900 dark:border-zinc-100"
+                    )}>
+                      <Check size={16} />
+                      <input 
+                        type="text"
+                        value={item}
+                        onChange={(e) => updateCustomItem(config.key, idx, e.target.value)}
+                        className="flex-1 bg-transparent border-none outline-none text-xs font-bold uppercase"
+                        autoFocus={!item}
+                      />
+                    </div>
+
+                    {selectedItem && (
+                      <div className="w-24 flex items-center gap-2 bg-zinc-100 dark:bg-zinc-800 rounded-xl px-3 border border-zinc-200 dark:border-zinc-700">
+                        <span className="text-[10px] font-bold text-zinc-400 uppercase">Qtd</span>
+                        <input 
+                          type="number"
+                          min="1"
+                          value={selectedItem.quantity}
+                          onChange={(e) => updateItemQuantity(config.key, item, parseInt(e.target.value) || 1)}
+                          className="w-full bg-transparent border-none outline-none text-xs font-bold text-zinc-900 dark:text-zinc-100"
+                        />
+                      </div>
+                    )}
+
+                    <button 
+                      type="button"
+                      onClick={() => removeCustomItem(config.key, idx)}
+                      className="p-3 text-rose-500 bg-rose-50 dark:bg-rose-500/10 rounded-xl hover:bg-rose-100 transition-colors"
+                    >
+                      <Trash2 size={18} />
+                    </button>
                   </div>
-                  <button 
-                    type="button"
-                    onClick={() => removeCustomItem(config.key, idx)}
-                    className="p-3 text-rose-500 bg-rose-50 dark:bg-rose-500/10 rounded-xl hover:bg-rose-100 transition-colors"
-                  >
-                    <Trash2 size={18} />
-                  </button>
-                </div>
-              ))}
+                );
+              })}
             </div>
 
             <button 

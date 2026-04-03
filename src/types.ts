@@ -100,20 +100,25 @@ export interface Order {
   details?: string; // JSON string containing OrderDetails
 }
 
+export interface ProductionItem {
+  name: string;
+  quantity: number;
+}
+
 export interface OrderDetails {
   entry_date: string;
   delivery_date: string;
   kanban_description?: string;
   completed_items?: string[]; // Array of item names that are finished
-  impression_3d: { items: string[] };
-  cuts_folds: { items: string[] };
-  welds: { items: string[] };
-  rough_finish: { items: string[] };
-  painting: { items: string[]; shipping_date?: string };
-  final_finish: { items: string[] };
-  lighting: { items: string[]; temperature?: string; model?: string };
-  accessories: { items: string[] };
-  gluing: { items: string[] };
+  impression_3d: { items: ProductionItem[] };
+  cuts_folds: { items: ProductionItem[] };
+  welds: { items: ProductionItem[] };
+  rough_finish: { items: ProductionItem[] };
+  painting: { items: ProductionItem[]; shipping_date?: string };
+  final_finish: { items: ProductionItem[] };
+  lighting: { items: ProductionItem[]; temperature?: string; model?: string };
+  accessories: { items: ProductionItem[] };
+  gluing: { items: ProductionItem[] };
 }
 
 export interface Movement {

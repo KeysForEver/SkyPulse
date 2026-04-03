@@ -1,7 +1,7 @@
 import React from 'react';
 import { X, Edit, Trash2, ClipboardList, User, Calendar, CheckCircle2, Info, Check, AlertTriangle } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Order, OrderDetails } from '../types';
+import { Order, OrderDetails, ProductionItem } from '../types';
 import { apiService } from '../services/apiService';
 import { Modal, ConfirmModal, Button, cn } from './Common';
 
@@ -43,12 +43,12 @@ export const OrderDetailModal = ({
     console.error("Error parsing order details", e);
   }
 
-  const handleCheckItem = async (section: string, item: string) => {
+  const handleCheckItem = async (section: string, itemName: string) => {
     if (!details || !order) return;
     
     setIsUpdating(true);
     try {
-      const itemKey = `${section}|${item}`;
+      const itemKey = `${section}|${itemName}`;
       const completedItems = details.completed_items || [];
       
       if (completedItems.includes(itemKey)) return;
@@ -82,7 +82,7 @@ export const OrderDetailModal = ({
     }
   };
 
-  const renderSection = (title: string, items: string[], extra?: React.ReactNode) => {
+  const renderSection = (title: string, items: ProductionItem[], extra?: React.ReactNode) => {
     if (items.length === 0 && !extra) return null;
     return (
       <div className="space-y-3">
@@ -91,30 +91,39 @@ export const OrderDetailModal = ({
           <h4 className="text-[10px] font-bold text-zinc-900 dark:text-zinc-100 uppercase tracking-widest">{title}</h4>
         </div>
         <div className="grid grid-cols-1 gap-1.5 ml-3">
-          {items.map((item, idx) => {
+          {items.map((itemObj, idx) => {
+            const item = typeof itemObj === 'string' ? itemObj : itemObj.name;
+            const quantity = typeof itemObj === 'string' ? null : itemObj.quantity;
             const itemKey = `${title}|${item}`;
             const isCompleted = details?.completed_items?.includes(itemKey);
 
             return (
-              <div key={idx} className="flex items-center gap-3 group">
-                <button
-                  disabled={isCompleted || isUpdating}
-                  onClick={() => !isCompleted && setConfirmingItem({ section: title, item })}
-                  className={cn(
-                    "w-5 h-5 rounded-md flex items-center justify-center transition-all duration-200",
-                    isCompleted 
-                      ? "bg-emerald-500 text-white cursor-default" 
-                      : "bg-zinc-100 dark:bg-zinc-800 text-transparent hover:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-700 border border-zinc-200 dark:border-zinc-700"
-                  )}
-                >
-                  <Check size={12} strokeWidth={3} className={cn(isCompleted ? "opacity-100" : "opacity-0 group-hover:opacity-100")} />
-                </button>
-                <span className={cn(
-                  "text-xs font-bold uppercase tracking-tight transition-colors",
-                  isCompleted ? "text-zinc-400 dark:text-zinc-500 line-through" : "text-zinc-700 dark:text-zinc-300"
-                )}>
-                  {item}
-                </span>
+              <div key={idx} className="flex items-center justify-between group pr-2">
+                <div className="flex items-center gap-3">
+                  <button
+                    disabled={isCompleted || isUpdating}
+                    onClick={() => !isCompleted && setConfirmingItem({ section: title, item })}
+                    className={cn(
+                      "w-5 h-5 rounded-md flex items-center justify-center transition-all duration-200",
+                      isCompleted 
+                        ? "bg-emerald-500 text-white cursor-default" 
+                        : "bg-zinc-100 dark:bg-zinc-800 text-transparent hover:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-700 border border-zinc-200 dark:border-zinc-700"
+                    )}
+                  >
+                    <Check size={12} strokeWidth={3} className={cn(isCompleted ? "opacity-100" : "opacity-0 group-hover:opacity-100")} />
+                  </button>
+                  <span className={cn(
+                    "text-xs font-bold uppercase tracking-tight transition-colors",
+                    isCompleted ? "text-zinc-400 dark:text-zinc-500 line-through" : "text-zinc-700 dark:text-zinc-300"
+                  )}>
+                    {item}
+                  </span>
+                </div>
+                {quantity !== null && (
+                  <span className="text-[10px] font-bold text-zinc-400 bg-zinc-100 dark:bg-zinc-800 px-1.5 py-0.5 rounded">
+                    {quantity} UN
+                  </span>
+                )}
               </div>
             );
           })}
