@@ -159,32 +159,85 @@ export default function App() {
   const [editingSupplier, setEditingSupplier] = useState<Supplier | null>(null);
   const [supplierFieldErrors, setSupplierFieldErrors] = useState<Record<string, string>>({});
 
-  const validateEntityData = (data: any, isSupplier: boolean = false) => {
+  const validateEntityData = (data: any, isSupplier: boolean = false, editingId?: number) => {
     const errors: Record<string, string> = {};
     const typeField = isSupplier ? 'tipo' : 'tipo_cliente';
+    const list = isSupplier ? suppliers : clients;
     
     if (data[typeField] === 'PF') {
-      if (!data.name) errors.name = 'NOME É OBRIGATÓRIO';
+      if (!data.name) {
+        errors.name = 'NOME É OBRIGATÓRIO';
+      } else {
+        const isDuplicate = list.some(item => 
+          item.id !== editingId && 
+          (isSupplier ? (item as Supplier).name : (item as Client).name)?.toUpperCase() === data.name.toUpperCase()
+        );
+        if (isDuplicate) errors.name = 'NOME JÁ CADASTRADO';
+      }
+
       if (!data.cpf) {
         errors.cpf = 'CPF É OBRIGATÓRIO';
       } else if (!validateCPF(data.cpf)) {
         errors.cpf = 'CPF INVÁLIDO';
+      } else {
+        const isDuplicate = list.some(item => item.id !== editingId && item.cpf === data.cpf);
+        if (isDuplicate) errors.cpf = 'CPF JÁ CADASTRADO';
       }
     } else {
-      if (!data.razao_social) errors.razao_social = 'RAZÃO SOCIAL É OBRIGATÓRIA';
+      if (!data.razao_social) {
+        errors.razao_social = 'RAZÃO SOCIAL É OBRIGATÓRIA';
+      } else {
+        const isDuplicate = list.some(item => 
+          item.id !== editingId && 
+          item.razao_social?.toUpperCase() === data.razao_social.toUpperCase()
+        );
+        if (isDuplicate) errors.razao_social = 'RAZÃO SOCIAL JÁ CADASTRADA';
+      }
+
       if (!data.cnpj) {
         errors.cnpj = 'CNPJ É OBRIGATÓRIO';
       } else if (!validateCNPJ(data.cnpj)) {
         errors.cnpj = 'CNPJ INVÁLIDO';
+      } else {
+        const isDuplicate = list.some(item => item.id !== editingId && item.cnpj === data.cnpj);
+        if (isDuplicate) errors.cnpj = 'CNPJ JÁ CADASTRADO';
       }
     }
 
-    if (data.email && !validateEmail(data.email)) {
-      errors.email = 'EMAIL INVÁLIDO';
+    if (data.email) {
+      if (!validateEmail(data.email)) {
+        errors.email = 'EMAIL INVÁLIDO';
+      } else if (isSupplier) {
+        // Email is mandatory for suppliers, so it must be unique
+        const isDuplicate = list.some(item => item.id !== editingId && item.email?.toLowerCase() === data.email.toLowerCase());
+        if (isDuplicate) errors.email = 'EMAIL JÁ CADASTRADO';
+      }
+    } else if (isSupplier) {
+      errors.email = 'EMAIL É OBRIGATÓRIO';
     }
 
-    if (data.telefone1 && !validatePhone(data.telefone1)) {
-      errors.telefone1 = 'TELEFONE INVÁLIDO';
+    if (data.telefone1) {
+      if (!validatePhone(data.telefone1)) {
+        errors.telefone1 = 'TELEFONE INVÁLIDO';
+      } else if (isSupplier) {
+        // Telefone 1 is mandatory for suppliers, so it must be unique
+        const isDuplicate = list.some(item => item.id !== editingId && item.telefone1 === data.telefone1);
+        if (isDuplicate) errors.telefone1 = 'TELEFONE JÁ CADASTRADO';
+      }
+    } else if (isSupplier) {
+      errors.telefone1 = 'TELEFONE É OBRIGATÓRIO';
+    }
+
+    if (data.endereco) {
+      if (isSupplier) {
+        const isDuplicate = list.some(item => 
+          item.id !== editingId && 
+          item.endereco?.toUpperCase() === data.endereco.toUpperCase()
+        );
+        if (isDuplicate) errors.endereco = 'ENDEREÇO JÁ CADASTRADO';
+      }
+    } else if (isSupplier) {
+      errors.endereco = 'ENDEREÇO É OBRIGATÓRIO';
     }
 
     if (data.cep && !validateCEP(data.cep)) {
@@ -408,7 +461,7 @@ export default function App() {
   };
 
   const updateClient = async (id: number, data: any) => {
-    const errors = validateEntityData(data);
+    const errors = validateEntityData(data, false, id);
 
     if (Object.keys(errors).length > 0) {
       setClientFieldErrors(errors);
@@ -442,7 +495,7 @@ export default function App() {
   };
 
   const updateSupplierEntity = async (id: number, data: any) => {
-    const errors = validateEntityData(data, true);
+    const errors = validateEntityData(data, true, id);
 
     if (Object.keys(errors).length > 0) {
       setSupplierFieldErrors(errors);
@@ -562,21 +615,13 @@ export default function App() {
       return;
     }
     try {
-      const payload = typeof data === 'string' ? { name: data, contact: '' } : data;
+      const payload = typeof data === 'string' ? { name: data, contact: '', tipo: 'PF' } : data;
       
-      // If it's a full object (from SupplierModal), validate it
-      if (typeof data !== 'string') {
-        const errors: Record<string, string> = {};
-        if (data.tipo === 'PF') {
-          if (!data.name) errors.name = 'NOME É OBRIGATÓRIO';
-          if (!data.cpf) errors.cpf = 'CPF É OBRIGATÓRIO';
-        } else {
-          if (!data.razao_social) errors.razao_social = 'RAZÃO SOCIAL É OBRIGATÓRIA';
-          if (!data.cnpj) errors.cnpj = 'CNPJ É OBRIGATÓRIO';
-        }
-
-        if (Object.keys(errors).length > 0) {
-          setSupplierFieldErrors(errors);
+      // If it's a simple string (from quick add), we still check uniqueness
+      if (typeof data === 'string') {
+        const isDuplicate = suppliers.some(s => s.name?.toUpperCase() === data.toUpperCase());
+        if (isDuplicate) {
+          setGlobalError('FORNECEDOR JÁ CADASTRADO COM ESTE NOME');
           return;
         }
       }
@@ -999,6 +1044,7 @@ export default function App() {
         }}
         editingOrder={editingOrder}
         clients={clients}
+        orders={orders}
       />
 
       <OrderDetailModal 

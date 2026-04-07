@@ -262,7 +262,29 @@ export const Assets = ({
         }}
         onSave={async (formData) => {
           const errors: Record<string, string> = {};
-          if (!formData.get('description')) errors.description = 'DESCRIÇÃO É OBRIGATÓRIA';
+          const description = formData.get('description') as string;
+          const assetNumber = formData.get('asset_number') as string;
+
+          if (!description) {
+            errors.description = 'DESCRIÇÃO É OBRIGATÓRIA';
+          } else {
+            const isDuplicate = assets.some(a => 
+              a.id !== editingAsset?.id && 
+              a.description.toUpperCase() === description.toUpperCase()
+            );
+            if (isDuplicate) errors.description = 'PATRIMÔNIO JÁ CADASTRADO COM ESTA DESCRIÇÃO';
+          }
+
+          if (!assetNumber) {
+            errors.asset_number = 'Nº PATRIMÔNIO É OBRIGATÓRIO';
+          } else {
+            const isDuplicate = assets.some(a => 
+              a.id !== editingAsset?.id && 
+              a.asset_number?.toUpperCase() === assetNumber.toUpperCase()
+            );
+            if (isDuplicate) errors.asset_number = 'Nº PATRIMÔNIO JÁ CADASTRADO';
+          }
+
           if (!formData.get('purchase_value')) errors.purchase_value = 'VALOR DE COMPRA É OBRIGATÓRIO';
           if (!formData.get('depreciation_percentage')) errors.depreciation_percentage = 'PERCENTUAL É OBRIGATÓRIO';
 

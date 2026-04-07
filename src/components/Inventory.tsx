@@ -228,6 +228,15 @@ export const Inventory = ({
     if (!formData.name) {
       newFieldErrors.name = 'O nome do produto é obrigatório.';
       hasError = true;
+    } else {
+      const isDuplicate = products.some(p => 
+        p.id !== editingProduct?.id && 
+        p.name.toUpperCase() === formData.name.toUpperCase()
+      );
+      if (isDuplicate) {
+        newFieldErrors.name = 'PRODUTO JÁ CADASTRADO COM ESTE NOME';
+        hasError = true;
+      }
     }
     if (!formData.category) {
       newFieldErrors.category = 'A categoria é obrigatória.';
@@ -352,6 +361,17 @@ export const Inventory = ({
       newFieldErrors.supplier_id = 'O fornecedor é obrigatório.';
       hasError = true;
     }
+    if (stockInData.doc_number) {
+      const isDuplicate = movements.some(m => 
+        m.type === 'IN' && 
+        m.doc_number === stockInData.doc_number && 
+        m.supplier_id === parseInt(stockInData.supplier_id)
+      );
+      if (isDuplicate) {
+        newFieldErrors.doc_number = 'Nº DOCUMENTO JÁ CADASTRADO PARA ESTE FORNECEDOR';
+        hasError = true;
+      }
+    }
     if (!stockInData.issue_date) {
       newFieldErrors.issue_date = 'A data de emissão é obrigatória.';
       hasError = true;
@@ -409,6 +429,13 @@ export const Inventory = ({
 
   const handleAddCategory = async () => {
     if (newCategoryName.trim()) {
+      const name = newCategoryName.trim().toUpperCase();
+      const isDuplicate = categories.some(c => c.id !== editingCategoryId && c.name.toUpperCase() === name);
+      if (isDuplicate) {
+        setError('CATEGORIA JÁ CADASTRADA');
+        return;
+      }
+
       if (isEditingCategory && editingCategoryId) {
         await onUpdateCategory(editingCategoryId, newCategoryName.trim());
       } else {
@@ -424,6 +451,13 @@ export const Inventory = ({
 
   const handleAddUnit = async () => {
     if (newUnitName.trim()) {
+      const name = newUnitName.trim().toUpperCase();
+      const isDuplicate = units.some(u => u.name.toUpperCase() === name);
+      if (isDuplicate) {
+        setError('UNIDADE JÁ CADASTRADA');
+        return;
+      }
+
       await onAddUnit(newUnitName.trim().toUpperCase());
       setFormData({ ...formData, unit: newUnitName.trim().toUpperCase() });
       setNewUnitName('');
@@ -433,6 +467,13 @@ export const Inventory = ({
 
   const handleAddSupplier = async () => {
     if (newSupplierName.trim()) {
+      const name = newSupplierName.trim().toUpperCase();
+      const isDuplicate = suppliers.some(s => (s.name || s.razao_social)?.toUpperCase() === name);
+      if (isDuplicate) {
+        setError('FORNECEDOR JÁ CADASTRADO');
+        return;
+      }
+
       await onAddSupplier(newSupplierName.trim());
       setNewSupplierName('');
       setIsAddingSupplier(false);
@@ -441,6 +482,13 @@ export const Inventory = ({
 
   const handleAddLocation = async () => {
     if (newLocationName.trim()) {
+      const name = newLocationName.trim().toUpperCase();
+      const isDuplicate = locations.some(l => l.id !== editingLocationId && l.name.toUpperCase() === name);
+      if (isDuplicate) {
+        setError('LOCALIZAÇÃO JÁ CADASTRADA');
+        return;
+      }
+
       if (isEditingLocation && editingLocationId) {
         await onUpdateLocation(editingLocationId, newLocationName.trim());
       } else {

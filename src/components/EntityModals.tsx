@@ -49,8 +49,7 @@ export const ClientModal = ({ isOpen, onClose, onSubmit, editingClient, fieldErr
           ...prev,
           endereco: address.logradouro.toUpperCase(),
           bairro: address.bairro.toUpperCase(),
-          cidade: address.localidade.toUpperCase(),
-          complemento: address.complemento.toUpperCase()
+          cidade: address.localidade.toUpperCase()
         }));
       }
     } finally {
@@ -91,6 +90,30 @@ export const ClientModal = ({ isOpen, onClose, onSubmit, editingClient, fieldErr
     onSubmit(formData);
   };
 
+  const handleTypeChange = (tipo: 'PF' | 'PJ') => {
+    setFormData({
+      tipo_cliente: tipo,
+      name: '',
+      cpf: '',
+      rg: '',
+      data_nascimento: '',
+      razao_social: '',
+      cnpj: '',
+      nome_fantasia: '',
+      ie: '',
+      im: '',
+      contato_responsavel: '',
+      endereco: '',
+      complemento: '',
+      bairro: '',
+      cep: '',
+      cidade: '',
+      telefone1: '',
+      telefone2: '',
+      email: ''
+    });
+  };
+
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={editingClient ? 'EDITAR CLIENTE' : 'NOVO CLIENTE'} noPadding>
       <form onSubmit={handleSubmit} noValidate className="p-6 space-y-4 flex-1 overflow-y-auto custom-scrollbar">
@@ -101,7 +124,7 @@ export const ClientModal = ({ isOpen, onClose, onSubmit, editingClient, fieldErr
               name="tipo_cliente" 
               value="PF" 
               checked={formData.tipo_cliente === 'PF'} 
-              onChange={() => setFormData({ ...formData, tipo_cliente: 'PF' })}
+              onChange={() => handleTypeChange('PF')}
               className="w-4 h-4 text-zinc-900 focus:ring-zinc-900 border-zinc-300"
             />
             <span className="text-sm font-bold text-zinc-700 dark:text-zinc-300 group-hover:text-zinc-900 dark:group-hover:text-zinc-100 transition-colors uppercase">PESSOA FÍSICA</span>
@@ -112,7 +135,7 @@ export const ClientModal = ({ isOpen, onClose, onSubmit, editingClient, fieldErr
               name="tipo_cliente" 
               value="PJ" 
               checked={formData.tipo_cliente === 'PJ'} 
-              onChange={() => setFormData({ ...formData, tipo_cliente: 'PJ' })}
+              onChange={() => handleTypeChange('PJ')}
               className="w-4 h-4 text-zinc-900 focus:ring-zinc-900 border-zinc-300"
             />
             <span className="text-sm font-bold text-zinc-700 dark:text-zinc-300 group-hover:text-zinc-900 dark:group-hover:text-zinc-100 transition-colors uppercase">PESSOA JURÍDICA</span>
@@ -339,8 +362,7 @@ export const SupplierModal = ({ isOpen, onClose, onSubmit, editingSupplier, fiel
           ...prev,
           endereco: address.logradouro.toUpperCase(),
           bairro: address.bairro.toUpperCase(),
-          cidade: address.localidade.toUpperCase(),
-          complemento: address.complemento.toUpperCase()
+          cidade: address.localidade.toUpperCase()
         }));
       }
     } finally {
@@ -382,6 +404,31 @@ export const SupplierModal = ({ isOpen, onClose, onSubmit, editingSupplier, fiel
     onSubmit(formData);
   };
 
+  const handleTypeChange = (tipo: 'PF' | 'PJ') => {
+    setFormData({
+      tipo: tipo,
+      name: '',
+      cpf: '',
+      rg: '',
+      data_nascimento: '',
+      razao_social: '',
+      cnpj: '',
+      nome_fantasia: '',
+      ie: '',
+      im: '',
+      contato_responsavel: '',
+      endereco: '',
+      complemento: '',
+      bairro: '',
+      cep: '',
+      cidade: '',
+      telefone1: '',
+      telefone2: '',
+      email: '',
+      website: ''
+    });
+  };
+
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={editingSupplier ? 'EDITAR FORNECEDOR' : 'NOVO FORNECEDOR'} noPadding>
       <form onSubmit={handleSubmit} noValidate className="p-6 space-y-4 flex-1 overflow-y-auto custom-scrollbar">
@@ -392,7 +439,7 @@ export const SupplierModal = ({ isOpen, onClose, onSubmit, editingSupplier, fiel
               name="tipo" 
               value="PF" 
               checked={formData.tipo === 'PF'} 
-              onChange={() => setFormData({ ...formData, tipo: 'PF' })}
+              onChange={() => handleTypeChange('PF')}
               className="w-4 h-4 text-zinc-900 focus:ring-zinc-900 border-zinc-300"
             />
             <span className="text-sm font-bold text-zinc-700 dark:text-zinc-300 group-hover:text-zinc-900 dark:group-hover:text-zinc-100 transition-colors uppercase">PESSOA FÍSICA</span>
@@ -403,7 +450,7 @@ export const SupplierModal = ({ isOpen, onClose, onSubmit, editingSupplier, fiel
               name="tipo" 
               value="PJ" 
               checked={formData.tipo === 'PJ'} 
-              onChange={() => setFormData({ ...formData, tipo: 'PJ' })}
+              onChange={() => handleTypeChange('PJ')}
               className="w-4 h-4 text-zinc-900 focus:ring-zinc-900 border-zinc-300"
             />
             <span className="text-sm font-bold text-zinc-700 dark:text-zinc-300 group-hover:text-zinc-900 dark:group-hover:text-zinc-100 transition-colors uppercase">PESSOA JURÍDICA</span>
