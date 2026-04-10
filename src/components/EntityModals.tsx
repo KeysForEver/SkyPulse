@@ -569,7 +569,6 @@ export const SupplierModal = ({ isOpen, onClose, onSubmit, editingSupplier, fiel
             <Input 
               label="ENDEREÇO" 
               icon={<MapPin size={18} />}
-              required
               value={formData.endereco} 
               onChange={(e: any) => setFormData({ ...formData, endereco: e.target.value.toUpperCase() })}
               error={fieldErrors.endereco}
@@ -590,7 +589,6 @@ export const SupplierModal = ({ isOpen, onClose, onSubmit, editingSupplier, fiel
           <Input 
             label="TELEFONE 1" 
             icon={<Phone size={18} />}
-            required
             value={formData.telefone1} 
             onChange={(e: any) => setFormData({ ...formData, telefone1: maskPhone(e.target.value) })}
             error={fieldErrors.telefone1}
@@ -604,7 +602,6 @@ export const SupplierModal = ({ isOpen, onClose, onSubmit, editingSupplier, fiel
           <Input 
             label="EMAIL" 
             icon={<Mail size={18} />}
-            required
             type="email" 
             value={formData.email} 
             onChange={(e: any) => setFormData({ ...formData, email: e.target.value.toLowerCase() })}

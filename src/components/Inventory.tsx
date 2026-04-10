@@ -41,6 +41,7 @@ interface InventoryProps {
   locations: {id: string | number, name: string}[];
   orders: Order[];
   movements: Movement[];
+  isAdmin?: boolean;
   onAddProduct: (p: FormData) => void;
   onUpdateProduct: (id: string | number, p: FormData) => Promise<void>;
   onDeleteProduct: (id: string | number) => Promise<void>;
@@ -64,6 +65,7 @@ export const Inventory = ({
   locations,
   orders,
   movements,
+  isAdmin = false,
   onAddProduct, 
   onUpdateProduct,
   onDeleteProduct,
@@ -743,6 +745,7 @@ export const Inventory = ({
               requestSort={requestSort}
               getSortIcon={getSortIcon}
               onProductClick={handleProductClick}
+              isAdmin={isAdmin}
             />
           ) : (
             <MovementTable movements={filteredMovements} />
@@ -833,6 +836,7 @@ export const Inventory = ({
         product={selectedProductForDetail}
         movements={productMovements}
         isLoading={isLoadingMovements}
+        isAdmin={isAdmin}
         onEdit={(p: any) => {
           setEditingProduct(p);
           setIsModalOpen(true);

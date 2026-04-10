@@ -270,7 +270,8 @@ export default function App() {
     u.email === user?.email || 
     (u.username && user?.email && u.username.toLowerCase() === user.email.split('@')[0].toLowerCase())
   );
-  const userPermissions = (user?.email === 'admin@skysmart.com' || user?.email === 'Diesel.087@gmail.com') 
+  const isAdmin = (user?.email === 'admin@skysmart.com' || user?.email === 'Diesel.087@gmail.com' || currentUserProfile?.role === 'Administrador');
+  const userPermissions = isAdmin
     ? ['dashboard', 'kanban', 'production', 'clients', 'suppliers', 'assets', 'inventory', 'financial', 'audit', 'settings']
     : (currentUserProfile?.permissions || []);
 
@@ -431,11 +432,9 @@ export default function App() {
         const isDuplicate = list.some(item => item.id !== editingId && item.email?.toLowerCase() === data.email.toLowerCase());
         if (isDuplicate) errors.email = 'EMAIL JÁ CADASTRADO';
       }
-    } else if (isSupplier) {
-      errors.email = 'EMAIL É OBRIGATÓRIO';
     }
 
-    // Telefone 1 uniqueness (required for suppliers)
+    // Telefone 1 uniqueness
     if (data.telefone1) {
       if (!validatePhone(data.telefone1)) {
         errors.telefone1 = 'TELEFONE INVÁLIDO';
@@ -443,19 +442,15 @@ export default function App() {
         const isDuplicate = list.some(item => item.id !== editingId && item.telefone1 === data.telefone1);
         if (isDuplicate) errors.telefone1 = 'TELEFONE JÁ CADASTRADO';
       }
-    } else if (isSupplier) {
-      errors.telefone1 = 'TELEFONE É OBRIGATÓRIO';
     }
 
-    // Endereco uniqueness (required for suppliers)
+    // Endereco uniqueness
     if (data.endereco) {
       const isDuplicate = list.some(item => 
         item.id !== editingId && 
         item.endereco?.toUpperCase() === data.endereco.toUpperCase()
       );
       if (isDuplicate) errors.endereco = 'ENDEREÇO JÁ CADASTRADO';
-    } else if (isSupplier) {
-      errors.endereco = 'ENDEREÇO É OBRIGATÓRIO';
     }
 
     if (data.cep && !validateCEP(data.cep)) {
@@ -996,6 +991,7 @@ export default function App() {
           locations={locations}
           orders={orders}
           movements={movements}
+          isAdmin={isAdmin}
           onAddProduct={addProduct} 
           onUpdateProduct={handleUpdateProduct}
           onDeleteProduct={handleDeleteProduct}
@@ -1045,6 +1041,7 @@ export default function App() {
           }}
           onItemClick={(order) => setSelectedOrderForDetail(order)}
           onError={setGlobalError}
+          isAdmin={isAdmin}
         />
       );
       case 'clients': return (
@@ -1070,10 +1067,12 @@ export default function App() {
           }}
           addButtonLabel="NOVO CLIENTE"
           onItemClick={(client) => {
-            setEditingClient(client);
-            setIsClientModalOpen(true);
+            if (isAdmin) {
+              setEditingClient(client);
+              setIsClientModalOpen(true);
+            }
           }}
-          showActions={true}
+          showActions={isAdmin}
           onMenuClick={handleGenericMenuClick}
         />
       );
@@ -1100,10 +1099,12 @@ export default function App() {
           }}
           addButtonLabel="NOVO FORNECEDOR"
           onItemClick={(supplier) => {
-            setEditingSupplier(supplier);
-            setIsSupplierModalOpen(true);
+            if (isAdmin) {
+              setEditingSupplier(supplier);
+              setIsSupplierModalOpen(true);
+            }
           }}
-          showActions={true}
+          showActions={isAdmin}
           onMenuClick={handleGenericMenuClick}
         />
       );
@@ -1112,6 +1113,7 @@ export default function App() {
           assets={assets}
           categories={categories}
           hideTitle={true}
+          isAdmin={isAdmin}
           onAddAsset={addAsset}
           onUpdateAsset={updateAsset}
           onDeleteAsset={deleteAsset}
@@ -1371,6 +1373,7 @@ export default function App() {
         isOpen={!!selectedOrderForDetail}
         onClose={() => setSelectedOrderForDetail(null)}
         order={selectedOrderForDetail}
+        isAdmin={isAdmin}
         onEdit={(order) => {
           setEditingOrder(order);
           setIsOrderModalOpen(true);
@@ -1435,7 +1438,7 @@ export default function App() {
       />
 
       <AnimatePresence>
-        {activeGenericMenuId && genericMenuPosition && (
+        {isAdmin && activeGenericMenuId && genericMenuPosition && (
           <>
             <div className="fixed inset-0 z-[150]" onClick={() => setActiveGenericMenuId(null)} />
             <motion.div 

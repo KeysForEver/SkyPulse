@@ -25,6 +25,7 @@ interface AssetsProps {
   assets: Asset[];
   categories: {id: string | number, name: string}[];
   hideTitle?: boolean;
+  isAdmin?: boolean;
   onAddAsset: (formData: FormData) => Promise<void>;
   onUpdateAsset: (id: string | number, formData: FormData) => Promise<void>;
   onDeleteAsset: (id: string | number) => Promise<void>;
@@ -35,6 +36,7 @@ export const Assets = ({
   assets, 
   categories,
   hideTitle = false,
+  isAdmin = false,
   onAddAsset, 
   onUpdateAsset,
   onDeleteAsset,
@@ -246,9 +248,15 @@ export const Assets = ({
             visibleColumns={visibleColumns}
             requestSort={requestSort}
             getSortIcon={getSortIcon}
-            onAssetClick={(asset) => { setEditingAsset(asset); setIsModalOpen(true); }}
+            onAssetClick={(asset) => { 
+              if (isAdmin) {
+                setEditingAsset(asset); 
+                setIsModalOpen(true); 
+              }
+            }}
             onEdit={(asset) => { setEditingAsset(asset); setIsModalOpen(true); }}
             onDelete={onDeleteAsset}
+            isAdmin={isAdmin}
           />
         </div>
       </Card>
