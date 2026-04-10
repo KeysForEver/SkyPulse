@@ -64,33 +64,37 @@ const Login = ({ onLogin }: { onLogin: () => void }) => {
     setIsLoading(true);
     setError(null);
 
-    let email = username;
-    let pass = password;
+    const normalizedUsername = username.toLowerCase().trim();
+    const normalizedPassword = password.toLowerCase().trim(); // User specifically asked for admin/admin lowercase
+
+    let email = normalizedUsername;
+    let pass = normalizedPassword;
 
     // Special handling for admin/admin
-    if (username === 'admin' && password === 'admin') {
+    if (normalizedUsername === 'admin' && normalizedPassword === 'admin') {
       email = 'admin@skysmart.com';
       pass = 'adminadmin';
-    } else if (!username.includes('@')) {
+    } else if (!normalizedUsername.includes('@')) {
       // If it's a simple username, append a domain to make it an email for Firebase Auth
-      email = `${username.toLowerCase()}@skysmart.com`;
+      email = `${normalizedUsername}@skysmart.com`;
     }
 
     try {
       try {
         await signInWithEmailAndPassword(auth, email, pass);
       } catch (err: any) {
-        // If user doesn't exist yet, check if they are authorized in the users collection
-        if (err.code === 'auth/user-not-found') {
+        // Modern Firebase Auth returns 'auth/invalid-credential' for both not found and wrong password
+        if (err.code === 'auth/user-not-found' || err.code === 'auth/invalid-credential') {
           // Special case for bootstrap admin
-          if (username === 'admin' && password === 'admin') {
-            await createUserWithEmailAndPassword(auth, email, pass);
+          if (normalizedUsername === 'admin' && normalizedPassword === 'admin') {
+            try {
+              await createUserWithEmailAndPassword(auth, email, pass);
+            } catch (createErr: any) {
+              // If creation fails (e.g. user already exists but password was wrong), throw original error
+              throw err;
+            }
           } else {
-            // Check if user is pre-authorized in Firestore
-            // Note: This requires a rule that allows unauthenticated read on users for this specific check
-            // or we just try to create and then check role.
-            // Let's try to create and then check. If no role, we sign out.
-            await createUserWithEmailAndPassword(auth, email, pass);
+            throw err;
           }
         } else {
           throw err;
@@ -137,8 +141,8 @@ const Login = ({ onLogin }: { onLogin: () => void }) => {
                 type="text"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
-                className="w-full pl-10 pr-4 py-3 bg-zinc-50 dark:bg-zinc-800 border border-zinc-100 dark:border-zinc-700 rounded-xl focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-100 outline-none transition-all uppercase text-sm font-medium"
-                placeholder="ADMIN"
+                className="w-full pl-10 pr-4 py-3 bg-zinc-50 dark:bg-zinc-800 border border-zinc-100 dark:border-zinc-700 rounded-xl focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-100 outline-none transition-all text-sm font-medium"
+                placeholder="admin"
                 required
               />
             </div>
