@@ -1,10 +1,11 @@
-export type Role = 'Admin' | 'Almoxarifado' | 'Vendas' | 'Instalação';
+export type Permission = 'dashboard' | 'kanban' | 'production' | 'clients' | 'suppliers' | 'assets' | 'inventory' | 'financial' | 'settings' | 'audit';
 
 export interface User {
   id: string | number;
   name: string;
   email: string;
-  role: Role;
+  role: string;
+  permissions?: Permission[];
 }
 
 export interface Product {

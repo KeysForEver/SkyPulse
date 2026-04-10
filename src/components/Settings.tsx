@@ -3,7 +3,20 @@ import { Download, ShieldCheck, Database as DbIcon, Loader2, Upload, Users as Us
 import { Card, ConfirmModal, ErrorAlert, Modal, Input, Select, Button, cn } from './Common';
 import { motion, AnimatePresence } from 'motion/react';
 import { apiService } from '../services/apiService';
-import { User, Role } from '../types';
+import { User, Permission } from '../types';
+
+const PERMISSIONS_LIST: { id: Permission; label: string }[] = [
+  { id: 'dashboard', label: 'PAINEL / DASHBOARD' },
+  { id: 'kanban', label: 'KANBAN DE PRODUÇÃO' },
+  { id: 'production', label: 'ORDENS DE PRODUÇÃO' },
+  { id: 'clients', label: 'GESTÃO DE CLIENTES' },
+  { id: 'suppliers', label: 'GESTÃO DE FORNECEDORES' },
+  { id: 'assets', label: 'GESTÃO DE PATRIMÔNIOS' },
+  { id: 'inventory', label: 'CONTROLE DE ESTOQUE' },
+  { id: 'financial', label: 'CONTROLE FINANCEIRO' },
+  { id: 'settings', label: 'CONFIGURAÇÕES DO SISTEMA' },
+  { id: 'audit', label: 'HISTÓRICO DE AÇÕES' },
+];
 
 interface SettingsProps {
   users: User[];
@@ -27,7 +40,8 @@ export const Settings = ({ users, onAddUser, onUpdateUser, onDeleteUser }: Setti
     name: '',
     username: '',
     password: '',
-    role: 'Almoxarifado' as Role
+    role: 'Usuário',
+    permissions: [] as Permission[]
   });
   const [isDeletingUser, setIsDeletingUser] = useState<User | null>(null);
   const [isSavingUser, setIsSavingUser] = useState(false);
@@ -118,7 +132,8 @@ export const Settings = ({ users, onAddUser, onUpdateUser, onDeleteUser }: Setti
       name: user.name,
       username: (user as any).username || '',
       password: (user as any).password || '',
-      role: user.role
+      role: user.role || 'Usuário',
+      permissions: user.permissions || []
     });
     setIsUserModalOpen(true);
   };
@@ -157,7 +172,13 @@ export const Settings = ({ users, onAddUser, onUpdateUser, onDeleteUser }: Setti
             </div>
             <Button onClick={() => {
               setEditingUser(null);
-              setUserFormData({ name: '', username: '', password: '', role: 'Almoxarifado' });
+              setUserFormData({ 
+                name: '', 
+                username: '', 
+                password: '', 
+                role: 'Usuário',
+                permissions: []
+              });
               setIsUserModalOpen(true);
             }} className="flex items-center gap-2">
               <Plus size={18} />
@@ -181,12 +202,23 @@ export const Settings = ({ users, onAddUser, onUpdateUser, onDeleteUser }: Setti
                     <td className="py-3 px-4 text-sm font-medium uppercase">{user.name}</td>
                     <td className="py-3 px-4 text-sm text-zinc-500 dark:text-zinc-400 uppercase">{(user as any).username || '-'}</td>
                     <td className="py-3 px-4">
-                      <span className={cn(
-                        "px-2 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider",
-                        user.role === 'Admin' ? "bg-zinc-900 text-white dark:bg-white dark:text-zinc-900" : "bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400"
-                      )}>
-                        {user.role}
-                      </span>
+                      <div className="flex flex-wrap gap-1">
+                        {user.permissions && user.permissions.length > 0 ? (
+                          user.permissions.length === PERMISSIONS_LIST.length ? (
+                            <span className="px-2 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider bg-zinc-900 text-white dark:bg-white dark:text-zinc-900">
+                              ACESSO TOTAL
+                            </span>
+                          ) : (
+                            <span className="px-2 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400">
+                              {user.permissions.length} TELAS
+                            </span>
+                          )
+                        ) : (
+                          <span className="px-2 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider bg-rose-50 text-rose-600 dark:bg-rose-500/10 dark:text-rose-400">
+                            SEM ACESSO
+                          </span>
+                        )}
+                      </div>
                     </td>
                     <td className="py-3 px-4 text-right">
                       <div className="flex items-center justify-end gap-2">
@@ -298,7 +330,7 @@ export const Settings = ({ users, onAddUser, onUpdateUser, onDeleteUser }: Setti
             <Input 
               label="Usuário (Login)"
               value={userFormData.username}
-              onChange={(e: any) => setUserFormData({ ...userFormData, username: e.target.value.toLowerCase() })}
+              onChange={(e: any) => setUserFormData({ ...userFormData, username: e.target.value })}
               placeholder="EX: joao.silva"
               required
             />
@@ -311,17 +343,36 @@ export const Settings = ({ users, onAddUser, onUpdateUser, onDeleteUser }: Setti
               required
             />
           </div>
-          <Select 
-            label="Cargo / Permissão"
-            value={userFormData.role}
-            onChange={(e: any) => setUserFormData({ ...userFormData, role: e.target.value as Role })}
-            options={[
-              { value: 'Admin', label: 'ADMINISTRADOR (ACESSO TOTAL)' },
-              { value: 'Almoxarifado', label: 'ALMOXARIFADO' },
-              { value: 'Vendas', label: 'VENDAS' },
-              { value: 'Instalação', label: 'INSTALAÇÃO' }
-            ]}
-          />
+          <div className="space-y-3">
+            <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest ml-1">Permissões de Acesso</label>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-4 bg-zinc-50 dark:bg-zinc-800/50 rounded-2xl border border-zinc-100 dark:border-zinc-800">
+              {PERMISSIONS_LIST.map((perm) => (
+                <label key={perm.id} className="flex items-center gap-3 cursor-pointer group">
+                  <div className="relative flex items-center">
+                    <input 
+                      type="checkbox"
+                      className="peer h-5 w-5 appearance-none rounded-md border border-zinc-300 dark:border-zinc-700 checked:bg-zinc-900 dark:checked:bg-zinc-100 transition-all cursor-pointer"
+                      checked={userFormData.permissions.includes(perm.id)}
+                      onChange={(e) => {
+                        const newPerms = e.target.checked 
+                          ? [...userFormData.permissions, perm.id]
+                          : userFormData.permissions.filter(p => p !== perm.id);
+                        setUserFormData({ ...userFormData, permissions: newPerms });
+                      }}
+                    />
+                    <div className="absolute text-white dark:text-zinc-900 opacity-0 peer-checked:opacity-100 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor">
+                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                      </svg>
+                    </div>
+                  </div>
+                  <span className="text-xs font-bold text-zinc-600 dark:text-zinc-400 group-hover:text-zinc-900 dark:group-hover:text-zinc-100 transition-colors uppercase tracking-tight">
+                    {perm.label}
+                  </span>
+                </label>
+              ))}
+            </div>
+          </div>
           <div className="flex justify-end gap-3 pt-4">
             <Button variant="secondary" onClick={() => setIsUserModalOpen(false)}>Cancelar</Button>
             <Button type="submit" isLoading={isSavingUser}>Salvar Usuário</Button>

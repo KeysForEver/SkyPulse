@@ -12,8 +12,7 @@ import {
   getDoc,
   runTransaction,
   serverTimestamp,
-  Timestamp,
-  onSnapshot
+  Timestamp
 } from 'firebase/firestore';
 import { db, auth } from '../firebase';
 import { Product, Client, Supplier, Asset, Order, Movement, OrderStatus } from '../types';

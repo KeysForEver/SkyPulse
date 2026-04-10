@@ -15,7 +15,9 @@ import {
   Edit,
   Trash2,
   Loader2,
-  ShieldCheck
+  ShieldCheck,
+  Eye,
+  EyeOff
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
@@ -27,7 +29,6 @@ import {
 } from 'firebase/auth';
 import { 
   collection, 
-  onSnapshot, 
   query, 
   orderBy, 
   Timestamp 
@@ -56,6 +57,7 @@ import { ConfirmModal } from './components/Common';
 const Login = ({ onLogin }: { onLogin: () => void }) => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -142,7 +144,6 @@ const Login = ({ onLogin }: { onLogin: () => void }) => {
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 className="w-full pl-10 pr-4 py-3 bg-zinc-50 dark:bg-zinc-800 border border-zinc-100 dark:border-zinc-700 rounded-xl focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-100 outline-none transition-all text-sm font-medium"
-                placeholder="admin"
                 required
               />
             </div>
@@ -155,13 +156,22 @@ const Login = ({ onLogin }: { onLogin: () => void }) => {
                 <ShieldCheck size={18} />
               </div>
               <input 
-                type="password"
+                type={showPassword ? "text" : "password"}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full pl-10 pr-4 py-3 bg-zinc-50 dark:bg-zinc-800 border border-zinc-100 dark:border-zinc-700 rounded-xl focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-100 outline-none transition-all text-sm font-medium"
+                className="w-full pl-10 pr-12 py-3 bg-zinc-50 dark:bg-zinc-800 border border-zinc-100 dark:border-zinc-700 rounded-xl focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-100 outline-none transition-all text-sm font-medium"
                 placeholder="••••••••"
                 required
               />
+              {password.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 transition-colors"
+                >
+                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              )}
             </div>
           </div>
 
@@ -255,6 +265,26 @@ export default function App() {
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [assets, setAssets] = useState<Asset[]>([]);
   const [systemUsers, setSystemUsers] = useState<User[]>([]);
+
+  const currentUserProfile = systemUsers.find(u => u.email === user?.email);
+  const userPermissions = (user?.email === 'admin@skysmart.com' || user?.email === 'Diesel.087@gmail.com') 
+    ? ['dashboard', 'kanban', 'production', 'clients', 'suppliers', 'assets', 'inventory', 'financial', 'audit', 'settings']
+    : (currentUserProfile?.permissions || []);
+
+  const sidebarItems = [
+    { id: 'dashboard', icon: LayoutDashboard, label: "Painel" },
+    { id: 'kanban', icon: ClipboardList, label: "Kanban" },
+    { id: 'production', icon: FileText, label: "Ordem de Produção" },
+    { id: 'clients', icon: Users, label: "Clientes" },
+    { id: 'suppliers', icon: Truck, label: "Fornecedores" },
+    { id: 'assets', icon: HardDrive, label: "Patrimônios" },
+    { id: 'inventory', icon: Package, label: "Estoque" },
+    { id: 'financial', icon: DollarSign, label: "Financeiro" },
+    { id: 'audit', icon: RotateCcw, label: "Histórico" },
+    { id: 'settings', icon: Settings, label: "Configurações" },
+  ];
+
+  const visibleSidebarItems = sidebarItems.filter(item => userPermissions.includes(item.id as any));
   const [categories, setCategories] = useState<{id: string | number, name: string}[]>([]);
   const [locations, setLocations] = useState<{id: string | number, name: string}[]>([]);
   const [units, setUnits] = useState<{id: string | number, name: string}[]>([]);
@@ -265,6 +295,7 @@ export default function App() {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [lastScrollY, setLastScrollY] = useState(0);
   const [globalError, setGlobalError] = useState<string | null>(null);
+  const [isFetching, setIsFetching] = useState(false);
   const mainContentRef = useRef<HTMLDivElement>(null);
 
   // Handle window resize to ensure sidebar state is consistent
@@ -487,109 +518,60 @@ export default function App() {
   };
 
   useEffect(() => {
-    if (!user) return;
-
-    const unsubProducts = onSnapshot(collection(db, 'products'), (snap) => {
-      const data = snap.docs.map(d => ({ id: d.id, ...d.data() } as Product));
-      setProducts(data);
-    });
-
-    const unsubOrders = onSnapshot(query(collection(db, 'orders'), orderBy('created_at', 'desc')), (snap) => {
-      const data = snap.docs.map(d => {
-        const docData = d.data();
-        return {
-          ...docData,
-          id: d.id,
-          created_at: docData.created_at instanceof Timestamp ? docData.created_at.toDate().toISOString() : docData.created_at
-        } as Order;
-      });
-      setOrders(data);
-    });
-
-    const unsubClients = onSnapshot(collection(db, 'clients'), (snap) => {
-      const data = snap.docs.map(d => ({ id: d.id, ...d.data() } as Client));
-      setClients(data);
-    });
-
-    const unsubSuppliers = onSnapshot(collection(db, 'suppliers'), (snap) => {
-      const data = snap.docs.map(d => ({ id: d.id, ...d.data() } as Supplier));
-      setSuppliers(data);
-    });
-
-    const unsubAssets = onSnapshot(collection(db, 'assets'), (snap) => {
-      const data = snap.docs.map(d => ({ id: d.id, ...d.data() } as Asset));
-      setAssets(data);
-    });
-
-    const unsubCategories = onSnapshot(collection(db, 'categories'), (snap) => {
-      const data = snap.docs.map(d => ({ id: d.id, ...d.data() } as any));
-      setCategories(data);
-    });
-
-    const unsubLocations = onSnapshot(collection(db, 'locations'), (snap) => {
-      const data = snap.docs.map(d => ({ id: d.id, ...d.data() } as any));
-      setLocations(data);
-    });
-
-    const unsubUnits = onSnapshot(collection(db, 'units'), (snap) => {
-      const data = snap.docs.map(d => ({ id: d.id, ...d.data() } as any));
-      setUnits(data);
-    });
-
-    const unsubMovements = onSnapshot(query(collection(db, 'movements'), orderBy('date', 'desc')), (snap) => {
-      const data = snap.docs.map(d => {
-        const docData = d.data();
-        return {
-          ...docData,
-          id: d.id,
-          date: docData.date instanceof Timestamp ? docData.date.toDate().toISOString() : docData.date
-        } as Movement;
-      });
-      setMovements(data);
-    });
-
-    const unsubAudit = onSnapshot(query(collection(db, 'audit_logs'), orderBy('created_at', 'desc')), (snap) => {
-      const data = snap.docs.map(d => {
-        const docData = d.data();
-        return {
-          ...docData,
-          id: d.id,
-          created_at: docData.created_at instanceof Timestamp ? docData.created_at.toDate().toISOString() : docData.created_at
-        } as any;
-      });
-      setAuditLogs(data);
-    });
-
-    const unsubUsers = onSnapshot(collection(db, 'users'), (snap) => {
-      const data = snap.docs.map(d => ({ id: d.id, ...d.data() } as User));
-      setSystemUsers(data);
-    });
-
-    // Refresh stats periodically or when data changes
-    apiService.getStats().then(setStats);
-
-    return () => {
-      unsubProducts();
-      unsubOrders();
-      unsubClients();
-      unsubSuppliers();
-      unsubAssets();
-      unsubCategories();
-      unsubLocations();
-      unsubUnits();
-      unsubMovements();
-      unsubAudit();
-      unsubUsers();
-    };
+    if (user) {
+      fetchData();
+    }
   }, [user]);
 
   const fetchData = async () => {
-    if (!user) return;
+    if (!user || isFetching) return;
+    setIsFetching(true);
     try {
-      const statsData = await apiService.getStats();
+      const [
+        statsData,
+        productsData,
+        ordersData,
+        clientsData,
+        suppliersData,
+        assetsData,
+        categoriesData,
+        locationsData,
+        unitsData,
+        movementsData,
+        auditLogsData,
+        usersData
+      ] = await Promise.all([
+        apiService.getStats(),
+        apiService.getProducts(),
+        apiService.getOrders(),
+        apiService.getClients(),
+        apiService.getSuppliers(),
+        apiService.getAssets(),
+        apiService.getCategories(),
+        apiService.getLocations(),
+        apiService.getUnits(),
+        apiService.getMovements(),
+        apiService.getAuditLogs(),
+        apiService.getUsers()
+      ]);
+
       setStats(statsData);
+      setProducts(productsData || []);
+      setOrders(ordersData || []);
+      setClients(clientsData || []);
+      setSuppliers(suppliersData || []);
+      setAssets(assetsData || []);
+      setCategories(categoriesData || []);
+      setLocations(locationsData || []);
+      setUnits(unitsData || []);
+      setMovements(movementsData || []);
+      setAuditLogs(auditLogsData || []);
+      setSystemUsers(usersData || []);
     } catch (err) {
       console.error('Error fetching data:', err);
+      setGlobalError('ERRO AO ATUALIZAR DADOS. TENTE NOVAMENTE.');
+    } finally {
+      setIsFetching(false);
     }
   };
 
@@ -778,6 +760,7 @@ export default function App() {
 
     try {
       await apiService.addAsset(formData);
+      fetchData();
       setIsAssetModalOpen(false);
     } catch (err) {
       console.error('Error adding asset:', err);
@@ -798,6 +781,7 @@ export default function App() {
 
     try {
       await apiService.updateAsset(id, formData);
+      fetchData();
       setIsAssetModalOpen(false);
       setEditingAsset(null);
     } catch (err) {
@@ -963,6 +947,22 @@ export default function App() {
   };
 
   const renderContent = () => {
+    if (!userPermissions.includes(activeTab as any)) {
+      return (
+        <div className="flex flex-col items-center justify-center h-full text-zinc-400 space-y-4">
+          <ShieldCheck size={48} />
+          <p className="text-sm font-bold uppercase tracking-widest">Acesso Restrito</p>
+          <p className="text-xs uppercase">Você não tem permissão para acessar esta tela.</p>
+          <Button onClick={() => {
+            const firstAvailable = sidebarItems.find(item => userPermissions.includes(item.id as any));
+            if (firstAvailable) setActiveTab(firstAvailable.id as any);
+          }}>
+            Voltar para Início
+          </Button>
+        </div>
+      );
+    }
+
     switch (activeTab) {
       case 'dashboard': return (
         <Dashboard 
@@ -1153,12 +1153,15 @@ export default function App() {
           users={systemUsers}
           onAddUser={async (data) => {
             await apiService.addUser(data);
+            fetchData();
           }}
           onUpdateUser={async (id, data) => {
             await apiService.updateUser(id, data);
+            fetchData();
           }}
           onDeleteUser={async (id) => {
             await apiService.deleteUser(id);
+            fetchData();
           }}
         />
       );
@@ -1228,16 +1231,16 @@ export default function App() {
           </div>
 
           <nav className="flex-1 px-4 space-y-1 overflow-y-auto custom-scrollbar overflow-x-hidden">
-            <SidebarItem icon={LayoutDashboard} label="Painel" active={activeTab === 'dashboard'} isCollapsed={isSidebarCollapsed} onClick={() => { setActiveTab('dashboard'); setIsSidebarOpen(false); }} />
-            <SidebarItem icon={ClipboardList} label="Kanban" active={activeTab === 'kanban'} isCollapsed={isSidebarCollapsed} onClick={() => { setActiveTab('kanban'); setIsSidebarOpen(false); }} />
-            <SidebarItem icon={FileText} label="Ordem de Produção" active={activeTab === 'production'} isCollapsed={isSidebarCollapsed} onClick={() => { setActiveTab('production'); setIsSidebarOpen(false); }} />
-            <SidebarItem icon={Users} label="Clientes" active={activeTab === 'clients'} isCollapsed={isSidebarCollapsed} onClick={() => { setActiveTab('clients'); setIsSidebarOpen(false); }} />
-            <SidebarItem icon={Truck} label="Fornecedores" active={activeTab === 'suppliers'} isCollapsed={isSidebarCollapsed} onClick={() => { setActiveTab('suppliers'); setIsSidebarOpen(false); }} />
-            <SidebarItem icon={HardDrive} label="Patrimônios" active={activeTab === 'assets'} isCollapsed={isSidebarCollapsed} onClick={() => { setActiveTab('assets'); setIsSidebarOpen(false); }} />
-            <SidebarItem icon={Package} label="Estoque" active={activeTab === 'inventory'} isCollapsed={isSidebarCollapsed} onClick={() => { setActiveTab('inventory'); setIsSidebarOpen(false); }} />
-            <SidebarItem icon={DollarSign} label="Financeiro" active={activeTab === 'financial'} isCollapsed={isSidebarCollapsed} onClick={() => { setActiveTab('financial'); setIsSidebarOpen(false); }} />
-            <SidebarItem icon={RotateCcw} label="Histórico" active={activeTab === 'audit'} isCollapsed={isSidebarCollapsed} onClick={() => { setActiveTab('audit'); setIsSidebarOpen(false); }} />
-            <SidebarItem icon={Settings} label="Configurações" active={activeTab === 'settings'} isCollapsed={isSidebarCollapsed} onClick={() => { setActiveTab('settings'); setIsSidebarOpen(false); }} />
+            {visibleSidebarItems.map((item) => (
+              <SidebarItem 
+                key={item.id}
+                icon={item.icon} 
+                label={item.label} 
+                active={activeTab === item.id} 
+                isCollapsed={isSidebarCollapsed} 
+                onClick={() => { setActiveTab(item.id as any); setIsSidebarOpen(false); }} 
+              />
+            ))}
           </nav>
 
           <div className="p-4 border-t border-zinc-100 dark:border-zinc-800">
@@ -1304,10 +1307,17 @@ export default function App() {
             </h1>
           </div>
           <div className="flex items-center gap-4">
-            <div className="hidden md:flex items-center gap-2 px-3 py-1.5 bg-zinc-100 dark:bg-zinc-800 rounded-full text-xs font-medium text-zinc-600 dark:text-zinc-400 uppercase">
-              <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-              Sistema Online
-            </div>
+            <button 
+              onClick={() => fetchData()}
+              disabled={isFetching}
+              className={cn(
+                "flex items-center gap-2 px-3 py-1.5 bg-zinc-100 dark:bg-zinc-800 rounded-full text-xs font-medium text-zinc-600 dark:text-zinc-400 uppercase transition-all hover:bg-zinc-200 dark:hover:bg-zinc-700",
+                isFetching && "opacity-50 cursor-not-allowed"
+              )}
+            >
+              <RotateCcw className={cn("w-3 h-3", isFetching && "animate-spin")} />
+              {isFetching ? 'Atualizando...' : 'Atualizar Dados'}
+            </button>
           </div>
         </header>
 
