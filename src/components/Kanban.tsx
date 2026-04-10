@@ -7,9 +7,9 @@ import { cn, SearchBar } from './Common';
 
 interface KanbanProps {
   orders: Order[];
-  onUpdateStatus: (id: number, status: OrderStatus) => void;
+  onUpdateStatus: (id: string | number, status: OrderStatus) => void;
   onEdit: (order: Order) => void;
-  onDelete: (id: number) => void;
+  onDelete: (id: string | number) => void;
   onAdd: () => void;
   onItemClick: (order: Order) => void;
   onError?: (message: string) => void;
@@ -17,9 +17,9 @@ interface KanbanProps {
 
 export const Kanban = ({ orders, onUpdateStatus, onEdit, onDelete, onAdd, onItemClick, onError }: KanbanProps) => {
   const [searchTerm, setSearchTerm] = useState('');
-  const [draggedOrderId, setDraggedOrderId] = useState<number | null>(null);
+  const [draggedOrderId, setDraggedOrderId] = useState<string | number | null>(null);
   const [draggedOverColumn, setDraggedOverColumn] = useState<string | null>(null);
-  const [activeMenuId, setActiveMenuId] = useState<number | null>(null);
+  const [activeMenuId, setActiveMenuId] = useState<string | number | null>(null);
   const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0 });
 
   const getOrderProgress = (order: Order) => {
@@ -51,7 +51,7 @@ export const Kanban = ({ orders, onUpdateStatus, onEdit, onDelete, onAdd, onItem
     }
   };
 
-  const validateStatusChange = (orderId: number, newStatus: OrderStatus) => {
+  const validateStatusChange = (orderId: string | number, newStatus: OrderStatus) => {
     const order = orders.find(o => o.id === orderId);
     if (!order) return false;
 
@@ -78,7 +78,7 @@ export const Kanban = ({ orders, onUpdateStatus, onEdit, onDelete, onAdd, onItem
     );
   }, [orders, searchTerm]);
 
-  const handleDragStart = (e: React.DragEvent, orderId: number) => {
+  const handleDragStart = (e: React.DragEvent, orderId: string | number) => {
     setDraggedOrderId(orderId);
     e.dataTransfer.setData('orderId', orderId.toString());
     e.dataTransfer.effectAllowed = 'move';
@@ -97,8 +97,8 @@ export const Kanban = ({ orders, onUpdateStatus, onEdit, onDelete, onAdd, onItem
     e.preventDefault();
     setDraggedOverColumn(null);
     
-    const orderId = draggedOrderId || parseInt(e.dataTransfer.getData('orderId'));
-    if (orderId && !isNaN(orderId)) {
+    const orderId = draggedOrderId || e.dataTransfer.getData('orderId');
+    if (orderId) {
       if (validateStatusChange(orderId, status)) {
         onUpdateStatus(orderId, status);
       }
@@ -106,7 +106,7 @@ export const Kanban = ({ orders, onUpdateStatus, onEdit, onDelete, onAdd, onItem
     setDraggedOrderId(null);
   };
 
-  const openMenu = (e: React.MouseEvent, orderId: number) => {
+  const openMenu = (e: React.MouseEvent, orderId: string | number) => {
     e.preventDefault();
     e.stopPropagation();
     const rect = e.currentTarget.getBoundingClientRect();

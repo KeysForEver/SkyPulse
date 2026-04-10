@@ -1,14 +1,14 @@
 export type Role = 'Admin' | 'Almoxarifado' | 'Vendas' | 'Instalação';
 
 export interface User {
-  id: number;
+  id: string | number;
   name: string;
   email: string;
   role: Role;
 }
 
 export interface Product {
-  id: number;
+  id: string | number;
   name: string;
   category: string;
   unit: string;
@@ -19,7 +19,7 @@ export interface Product {
 }
 
 export interface Client {
-  id: number;
+  id: string | number;
   tipo_cliente: 'PF' | 'PJ';
   // Pessoa Física
   name: string; // NOME COMPLETO
@@ -45,7 +45,7 @@ export interface Client {
 }
 
 export interface Supplier {
-  id: number;
+  id: string | number;
   tipo: 'PF' | 'PJ';
   // Pessoa Física
   name?: string; // NOME COMPLETO
@@ -72,7 +72,7 @@ export interface Supplier {
 }
 
 export interface Asset {
-  id: number;
+  id: string | number;
   description: string;
   asset_number: string;
   category: string;
@@ -90,11 +90,11 @@ export interface Asset {
 export type OrderStatus = 'ORDENS DE PRODUÇÃO' | 'SEPARAÇÃO DE MATERIAL' | 'PRODUÇÃO' | 'FINALIZAÇÃO' | 'REVISÃO' | 'CONCLUIDO';
 
 export interface Order {
-  id: number;
+  id: string | number;
   title: string;
   description: string;
   status: OrderStatus;
-  client_id: number;
+  client_id: string | number;
   client_name?: string;
   created_at: string;
   details?: string; // JSON string containing OrderDetails
@@ -122,13 +122,13 @@ export interface OrderDetails {
 }
 
 export interface Movement {
-  id: number;
-  product_id: number;
+  id: string | number;
+  product_id: string | number;
   product_name?: string;
   type: 'IN' | 'OUT';
   quantity: number;
   date: string;
-  supplier_id?: number;
+  supplier_id?: string | number;
   supplier_name?: string;
   doc_number?: string;
   issue_date?: string;

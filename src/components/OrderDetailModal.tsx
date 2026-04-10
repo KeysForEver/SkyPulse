@@ -10,7 +10,7 @@ interface OrderDetailModalProps {
   onClose: () => void;
   order: Order | null;
   onEdit: (order: Order) => void;
-  onDelete: (id: number) => void;
+  onDelete: (id: string | number) => void;
   onUpdate?: () => void;
 }
 

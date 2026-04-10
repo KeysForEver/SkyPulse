@@ -332,7 +332,7 @@ export const StockInModal = ({
     p.name.toLowerCase().includes(debouncedSearchTerm.toLowerCase())
   );
 
-  const selectedProduct = products.find((p: Product) => p.id === parseInt(stockInData.product_id));
+  const selectedProduct = products.find((p: Product) => p.id.toString() === stockInData.product_id);
 
   useEffect(() => {
     if (!stockInData.product_id) {
@@ -745,7 +745,7 @@ export const StockOutModal = ({
     p.name.toLowerCase().includes(debouncedSearchTerm.toLowerCase())
   );
 
-  const selectedProduct = products.find((p: Product) => p.id === parseInt(stockOutData.product_id));
+  const selectedProduct = products.find((p: Product) => p.id.toString() === stockOutData.product_id);
 
   useEffect(() => {
     if (!stockOutData.product_id) {

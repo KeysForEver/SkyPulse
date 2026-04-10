@@ -35,21 +35,21 @@ import {
 
 interface InventoryProps {
   products: Product[];
-  categories: {id: number, name: string}[];
-  units: {id: number, name: string}[];
+  categories: {id: string | number, name: string}[];
+  units: {id: string | number, name: string}[];
   suppliers: Supplier[];
-  locations: {id: number, name: string}[];
+  locations: {id: string | number, name: string}[];
   orders: Order[];
   movements: Movement[];
   onAddProduct: (p: FormData) => void;
-  onUpdateProduct: (id: number, p: FormData) => Promise<void>;
-  onDeleteProduct: (id: number) => Promise<void>;
+  onUpdateProduct: (id: string | number, p: FormData) => Promise<void>;
+  onDeleteProduct: (id: string | number) => Promise<void>;
   onAddCategory: (name: string) => Promise<void>;
   onAddUnit: (name: string) => Promise<void>;
-  onUpdateCategory: (id: number, name: string) => Promise<void>;
+  onUpdateCategory: (id: string | number, name: string) => Promise<void>;
   onAddSupplier: (name: string) => Promise<void>;
   onAddLocation: (name: string) => Promise<void>;
-  onUpdateLocation: (id: number, name: string) => Promise<void>;
+  onUpdateLocation: (id: string | number, name: string) => Promise<void>;
   onStockIn: (data: any) => Promise<void>;
   onStockOut: (data: any) => Promise<void>;
   initialSearchTerm?: string;
@@ -94,11 +94,11 @@ export const Inventory = ({
   const [isAddingCategory, setIsAddingCategory] = useState(false);
   const [isAddingUnit, setIsAddingUnit] = useState(false);
   const [isEditingCategory, setIsEditingCategory] = useState(false);
-  const [editingCategoryId, setEditingCategoryId] = useState<number | null>(null);
+  const [editingCategoryId, setEditingCategoryId] = useState<string | number | null>(null);
   const [isAddingSupplier, setIsAddingSupplier] = useState(false);
   const [isAddingLocation, setIsAddingLocation] = useState(false);
   const [isEditingLocation, setIsEditingLocation] = useState(false);
-  const [editingLocationId, setEditingLocationId] = useState<number | null>(null);
+  const [editingLocationId, setEditingLocationId] = useState<string | number | null>(null);
   const [newCategoryName, setNewCategoryName] = useState('');
   const [newUnitName, setNewUnitName] = useState('');
   const [newSupplierName, setNewSupplierName] = useState('');

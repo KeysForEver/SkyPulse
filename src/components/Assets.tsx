@@ -23,12 +23,12 @@ import { exportGenericToCSV, exportGenericToPDF } from '../services/exportServic
 
 interface AssetsProps {
   assets: Asset[];
-  categories: {id: number, name: string}[];
+  categories: {id: string | number, name: string}[];
   hideTitle?: boolean;
   onAddAsset: (formData: FormData) => Promise<void>;
-  onUpdateAsset: (id: number, formData: FormData) => Promise<void>;
-  onDeleteAsset: (id: number) => Promise<void>;
-  onDisposalAsset: (id: number, data: any) => Promise<void>;
+  onUpdateAsset: (id: string | number, formData: FormData) => Promise<void>;
+  onDeleteAsset: (id: string | number) => Promise<void>;
+  onDisposalAsset: (id: string | number, data: any) => Promise<void>;
 }
 
 export const Assets = ({ 

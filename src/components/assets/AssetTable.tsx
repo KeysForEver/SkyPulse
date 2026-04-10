@@ -10,7 +10,7 @@ interface AssetTableProps {
   getSortIcon: (key: keyof Asset | 'status') => React.ReactNode;
   onAssetClick: (asset: Asset) => void;
   onEdit: (asset: Asset) => void;
-  onDelete: (id: number) => void;
+  onDelete: (id: string | number) => void;
 }
 
 export const AssetTable = ({ 

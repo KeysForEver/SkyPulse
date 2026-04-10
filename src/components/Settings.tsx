@@ -1,16 +1,36 @@
 import React, { useState, useRef } from 'react';
-import { Download, ShieldCheck, Database as DbIcon, Loader2, Upload } from 'lucide-react';
-import { Card, ConfirmModal, ErrorAlert } from './Common';
-import { motion } from 'motion/react';
+import { Download, ShieldCheck, Database as DbIcon, Loader2, Upload, Users as UsersIcon, Plus, Edit, Trash2, Key } from 'lucide-react';
+import { Card, ConfirmModal, ErrorAlert, Modal, Input, Select, Button, cn } from './Common';
+import { motion, AnimatePresence } from 'motion/react';
 import { apiService } from '../services/apiService';
+import { User, Role } from '../types';
 
-export const Settings = () => {
+interface SettingsProps {
+  users: User[];
+  onAddUser: (data: any) => Promise<void>;
+  onUpdateUser: (id: string | number, data: any) => Promise<void>;
+  onDeleteUser: (id: string | number) => Promise<void>;
+}
+
+export const Settings = ({ users, onAddUser, onUpdateUser, onDeleteUser }: SettingsProps) => {
   const [isBackingUp, setIsBackingUp] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
   const [showConfirmRestore, setShowConfirmRestore] = useState(false);
   const [pendingFile, setPendingFile] = useState<File | null>(null);
   const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // User Management State
+  const [isUserModalOpen, setIsUserModalOpen] = useState(false);
+  const [editingUser, setEditingUser] = useState<User | null>(null);
+  const [userFormData, setUserFormData] = useState({
+    name: '',
+    username: '',
+    password: '',
+    role: 'Almoxarifado' as Role
+  });
+  const [isDeletingUser, setIsDeletingUser] = useState<User | null>(null);
+  const [isSavingUser, setIsSavingUser] = useState(false);
 
   const handleBackup = async () => {
     setIsBackingUp(true);
@@ -73,6 +93,46 @@ export const Settings = () => {
     }
   };
 
+  const handleUserSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSavingUser(true);
+    try {
+      if (editingUser) {
+        await onUpdateUser(editingUser.id, userFormData);
+      } else {
+        await onAddUser(userFormData);
+      }
+      setIsUserModalOpen(false);
+      setEditingUser(null);
+      setUserFormData({ name: '', username: '', password: '', role: 'Almoxarifado' });
+    } catch (err: any) {
+      setError('Erro ao salvar usuário: ' + err.message);
+    } finally {
+      setIsSavingUser(false);
+    }
+  };
+
+  const handleEditUser = (user: User) => {
+    setEditingUser(user);
+    setUserFormData({
+      name: user.name,
+      username: (user as any).username || '',
+      password: (user as any).password || '',
+      role: user.role
+    });
+    setIsUserModalOpen(true);
+  };
+
+  const handleDeleteUser = async () => {
+    if (!isDeletingUser) return;
+    try {
+      await onDeleteUser(isDeletingUser.id);
+      setIsDeletingUser(null);
+    } catch (err: any) {
+      setError('Erro ao excluir usuário: ' + err.message);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-1">
@@ -82,8 +142,82 @@ export const Settings = () => {
 
       {error && <ErrorAlert className="max-w-2xl">{error}</ErrorAlert>}
 
-      <div className="max-w-2xl space-y-4">
+      <div className="max-w-4xl space-y-6">
+        {/* User Management Section */}
         <Card className="p-6">
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 bg-zinc-100 dark:bg-zinc-800 rounded-2xl flex items-center justify-center flex-shrink-0">
+                <UsersIcon className="text-zinc-900 dark:text-zinc-100" size={24} />
+              </div>
+              <div>
+                <h3 className="text-lg font-bold uppercase">Gestão de Usuários</h3>
+                <p className="text-sm text-zinc-500 dark:text-zinc-400 uppercase">Controle quem tem acesso ao sistema e suas permissões.</p>
+              </div>
+            </div>
+            <Button onClick={() => {
+              setEditingUser(null);
+              setUserFormData({ name: '', username: '', password: '', role: 'Almoxarifado' });
+              setIsUserModalOpen(true);
+            }} className="flex items-center gap-2">
+              <Plus size={18} />
+              NOVO USUÁRIO
+            </Button>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="border-b border-zinc-100 dark:border-zinc-800">
+                  <th className="py-3 px-4 text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Nome</th>
+                  <th className="py-3 px-4 text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Usuário</th>
+                  <th className="py-3 px-4 text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Cargo/Permissão</th>
+                  <th className="py-3 px-4 text-[10px] font-bold text-zinc-400 uppercase tracking-widest text-right">Ações</th>
+                </tr>
+              </thead>
+              <tbody>
+                {users.map((user) => (
+                  <tr key={user.id} className="border-b border-zinc-50 dark:border-zinc-900/50 hover:bg-zinc-50/50 dark:hover:bg-zinc-900/30 transition-colors">
+                    <td className="py-3 px-4 text-sm font-medium uppercase">{user.name}</td>
+                    <td className="py-3 px-4 text-sm text-zinc-500 dark:text-zinc-400 uppercase">{(user as any).username || '-'}</td>
+                    <td className="py-3 px-4">
+                      <span className={cn(
+                        "px-2 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider",
+                        user.role === 'Admin' ? "bg-zinc-900 text-white dark:bg-white dark:text-zinc-900" : "bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400"
+                      )}>
+                        {user.role}
+                      </span>
+                    </td>
+                    <td className="py-3 px-4 text-right">
+                      <div className="flex items-center justify-end gap-2">
+                        <button 
+                          onClick={() => handleEditUser(user)}
+                          className="p-2 text-zinc-400 hover:text-zinc-900 dark:hover:text-white transition-colors"
+                        >
+                          <Edit size={16} />
+                        </button>
+                        <button 
+                          onClick={() => setIsDeletingUser(user)}
+                          className="p-2 text-zinc-400 hover:text-rose-600 transition-colors"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+                {users.length === 0 && (
+                  <tr>
+                    <td colSpan={4} className="py-8 text-center text-zinc-400 text-sm uppercase italic">Nenhum usuário cadastrado</td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </Card>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <Card className="p-6">
           <div className="flex items-start gap-4">
             <div className="w-12 h-12 bg-zinc-100 dark:bg-zinc-800 rounded-2xl flex items-center justify-center flex-shrink-0">
               <DbIcon className="text-zinc-900 dark:text-zinc-100" size={24} />
@@ -145,6 +279,65 @@ export const Settings = () => {
           </div>
         </Card>
       </div>
+    </div>
+
+    <Modal 
+        isOpen={isUserModalOpen} 
+        onClose={() => setIsUserModalOpen(false)} 
+        title={editingUser ? 'EDITAR USUÁRIO' : 'NOVO USUÁRIO'}
+      >
+        <form onSubmit={handleUserSubmit} className="p-6 space-y-4">
+          <Input 
+            label="Nome Completo"
+            value={userFormData.name}
+            onChange={(e: any) => setUserFormData({ ...userFormData, name: e.target.value.toUpperCase() })}
+            placeholder="EX: JOÃO DA SILVA"
+            required
+          />
+          <div className="grid grid-cols-2 gap-4">
+            <Input 
+              label="Usuário (Login)"
+              value={userFormData.username}
+              onChange={(e: any) => setUserFormData({ ...userFormData, username: e.target.value.toLowerCase() })}
+              placeholder="EX: joao.silva"
+              required
+            />
+            <Input 
+              label="Senha"
+              type="password"
+              value={userFormData.password}
+              onChange={(e: any) => setUserFormData({ ...userFormData, password: e.target.value })}
+              placeholder="••••••••"
+              required
+            />
+          </div>
+          <Select 
+            label="Cargo / Permissão"
+            value={userFormData.role}
+            onChange={(e: any) => setUserFormData({ ...userFormData, role: e.target.value as Role })}
+            options={[
+              { value: 'Admin', label: 'ADMINISTRADOR (ACESSO TOTAL)' },
+              { value: 'Almoxarifado', label: 'ALMOXARIFADO' },
+              { value: 'Vendas', label: 'VENDAS' },
+              { value: 'Instalação', label: 'INSTALAÇÃO' }
+            ]}
+          />
+          <div className="flex justify-end gap-3 pt-4">
+            <Button variant="secondary" onClick={() => setIsUserModalOpen(false)}>Cancelar</Button>
+            <Button type="submit" isLoading={isSavingUser}>Salvar Usuário</Button>
+          </div>
+        </form>
+      </Modal>
+
+      <ConfirmModal 
+        isOpen={!!isDeletingUser}
+        onClose={() => setIsDeletingUser(null)}
+        onConfirm={handleDeleteUser}
+        title="EXCLUIR USUÁRIO"
+        message={`Tem certeza que deseja excluir o usuário ${isDeletingUser?.name}? Esta ação não pode ser desfeita.`}
+        confirmText="EXCLUIR"
+        variant="danger"
+      />
 
       <ConfirmModal 
         isOpen={showConfirmRestore}

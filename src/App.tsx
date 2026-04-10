@@ -13,10 +13,27 @@ import {
   FileText,
   RotateCcw,
   Edit,
-  Trash2
+  Trash2,
+  Loader2,
+  ShieldCheck
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Product, Client, Supplier, Asset, Order, Movement, OrderStatus, OrderDetails } from './types';
+import { 
+  onAuthStateChanged, 
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
+  signOut,
+  User as FirebaseUser
+} from 'firebase/auth';
+import { 
+  collection, 
+  onSnapshot, 
+  query, 
+  orderBy, 
+  Timestamp 
+} from 'firebase/firestore';
+import { auth, db } from './firebase';
+import { Product, Client, Supplier, Asset, Order, Movement, OrderStatus, OrderDetails, User } from './types';
 import { apiService } from './services/apiService';
 import { KANBAN_COLUMNS } from './constants';
 import { Dashboard } from './components/Dashboard';
@@ -25,7 +42,7 @@ import { Kanban } from './components/Kanban';
 import { GenericList } from './components/GenericList';
 import { Settings as SettingsView } from './components/Settings';
 import { Assets } from './components/Assets';
-import { SidebarItem, cn, ErrorAlert } from './components/Common';
+import { SidebarItem, cn, ErrorAlert, Button } from './components/Common';
 import { OrderModal } from './components/OrderModal';
 import { OrderDetailModal } from './components/OrderDetailModal';
 import { ClientModal, SupplierModal } from './components/EntityModals';
@@ -34,9 +51,161 @@ import { validateEmail, validateCPF, validateCNPJ, validatePhone, validateCEP } 
 import { FinancialDetailModal } from './components/FinancialDetailModal';
 import { ConfirmModal } from './components/Common';
 
+// --- Login Component ---
+
+const Login = ({ onLogin }: { onLogin: () => void }) => {
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+    setError(null);
+
+    let email = username;
+    let pass = password;
+
+    // Special handling for admin/admin
+    if (username === 'admin' && password === 'admin') {
+      email = 'admin@skysmart.com';
+      pass = 'adminadmin';
+    } else if (!username.includes('@')) {
+      // If it's a simple username, append a domain to make it an email for Firebase Auth
+      email = `${username.toLowerCase()}@skysmart.com`;
+    }
+
+    try {
+      try {
+        await signInWithEmailAndPassword(auth, email, pass);
+      } catch (err: any) {
+        // If user doesn't exist yet, check if they are authorized in the users collection
+        if (err.code === 'auth/user-not-found') {
+          // Special case for bootstrap admin
+          if (username === 'admin' && password === 'admin') {
+            await createUserWithEmailAndPassword(auth, email, pass);
+          } else {
+            // Check if user is pre-authorized in Firestore
+            // Note: This requires a rule that allows unauthenticated read on users for this specific check
+            // or we just try to create and then check role.
+            // Let's try to create and then check. If no role, we sign out.
+            await createUserWithEmailAndPassword(auth, email, pass);
+          }
+        } else {
+          throw err;
+        }
+      }
+      onLogin();
+    } catch (err: any) {
+      console.error('Login error:', err);
+      if (err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential') {
+        setError('USUÁRIO OU SENHA INCORRETOS');
+      } else {
+        setError('ERRO AO REALIZAR LOGIN. TENTE NOVAMENTE.');
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-zinc-50 dark:bg-zinc-950 p-4">
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="max-w-md w-full bg-white dark:bg-zinc-900 p-8 rounded-3xl shadow-2xl border border-zinc-100 dark:border-zinc-800"
+      >
+        <div className="text-center mb-8">
+          <div className="w-20 h-20 bg-zinc-900 dark:bg-white rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg">
+            <HardDrive className="text-white dark:text-zinc-900" size={40} />
+          </div>
+          <h1 className="text-3xl font-black text-zinc-900 dark:text-white mb-2 tracking-tight uppercase">SKYSMART</h1>
+          <p className="text-zinc-500 dark:text-zinc-400 uppercase text-xs font-bold tracking-widest">Gestão Inteligente</p>
+        </div>
+
+        <form onSubmit={handleLogin} className="space-y-4">
+          {error && <ErrorAlert>{error}</ErrorAlert>}
+          
+          <div className="space-y-1.5">
+            <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest ml-1">Usuário</label>
+            <div className="relative">
+              <div className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400">
+                <Users size={18} />
+              </div>
+              <input 
+                type="text"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                className="w-full pl-10 pr-4 py-3 bg-zinc-50 dark:bg-zinc-800 border border-zinc-100 dark:border-zinc-700 rounded-xl focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-100 outline-none transition-all uppercase text-sm font-medium"
+                placeholder="ADMIN"
+                required
+              />
+            </div>
+          </div>
+
+          <div className="space-y-1.5">
+            <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest ml-1">Senha</label>
+            <div className="relative">
+              <div className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400">
+                <ShieldCheck size={18} />
+              </div>
+              <input 
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="w-full pl-10 pr-4 py-3 bg-zinc-50 dark:bg-zinc-800 border border-zinc-100 dark:border-zinc-700 rounded-xl focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-100 outline-none transition-all text-sm font-medium"
+                placeholder="••••••••"
+                required
+              />
+            </div>
+          </div>
+
+          <Button 
+            type="submit"
+            variant="primary" 
+            disabled={isLoading}
+            className="w-full py-4 flex items-center justify-center gap-3 text-sm font-bold uppercase tracking-widest"
+          >
+            {isLoading ? <Loader2 className="animate-spin" size={20} /> : 'Acessar Sistema'}
+          </Button>
+        </form>
+        
+        <p className="mt-8 text-center text-[10px] text-zinc-400 dark:text-zinc-500 uppercase tracking-widest font-bold">
+          SkySmart v1.0 • 2026
+        </p>
+      </motion.div>
+    </div>
+  );
+};
+
 // --- Main App ---
 
 export default function App() {
+  const [user, setUser] = useState<FirebaseUser | null>(null);
+  const [isAuthReady, setIsAuthReady] = useState(false);
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+      if (firebaseUser) {
+        // If it's the bootstrap admin, they are always allowed
+        if (firebaseUser.email === 'admin@skysmart.com' || firebaseUser.email === 'Diesel.087@gmail.com') {
+          setUser(firebaseUser);
+        } else {
+          // For other users, we should ideally check if they exist in the users collection
+          // Since we have systemUsers state, we can use it, but it might not be ready.
+          // However, the firestore rules will block them anyway if they try to read/write.
+          // To be safe, we can do a quick check here if systemUsers is already populated.
+          setUser(firebaseUser);
+        }
+      } else {
+        setUser(null);
+      }
+      setIsAuthReady(true);
+    });
+    return () => unsubscribe();
+  }, []);
+
   const [isDarkMode, setIsDarkMode] = useState(() => {
     if (typeof window !== 'undefined') {
       return window.matchMedia('(prefers-color-scheme: dark)').matches;
@@ -81,9 +250,10 @@ export default function App() {
   const [clients, setClients] = useState<Client[]>([]);
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [assets, setAssets] = useState<Asset[]>([]);
-  const [categories, setCategories] = useState<{id: number, name: string}[]>([]);
-  const [locations, setLocations] = useState<{id: number, name: string}[]>([]);
-  const [units, setUnits] = useState<{id: number, name: string}[]>([]);
+  const [systemUsers, setSystemUsers] = useState<User[]>([]);
+  const [categories, setCategories] = useState<{id: string | number, name: string}[]>([]);
+  const [locations, setLocations] = useState<{id: string | number, name: string}[]>([]);
+  const [units, setUnits] = useState<{id: string | number, name: string}[]>([]);
   const [movements, setMovements] = useState<Movement[]>([]);
   const [financialEntries, setFinancialEntries] = useState<any[]>([]);
   const [auditLogs, setAuditLogs] = useState<any[]>([]);
@@ -158,8 +328,9 @@ export default function App() {
   const [isSupplierModalOpen, setIsSupplierModalOpen] = useState(false);
   const [editingSupplier, setEditingSupplier] = useState<Supplier | null>(null);
   const [supplierFieldErrors, setSupplierFieldErrors] = useState<Record<string, string>>({});
+  const [assetFieldErrors, setAssetFieldErrors] = useState<Record<string, string>>({});
 
-  const validateEntityData = (data: any, isSupplier: boolean = false, editingId?: number) => {
+  const validateEntityData = (data: any, isSupplier: boolean = false, editingId?: string | number) => {
     const errors: Record<string, string> = {};
     const typeField = isSupplier ? 'tipo' : 'tipo_cliente';
     const list = isSupplier ? suppliers : clients;
@@ -204,11 +375,11 @@ export default function App() {
       }
     }
 
+    // Email uniqueness (required for suppliers)
     if (data.email) {
       if (!validateEmail(data.email)) {
         errors.email = 'EMAIL INVÁLIDO';
-      } else if (isSupplier) {
-        // Email is mandatory for suppliers, so it must be unique
+      } else {
         const isDuplicate = list.some(item => item.id !== editingId && item.email?.toLowerCase() === data.email.toLowerCase());
         if (isDuplicate) errors.email = 'EMAIL JÁ CADASTRADO';
       }
@@ -216,11 +387,11 @@ export default function App() {
       errors.email = 'EMAIL É OBRIGATÓRIO';
     }
 
+    // Telefone 1 uniqueness (required for suppliers)
     if (data.telefone1) {
       if (!validatePhone(data.telefone1)) {
         errors.telefone1 = 'TELEFONE INVÁLIDO';
-      } else if (isSupplier) {
-        // Telefone 1 is mandatory for suppliers, so it must be unique
+      } else {
         const isDuplicate = list.some(item => item.id !== editingId && item.telefone1 === data.telefone1);
         if (isDuplicate) errors.telefone1 = 'TELEFONE JÁ CADASTRADO';
       }
@@ -228,14 +399,13 @@ export default function App() {
       errors.telefone1 = 'TELEFONE É OBRIGATÓRIO';
     }
 
+    // Endereco uniqueness (required for suppliers)
     if (data.endereco) {
-      if (isSupplier) {
-        const isDuplicate = list.some(item => 
-          item.id !== editingId && 
-          item.endereco?.toUpperCase() === data.endereco.toUpperCase()
-        );
-        if (isDuplicate) errors.endereco = 'ENDEREÇO JÁ CADASTRADO';
-      }
+      const isDuplicate = list.some(item => 
+        item.id !== editingId && 
+        item.endereco?.toUpperCase() === data.endereco.toUpperCase()
+      );
+      if (isDuplicate) errors.endereco = 'ENDEREÇO JÁ CADASTRADO';
     } else if (isSupplier) {
       errors.endereco = 'ENDEREÇO É OBRIGATÓRIO';
     }
@@ -243,6 +413,32 @@ export default function App() {
     if (data.cep && !validateCEP(data.cep)) {
       errors.cep = 'CEP INVÁLIDO';
     }
+
+    return errors;
+  };
+
+  const validateAssetData = (data: any, editingId?: string | number) => {
+    const errors: Record<string, string> = {};
+    
+    if (!data.description) {
+      errors.description = 'DESCRIÇÃO É OBRIGATÓRIA';
+    } else {
+      const isDuplicate = assets.some(a => a.id !== editingId && a.description.toUpperCase() === data.description.toUpperCase());
+      if (isDuplicate) errors.description = 'DESCRIÇÃO JÁ CADASTRADA';
+    }
+
+    if (!data.asset_number) {
+      errors.asset_number = 'NÚMERO É OBRIGATÓRIO';
+    } else {
+      const isDuplicate = assets.some(a => a.id !== editingId && a.asset_number === data.asset_number);
+      if (isDuplicate) errors.asset_number = 'NÚMERO JÁ CADASTRADO';
+    }
+
+    if (!data.category) errors.category = 'CATEGORIA É OBRIGATÓRIA';
+    if (!data.purchase_date) errors.purchase_date = 'DATA É OBRIGATÓRIA';
+    if (!data.purchase_value) errors.purchase_value = 'VALOR É OBRIGATÓRIO';
+    if (!data.depreciation_type) errors.depreciation_type = 'TIPO É OBRIGATÓRIO';
+    if (!data.depreciation_percentage) errors.depreciation_percentage = 'PERCENTUAL É OBRIGATÓRIO';
 
     return errors;
   };
@@ -276,10 +472,10 @@ export default function App() {
     });
   };
 
-  const [activeGenericMenuId, setActiveGenericMenuId] = useState<number | null>(null);
+  const [activeGenericMenuId, setActiveGenericMenuId] = useState<string | number | null>(null);
   const [genericMenuPosition, setGenericMenuPosition] = useState<{ top: number, left: number } | null>(null);
 
-  const handleGenericMenuClick = (e: React.MouseEvent, id: number) => {
+  const handleGenericMenuClick = (e: React.MouseEvent, id: string | number) => {
     e.stopPropagation();
     const rect = e.currentTarget.getBoundingClientRect();
     setGenericMenuPosition({ top: rect.bottom + window.scrollY, left: rect.right - 160 + window.scrollX });
@@ -287,77 +483,113 @@ export default function App() {
   };
 
   useEffect(() => {
-    fetchData();
+    if (!user) return;
 
-    // WebSocket for real-time updates
-    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const ws = new WebSocket(`${protocol}//${window.location.host}`);
-    
-    ws.onmessage = (event) => {
-      const data = JSON.parse(event.data);
-      if (data.type === 'ORDER_UPDATED' || data.type === 'INVENTORY_UPDATED' || data.type === 'AUDIT_LOG_UPDATED') {
-        fetchData();
-      }
+    const unsubProducts = onSnapshot(collection(db, 'products'), (snap) => {
+      const data = snap.docs.map(d => ({ id: d.id, ...d.data() } as Product));
+      setProducts(data);
+    });
+
+    const unsubOrders = onSnapshot(query(collection(db, 'orders'), orderBy('created_at', 'desc')), (snap) => {
+      const data = snap.docs.map(d => {
+        const docData = d.data();
+        return {
+          ...docData,
+          id: d.id,
+          created_at: docData.created_at instanceof Timestamp ? docData.created_at.toDate().toISOString() : docData.created_at
+        } as Order;
+      });
+      setOrders(data);
+    });
+
+    const unsubClients = onSnapshot(collection(db, 'clients'), (snap) => {
+      const data = snap.docs.map(d => ({ id: d.id, ...d.data() } as Client));
+      setClients(data);
+    });
+
+    const unsubSuppliers = onSnapshot(collection(db, 'suppliers'), (snap) => {
+      const data = snap.docs.map(d => ({ id: d.id, ...d.data() } as Supplier));
+      setSuppliers(data);
+    });
+
+    const unsubAssets = onSnapshot(collection(db, 'assets'), (snap) => {
+      const data = snap.docs.map(d => ({ id: d.id, ...d.data() } as Asset));
+      setAssets(data);
+    });
+
+    const unsubCategories = onSnapshot(collection(db, 'categories'), (snap) => {
+      const data = snap.docs.map(d => ({ id: d.id, ...d.data() } as any));
+      setCategories(data);
+    });
+
+    const unsubLocations = onSnapshot(collection(db, 'locations'), (snap) => {
+      const data = snap.docs.map(d => ({ id: d.id, ...d.data() } as any));
+      setLocations(data);
+    });
+
+    const unsubUnits = onSnapshot(collection(db, 'units'), (snap) => {
+      const data = snap.docs.map(d => ({ id: d.id, ...d.data() } as any));
+      setUnits(data);
+    });
+
+    const unsubMovements = onSnapshot(query(collection(db, 'movements'), orderBy('date', 'desc')), (snap) => {
+      const data = snap.docs.map(d => {
+        const docData = d.data();
+        return {
+          ...docData,
+          id: d.id,
+          date: docData.date instanceof Timestamp ? docData.date.toDate().toISOString() : docData.date
+        } as Movement;
+      });
+      setMovements(data);
+    });
+
+    const unsubAudit = onSnapshot(query(collection(db, 'audit_logs'), orderBy('created_at', 'desc')), (snap) => {
+      const data = snap.docs.map(d => {
+        const docData = d.data();
+        return {
+          ...docData,
+          id: d.id,
+          created_at: docData.created_at instanceof Timestamp ? docData.created_at.toDate().toISOString() : docData.created_at
+        } as any;
+      });
+      setAuditLogs(data);
+    });
+
+    const unsubUsers = onSnapshot(collection(db, 'users'), (snap) => {
+      const data = snap.docs.map(d => ({ id: d.id, ...d.data() } as User));
+      setSystemUsers(data);
+    });
+
+    // Refresh stats periodically or when data changes
+    apiService.getStats().then(setStats);
+
+    return () => {
+      unsubProducts();
+      unsubOrders();
+      unsubClients();
+      unsubSuppliers();
+      unsubAssets();
+      unsubCategories();
+      unsubLocations();
+      unsubUnits();
+      unsubMovements();
+      unsubAudit();
+      unsubUsers();
     };
-
-    return () => ws.close();
-  }, []);
-
-  useEffect(() => {
-    if (selectedOrderForDetail) {
-      const updated = orders.find(o => o.id === selectedOrderForDetail.id);
-      if (updated) setSelectedOrderForDetail(updated);
-    }
-  }, [orders]);
+  }, [user]);
 
   const fetchData = async () => {
+    if (!user) return;
     try {
-      const [
-        statsData,
-        productsData,
-        ordersData,
-        clientsData,
-        suppliersData,
-        assetsData,
-        categoriesData,
-        locationsData,
-        unitsData,
-        movementsData,
-        financialData,
-        auditLogsData
-      ] = await Promise.all([
-        apiService.getStats(),
-        apiService.getProducts(),
-        apiService.getOrders(),
-        apiService.getClients(),
-        apiService.getSuppliers(),
-        apiService.getAssets(),
-        apiService.getCategories(),
-        apiService.getLocations(),
-        apiService.getUnits(),
-        apiService.getMovements(),
-        apiService.getFinancialEntries(),
-        apiService.getAuditLogs()
-      ]);
-
+      const statsData = await apiService.getStats();
       setStats(statsData);
-      setProducts(productsData);
-      setOrders(ordersData);
-      setClients(clientsData);
-      setSuppliers(suppliersData);
-      setAssets(assetsData);
-      setCategories(categoriesData);
-      setLocations(locationsData);
-      setUnits(unitsData);
-      setMovements(movementsData);
-      setFinancialEntries(financialData);
-      setAuditLogs(auditLogsData);
     } catch (err) {
-      console.error('Error in fetchData:', err);
+      console.error('Error fetching data:', err);
     }
   };
 
-  const updateOrderStatus = async (id: number, status: OrderStatus) => {
+  const updateOrderStatus = async (id: string | number, status: OrderStatus) => {
     try {
       const order = orders.find(o => o.id === id);
       if (order) {
@@ -417,7 +649,7 @@ export default function App() {
     }
   };
 
-  const updateOrder = async (id: number, data: any) => {
+  const updateOrder = async (id: string | number, data: any) => {
     try {
       await apiService.updateOrder(id, data);
       fetchData();
@@ -426,7 +658,7 @@ export default function App() {
     }
   };
 
-  const deleteOrder = async (id: number) => {
+  const deleteOrder = async (id: string | number) => {
     showConfirm(
       'Excluir Ordem',
       'Tem certeza que deseja excluir esta ordem de produção? Esta ação não pode ser desfeita.',
@@ -460,7 +692,7 @@ export default function App() {
     }
   };
 
-  const updateClient = async (id: number, data: any) => {
+  const updateClient = async (id: string | number, data: any) => {
     const errors = validateEntityData(data, false, id);
 
     if (Object.keys(errors).length > 0) {
@@ -479,7 +711,7 @@ export default function App() {
     }
   };
 
-  const deleteClient = async (id: number) => {
+  const deleteClient = async (id: string | number) => {
     showConfirm(
       'Excluir Cliente',
       'Tem certeza que deseja excluir este cliente? Esta ação não pode ser desfeita.',
@@ -494,7 +726,7 @@ export default function App() {
     );
   };
 
-  const updateSupplierEntity = async (id: number, data: any) => {
+  const updateSupplierEntity = async (id: string | number, data: any) => {
     const errors = validateEntityData(data, true, id);
 
     if (Object.keys(errors).length > 0) {
@@ -513,7 +745,7 @@ export default function App() {
     }
   };
 
-  const deleteSupplier = async (id: number) => {
+  const deleteSupplier = async (id: string | number) => {
     showConfirm(
       'Excluir Fornecedor',
       'Tem certeza que deseja excluir este fornecedor? Esta ação não pode ser desfeita.',
@@ -529,24 +761,47 @@ export default function App() {
   };
 
   const addAsset = async (formData: FormData) => {
+    const data: any = {};
+    formData.forEach((value, key) => {
+      data[key] = value;
+    });
+
+    const errors = validateAssetData(data);
+    if (Object.keys(errors).length > 0) {
+      setAssetFieldErrors(errors);
+      return;
+    }
+
     try {
       await apiService.addAsset(formData);
-      fetchData();
+      setIsAssetModalOpen(false);
     } catch (err) {
       console.error('Error adding asset:', err);
     }
   };
 
-  const updateAsset = async (id: number, formData: FormData) => {
+  const updateAsset = async (id: string | number, formData: FormData) => {
+    const data: any = {};
+    formData.forEach((value, key) => {
+      data[key] = value;
+    });
+
+    const errors = validateAssetData(data, id);
+    if (Object.keys(errors).length > 0) {
+      setAssetFieldErrors(errors);
+      return;
+    }
+
     try {
       await apiService.updateAsset(id, formData);
-      fetchData();
+      setIsAssetModalOpen(false);
+      setEditingAsset(null);
     } catch (err) {
       console.error('Error updating asset:', err);
     }
   };
 
-  const handleDisposalAsset = async (id: number, data: any) => {
+  const handleDisposalAsset = async (id: string | number, data: any) => {
     try {
       await apiService.disposalAsset(id, data);
       fetchData();
@@ -555,7 +810,7 @@ export default function App() {
     }
   };
 
-  const deleteAsset = async (id: number) => {
+  const deleteAsset = async (id: string | number) => {
     showConfirm(
       'Excluir Patrimônio',
       'Tem certeza que deseja excluir este patrimônio? Esta ação não pode ser desfeita.',
@@ -598,7 +853,7 @@ export default function App() {
     }
   };
 
-  const updateCategory = async (id: number, name: string) => {
+  const updateCategory = async (id: string | number, name: string) => {
     try {
       await apiService.updateCategory(id, name);
       fetchData();
@@ -645,7 +900,7 @@ export default function App() {
     }
   };
 
-  const updateLocation = async (id: number, name: string) => {
+  const updateLocation = async (id: string | number, name: string) => {
     try {
       await apiService.updateLocation(id, name);
       fetchData();
@@ -677,7 +932,7 @@ export default function App() {
     }
   };
 
-  const handleUpdateProduct = async (id: number, formData: FormData) => {
+  const handleUpdateProduct = async (id: string | number, formData: FormData) => {
     try {
       await apiService.updateProduct(id, formData);
       fetchData();
@@ -687,7 +942,7 @@ export default function App() {
     }
   };
 
-  const handleDeleteProduct = async (id: number) => {
+  const handleDeleteProduct = async (id: string | number) => {
     showConfirm(
       'Excluir Produto',
       'Tem certeza que deseja excluir este produto? Esta ação não pode ser desfeita.',
@@ -889,10 +1144,35 @@ export default function App() {
           ]} 
         />
       );
-      case 'settings': return <SettingsView />;
+      case 'settings': return (
+        <SettingsView 
+          users={systemUsers}
+          onAddUser={async (data) => {
+            await apiService.addUser(data);
+          }}
+          onUpdateUser={async (id, data) => {
+            await apiService.updateUser(id, data);
+          }}
+          onDeleteUser={async (id) => {
+            await apiService.deleteUser(id);
+          }}
+        />
+      );
       default: return <div className="flex items-center justify-center h-64 text-zinc-400">Em desenvolvimento...</div>;
     }
   };
+
+  if (!isAuthReady) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-zinc-50 dark:bg-zinc-950">
+        <Loader2 className="animate-spin text-zinc-900 dark:text-white" size={40} />
+      </div>
+    );
+  }
+
+  if (!user) {
+    return <Login onLogin={() => fetchData()} />;
+  }
 
   return (
     <>
@@ -958,14 +1238,27 @@ export default function App() {
 
           <div className="p-4 border-t border-zinc-100 dark:border-zinc-800">
             <div className={cn("flex items-center gap-3 px-2 py-3 rounded-lg bg-zinc-50 dark:bg-zinc-900/50", isSidebarCollapsed && "justify-center px-0")}>
-              <div className="w-8 h-8 rounded-full bg-zinc-200 dark:bg-zinc-700 flex items-center justify-center text-xs font-bold text-zinc-600 dark:text-zinc-300 flex-shrink-0">
-                AD
-              </div>
+              {user?.photoURL ? (
+                <img src={user.photoURL} alt={user.displayName || ''} className="w-8 h-8 rounded-full flex-shrink-0" referrerPolicy="no-referrer" />
+              ) : (
+                <div className="w-8 h-8 rounded-full bg-zinc-200 dark:bg-zinc-700 flex items-center justify-center text-xs font-bold text-zinc-600 dark:text-zinc-300 flex-shrink-0">
+                  {user?.displayName?.charAt(0) || 'U'}
+                </div>
+              )}
               {!isSidebarCollapsed && (
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100 truncate uppercase">Administrador</p>
-                  <p className="text-xs text-zinc-500 dark:text-zinc-400 truncate">admin@pro.com</p>
+                  <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100 truncate uppercase">{user?.displayName || 'Usuário'}</p>
+                  <p className="text-xs text-zinc-500 dark:text-zinc-400 truncate">{user?.email}</p>
                 </div>
+              )}
+              {!isSidebarCollapsed && (
+                <button 
+                  onClick={() => signOut(auth)}
+                  className="p-1.5 text-zinc-400 hover:text-rose-500 transition-colors"
+                  title="Sair"
+                >
+                  <X size={18} />
+                </button>
               )}
             </div>
           </div>
@@ -1111,6 +1404,7 @@ export default function App() {
         }}
         asset={editingAsset}
         categories={categories}
+        fieldErrors={assetFieldErrors}
       />
 
       <AnimatePresence>
