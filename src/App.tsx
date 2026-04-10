@@ -266,7 +266,10 @@ export default function App() {
   const [assets, setAssets] = useState<Asset[]>([]);
   const [systemUsers, setSystemUsers] = useState<User[]>([]);
 
-  const currentUserProfile = systemUsers.find(u => u.email === user?.email);
+  const currentUserProfile = systemUsers.find(u => 
+    u.email === user?.email || 
+    (u.username && user?.email && u.username.toLowerCase() === user.email.split('@')[0].toLowerCase())
+  );
   const userPermissions = (user?.email === 'admin@skysmart.com' || user?.email === 'Diesel.087@gmail.com') 
     ? ['dashboard', 'kanban', 'production', 'clients', 'suppliers', 'assets', 'inventory', 'financial', 'audit', 'settings']
     : (currentUserProfile?.permissions || []);
@@ -283,6 +286,16 @@ export default function App() {
     { id: 'audit', icon: RotateCcw, label: "Histórico" },
     { id: 'settings', icon: Settings, label: "Configurações" },
   ];
+
+  // Redirect to first available tab if current is not allowed
+  useEffect(() => {
+    if (user && userPermissions.length > 0 && !userPermissions.includes(activeTab as any)) {
+      const firstAvailable = sidebarItems.find(item => userPermissions.includes(item.id as any));
+      if (firstAvailable) {
+        setActiveTab(firstAvailable.id as any);
+      }
+    }
+  }, [user, userPermissions, activeTab]);
 
   const visibleSidebarItems = sidebarItems.filter(item => userPermissions.includes(item.id as any));
   const [categories, setCategories] = useState<{id: string | number, name: string}[]>([]);

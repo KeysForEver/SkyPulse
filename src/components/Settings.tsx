@@ -135,14 +135,22 @@ export const Settings = ({ users, onAddUser, onUpdateUser, onDeleteUser }: Setti
     e.preventDefault();
     setIsSavingUser(true);
     try {
+      // Ensure email is set based on username for Auth matching
+      const userData = {
+        ...userFormData,
+        email: userFormData.username.includes('@') 
+          ? userFormData.username 
+          : `${userFormData.username.toLowerCase().trim()}@skysmart.com`
+      };
+
       if (editingUser) {
-        await onUpdateUser(editingUser.id, userFormData);
+        await onUpdateUser(editingUser.id, userData);
       } else {
-        await onAddUser(userFormData);
+        await onAddUser(userData);
       }
       setIsUserModalOpen(false);
       setEditingUser(null);
-      setUserFormData({ name: '', username: '', password: '', role: 'Almoxarifado' });
+      setUserFormData({ name: '', username: '', password: '', role: 'Almoxarifado', permissions: [] });
     } catch (err: any) {
       setError('Erro ao salvar usuário: ' + err.message);
     } finally {
