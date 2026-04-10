@@ -45,6 +45,30 @@ export const Settings = ({ users, onAddUser, onUpdateUser, onDeleteUser }: Setti
   });
   const [isDeletingUser, setIsDeletingUser] = useState<User | null>(null);
   const [isSavingUser, setIsSavingUser] = useState(false);
+  const [isSyncing, setIsSyncing] = useState(false);
+
+  const handleSyncUsers = async () => {
+    setIsSyncing(true);
+    setError(null);
+    try {
+      let successCount = 0;
+      for (const user of users) {
+        if (user.username && user.password) {
+          try {
+            await apiService.syncUserWithAuth(user.username, user.password);
+            successCount++;
+          } catch (e) {
+            console.error(`Error syncing ${user.username}:`, e);
+          }
+        }
+      }
+      alert(`Sincronização concluída! ${successCount} usuários processados.`);
+    } catch (err: any) {
+      setError('Erro na sincronização: ' + err.message);
+    } finally {
+      setIsSyncing(false);
+    }
+  };
 
   const handleBackup = async () => {
     setIsBackingUp(true);
@@ -170,20 +194,31 @@ export const Settings = ({ users, onAddUser, onUpdateUser, onDeleteUser }: Setti
                 <p className="text-sm text-zinc-500 dark:text-zinc-400 uppercase">Controle quem tem acesso ao sistema e suas permissões.</p>
               </div>
             </div>
-            <Button onClick={() => {
-              setEditingUser(null);
-              setUserFormData({ 
-                name: '', 
-                username: '', 
-                password: '', 
-                role: 'Usuário',
-                permissions: []
-              });
-              setIsUserModalOpen(true);
-            }} className="flex items-center gap-2">
-              <Plus size={18} />
-              NOVO USUÁRIO
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button 
+                variant="secondary" 
+                onClick={handleSyncUsers} 
+                disabled={isSyncing}
+                className="flex items-center gap-2"
+              >
+                {isSyncing ? <Loader2 className="animate-spin" size={18} /> : <ShieldCheck size={18} />}
+                SINCRONIZAR AUTH
+              </Button>
+              <Button onClick={() => {
+                setEditingUser(null);
+                setUserFormData({ 
+                  name: '', 
+                  username: '', 
+                  password: '', 
+                  role: 'Usuário',
+                  permissions: []
+                });
+                setIsUserModalOpen(true);
+              }} className="flex items-center gap-2">
+                <Plus size={18} />
+                NOVO USUÁRIO
+              </Button>
+            </div>
           </div>
 
           <div className="overflow-x-auto">

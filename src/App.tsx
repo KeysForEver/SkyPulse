@@ -96,23 +96,7 @@ const Login = ({ onLogin }: { onLogin: () => void }) => {
               throw err;
             }
           } else {
-            // Fallback: Check if user exists in Firestore and create Auth user if valid
-            try {
-              const response = await fetch('/api/auth/fallback', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ username: normalizedUsername, password: normalizedPassword })
-              });
-
-              if (response.ok) {
-                // Server created the user, now try signing in again
-                await signInWithEmailAndPassword(auth, email, pass);
-              } else {
-                throw err;
-              }
-            } catch (fallbackErr) {
-              throw err;
-            }
+            throw err;
           }
         } else {
           throw err;

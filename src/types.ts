@@ -4,6 +4,8 @@ export interface User {
   id: string | number;
   name: string;
   email: string;
+  username?: string;
+  password?: string;
   role: string;
   permissions?: Permission[];
 }
