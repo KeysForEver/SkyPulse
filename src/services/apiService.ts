@@ -658,6 +658,18 @@ export const apiService = {
   addUser: async (data: any) => {
     try {
       const docRef = await addDoc(collection(db, 'users'), data);
+      
+      // Sync with Auth
+      try {
+        await fetch('/api/users/sync', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username: data.username, password: data.password })
+        });
+      } catch (syncErr) {
+        console.error('Error syncing user to Auth:', syncErr);
+      }
+
       return { id: docRef.id };
     } catch (error) {
       handleFirestoreError(error, OperationType.CREATE, 'users');
@@ -666,6 +678,20 @@ export const apiService = {
   updateUser: async (id: string | number, data: any) => {
     try {
       await updateDoc(doc(db, 'users', String(id)), data);
+
+      // Sync with Auth if username or password changed
+      if (data.username || data.password) {
+        try {
+          await fetch('/api/users/sync', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username: data.username, password: data.password })
+          });
+        } catch (syncErr) {
+          console.error('Error syncing user update to Auth:', syncErr);
+        }
+      }
+
       return { success: true };
     } catch (error) {
       handleFirestoreError(error, OperationType.UPDATE, `users/${id}`);
