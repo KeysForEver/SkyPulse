@@ -8,6 +8,7 @@ import { User, Permission } from '../types';
 const PERMISSIONS_LIST: { id: Permission; label: string }[] = [
   { id: 'dashboard', label: 'PAINEL / DASHBOARD' },
   { id: 'kanban', label: 'KANBAN DE PRODUÇÃO' },
+  { id: 'service_entry', label: 'ENTRADA DE SERVIÇO' },
   { id: 'production', label: 'ORDENS DE PRODUÇÃO' },
   { id: 'clients', label: 'GESTÃO DE CLIENTES' },
   { id: 'suppliers', label: 'GESTÃO DE FORNECEDORES' },
