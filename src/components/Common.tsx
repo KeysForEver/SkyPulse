@@ -95,8 +95,8 @@ export const ConfirmModal = ({
   onConfirm, 
   title, 
   message, 
-  confirmText = "Confirmar", 
-  cancelText = "Cancelar", 
+  confirmText = "CONFIRMAR", 
+  cancelText = "CANCELAR", 
   variant = "danger", 
   isLoading = false 
 }: { 

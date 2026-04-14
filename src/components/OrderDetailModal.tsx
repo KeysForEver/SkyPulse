@@ -267,18 +267,19 @@ export const OrderDetailModal = ({
                 initial={{ width: 0 }}
                 animate={{ 
                   width: order.status === 'CONCLUIDO' ? '100%' :
-                         order.status === 'REVISÃO' ? '85%' : 
-                         order.status === 'FINALIZAÇÃO' ? '70%' : 
-                         order.status === 'PRODUÇÃO' ? '55%' : 
-                         order.status === 'SEPARAÇÃO DE MATERIAL' ? '40%' : '20%' 
+                         order.status === 'REVISÃO INSTALAÇÃO' ? '85%' : 
+                         order.status === 'INSTALAÇÃO' ? '72%' : 
+                         order.status === 'REVISÃO PRODUÇÃO' ? '58%' : 
+                         order.status === 'PRODUÇÃO' ? '44%' : 
+                         order.status === 'SEPARAÇÃO DE MATERIAL' ? '30%' : '15%' 
                 }}
                 transition={{ duration: 0.8, ease: "easeOut" }}
               />
             </div>
             <div className="flex justify-between text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-tighter">
-              <span>Início</span>
-              <span>Produção</span>
-              <span>Concluído</span>
+              <span>INÍCIO</span>
+              <span>PRODUÇÃO</span>
+              <span>CONCLUÍDO</span>
             </div>
           </div>
         </div>
@@ -288,8 +289,8 @@ export const OrderDetailModal = ({
         isOpen={!!confirmingItem}
         onClose={() => setConfirmingItem(null)}
         onConfirm={() => handleCheckItem(confirmingItem!.section, confirmingItem!.item)}
-        title="Confirmar Finalização"
-        message={`Você está prestes a marcar "${confirmingItem?.item}" como concluído. Esta ação é irreversível e ficará registrada no histórico do sistema.`}
+        title="CONFIRMAR REVISÃO"
+        message={`VOCÊ ESTÁ PRESTES A MARCAR "${confirmingItem?.item}" COMO CONCLUÍDO. ESTA AÇÃO É IRREVERSÍVEL E FICARÁ REGISTRADA NO HISTÓRICO DO SISTEMA.`}
         isLoading={isUpdating}
       />
     </>

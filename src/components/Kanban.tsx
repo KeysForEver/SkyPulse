@@ -59,7 +59,7 @@ export const Kanban = ({ orders, serviceEntries, onUpdateStatus, onEdit, onDelet
     if (!order) return false;
 
     const statusIndex = KANBAN_COLUMNS.indexOf(newStatus);
-    const finalizationIndex = KANBAN_COLUMNS.indexOf('FINALIZAÇÃO');
+    const finalizationIndex = KANBAN_COLUMNS.indexOf('REVISÃO PRODUÇÃO');
 
     if (statusIndex >= finalizationIndex) {
       const progress = getOrderProgress(order);
@@ -149,7 +149,7 @@ export const Kanban = ({ orders, serviceEntries, onUpdateStatus, onEdit, onDelet
         {/* Service Entries Column */}
         <div className="flex-shrink-0 w-72 flex flex-col gap-3 self-stretch">
           <div className="flex items-center justify-between px-1">
-            <h3 className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-widest">ENTRADAS DE SERVIÇO</h3>
+            <h3 className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-widest">ENTRADA DE SERVIÇO</h3>
             <span className="bg-zinc-200 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 text-[10px] font-bold px-2 py-0.5 rounded-full">
               {filteredServiceEntries.length}
             </span>
@@ -253,7 +253,7 @@ export const Kanban = ({ orders, serviceEntries, onUpdateStatus, onEdit, onDelet
                 {/* Progress Indicator */}
                 <div className="mb-4 space-y-1.5">
                   <div className="flex justify-between items-center">
-                    <span className="text-[9px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-tighter">Progresso de Produção</span>
+                    <span className="text-[9px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-tighter">PROGRESSO DE PRODUÇÃO</span>
                     <span className={cn(
                       "text-[10px] font-bold",
                       getOrderProgress(order) === 100 ? "text-emerald-500" : "text-zinc-900 dark:text-zinc-100"
@@ -328,7 +328,7 @@ export const Kanban = ({ orders, serviceEntries, onUpdateStatus, onEdit, onDelet
                 className="flex items-center gap-2 w-full px-3 py-2 text-xs font-medium text-zinc-600 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-800 hover:text-zinc-900 dark:hover:text-zinc-100 rounded-lg transition-colors"
               >
                 <Edit size={14} />
-                Editar Ordem
+                EDITAR ORDEM
               </button>
               {isAdmin && (
                 <>
@@ -342,7 +342,7 @@ export const Kanban = ({ orders, serviceEntries, onUpdateStatus, onEdit, onDelet
                     className="flex items-center gap-2 w-full px-3 py-2 text-xs font-medium text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-500/10 rounded-lg transition-colors"
                   >
                     <Trash2 size={14} />
-                    Excluir Ordem
+                    EXCLUIR ORDEM
                   </button>
                 </>
               )}

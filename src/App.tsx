@@ -597,7 +597,7 @@ export default function App() {
       const order = orders.find(o => o.id === id);
       if (order) {
         const statusIndex = KANBAN_COLUMNS.indexOf(status);
-        const finalizationIndex = KANBAN_COLUMNS.indexOf('FINALIZAÇÃO');
+        const finalizationIndex = KANBAN_COLUMNS.indexOf('REVISÃO PRODUÇÃO');
 
         if (statusIndex >= finalizationIndex) {
           let progress = 0;
@@ -663,8 +663,8 @@ export default function App() {
 
   const deleteOrder = async (id: string | number) => {
     showConfirm(
-      'Excluir Ordem',
-      'Tem certeza que deseja excluir esta ordem de produção? Esta ação não pode ser desfeita.',
+      'EXCLUIR ORDEM',
+      'TEM CERTEZA QUE DESEJA EXCLUIR ESTA ORDEM DE PRODUÇÃO? ESTA AÇÃO NÃO PODE SER DESFEITA.',
       async () => {
         try {
           await apiService.deleteOrder(id);
@@ -716,8 +716,8 @@ export default function App() {
 
   const deleteClient = async (id: string | number) => {
     showConfirm(
-      'Excluir Cliente',
-      'Tem certeza que deseja excluir este cliente? Esta ação não pode ser desfeita.',
+      'EXCLUIR CLIENTE',
+      'TEM CERTEZA QUE DESEJA EXCLUIR ESTE CLIENTE? ESTA AÇÃO NÃO PODE SER DESFEITA.',
       async () => {
         try {
           await apiService.deleteClient(id);
@@ -750,8 +750,8 @@ export default function App() {
 
   const deleteSupplier = async (id: string | number) => {
     showConfirm(
-      'Excluir Fornecedor',
-      'Tem certeza que deseja excluir este fornecedor? Esta ação não pode ser desfeita.',
+      'EXCLUIR FORNECEDOR',
+      'TEM CERTEZA QUE DESEJA EXCLUIR ESTE FORNECEDOR? ESTA AÇÃO NÃO PODE SER DESFEITA.',
       async () => {
         try {
           await apiService.deleteSupplier(id);
@@ -817,8 +817,8 @@ export default function App() {
 
   const deleteAsset = async (id: string | number) => {
     showConfirm(
-      'Excluir Patrimônio',
-      'Tem certeza que deseja excluir este patrimônio? Esta ação não pode ser desfeita.',
+      'EXCLUIR PATRIMÔNIO',
+      'TEM CERTEZA QUE DESEJA EXCLUIR ESTE PATRIMÔNIO? ESTA AÇÃO NÃO PODE SER DESFEITA.',
       async () => {
         try {
           await apiService.deleteAsset(id);
@@ -976,8 +976,8 @@ export default function App() {
 
   const handleDeleteProduct = async (id: string | number) => {
     showConfirm(
-      'Excluir Produto',
-      'Tem certeza que deseja excluir este produto? Esta ação não pode ser desfeita.',
+      'EXCLUIR PRODUTO',
+      'TEM CERTEZA QUE DESEJA EXCLUIR ESTE PRODUTO? ESTA AÇÃO NÃO PODE SER DESFEITA.',
       async () => {
         try {
           await apiService.deleteProduct(id);
@@ -1001,7 +1001,7 @@ export default function App() {
             const firstAvailable = sidebarItems.find(item => userPermissions.includes(item.id as any));
             if (firstAvailable) setActiveTab(firstAvailable.id as any);
           }}>
-            Voltar para Início
+            VOLTAR PARA INÍCIO
           </Button>
         </div>
       );
@@ -1544,20 +1544,20 @@ export default function App() {
                 disabled={!['production', 'service_entry', 'clients', 'suppliers', 'assets'].includes(activeTab)}
               >
                 <Edit size={14} />
-                Editar
+                EDITAR
               </button>
               {isAdmin && (
                 <button 
                   onClick={(e) => {
                     e.stopPropagation();
-                    const title = activeTab === 'production' ? 'Excluir Ordem' :
-                                  activeTab === 'service_entry' ? 'Excluir Entrada' :
-                                  activeTab === 'clients' ? 'Excluir Cliente' :
-                                  activeTab === 'suppliers' ? 'Excluir Fornecedor' : 'Excluir Item';
+                    const title = activeTab === 'production' ? 'EXCLUIR ORDEM' :
+                                  activeTab === 'service_entry' ? 'EXCLUIR ENTRADA' :
+                                  activeTab === 'clients' ? 'EXCLUIR CLIENTE' :
+                                  activeTab === 'suppliers' ? 'EXCLUIR FORNECEDOR' : 'EXCLUIR ITEM';
                     
                     showConfirm(
                       title,
-                      'Tem certeza que deseja excluir este item? Esta ação não pode ser desfeita.',
+                      'TEM CERTEZA QUE DESEJA EXCLUIR ESTE ITEM? ESTA AÇÃO NÃO PODE SER DESFEITA.',
                       () => {
                         if (activeTab === 'production') deleteOrder(activeGenericMenuId!);
                         else if (activeTab === 'service_entry') deleteServiceEntry(activeGenericMenuId!);
@@ -1571,7 +1571,7 @@ export default function App() {
                   className="flex items-center gap-2 w-full px-3 py-2 text-xs font-medium text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-500/10 rounded-lg transition-colors"
                 >
                   <Trash2 size={14} />
-                  Excluir
+                  EXCLUIR
                 </button>
               )}
             </motion.div>

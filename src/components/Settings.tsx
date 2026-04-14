@@ -199,8 +199,8 @@ export const Settings = ({ users, onAddUser, onUpdateUser, onDeleteUser }: Setti
                 <UsersIcon className="text-zinc-900 dark:text-zinc-100" size={24} />
               </div>
               <div>
-                <h3 className="text-lg font-bold uppercase">Gestão de Usuários</h3>
-                <p className="text-sm text-zinc-500 dark:text-zinc-400 uppercase">Controle quem tem acesso ao sistema e suas permissões.</p>
+                <h3 className="text-lg font-bold uppercase">GESTÃO DE USUÁRIOS</h3>
+                <p className="text-sm text-zinc-500 dark:text-zinc-400 uppercase">CONTROLE QUEM TEM ACESSO AO SISTEMA E SUAS PERMISSÕES.</p>
               </div>
             </div>
             <div className="flex items-center gap-2">
@@ -234,10 +234,10 @@ export const Settings = ({ users, onAddUser, onUpdateUser, onDeleteUser }: Setti
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="border-b border-zinc-100 dark:border-zinc-800">
-                  <th className="py-3 px-4 text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Nome</th>
-                  <th className="py-3 px-4 text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Usuário</th>
-                  <th className="py-3 px-4 text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Cargo/Permissão</th>
-                  <th className="py-3 px-4 text-[10px] font-bold text-zinc-400 uppercase tracking-widest text-right">Ações</th>
+                  <th className="py-3 px-4 text-[10px] font-bold text-zinc-400 uppercase tracking-widest">NOME</th>
+                  <th className="py-3 px-4 text-[10px] font-bold text-zinc-400 uppercase tracking-widest">USUÁRIO</th>
+                  <th className="py-3 px-4 text-[10px] font-bold text-zinc-400 uppercase tracking-widest">CARGO/PERMISSÃO</th>
+                  <th className="py-3 px-4 text-[10px] font-bold text-zinc-400 uppercase tracking-widest text-right">AÇÕES</th>
                 </tr>
               </thead>
               <tbody>
@@ -284,7 +284,7 @@ export const Settings = ({ users, onAddUser, onUpdateUser, onDeleteUser }: Setti
                 ))}
                 {users.length === 0 && (
                   <tr>
-                    <td colSpan={4} className="py-8 text-center text-zinc-400 text-sm uppercase italic">Nenhum usuário cadastrado</td>
+                    <td colSpan={4} className="py-8 text-center text-zinc-400 text-sm uppercase italic">NENHUM USUÁRIO CADASTRADO</td>
                   </tr>
                 )}
               </tbody>

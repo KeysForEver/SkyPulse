@@ -90,7 +90,7 @@ export interface Asset {
   disposal_value?: number;
 }
 
-export type OrderStatus = 'ENTRADA DE SERVIÇO' | 'ORDENS DE PRODUÇÃO' | 'SEPARAÇÃO DE MATERIAL' | 'PRODUÇÃO' | 'FINALIZAÇÃO' | 'REVISÃO' | 'CONCLUIDO';
+export type OrderStatus = 'ENTRADA DE SERVIÇO' | 'ORDENS DE PRODUÇÃO' | 'SEPARAÇÃO DE MATERIAL' | 'PRODUÇÃO' | 'REVISÃO PRODUÇÃO' | 'INSTALAÇÃO' | 'REVISÃO INSTALAÇÃO' | 'CONCLUIDO';
 
 export interface Order {
   id: string | number;
