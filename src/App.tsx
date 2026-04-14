@@ -662,17 +662,19 @@ export default function App() {
   };
 
   const deleteOrder = async (id: string | number) => {
+    try {
+      await apiService.deleteOrder(id);
+      fetchData();
+    } catch (err) {
+      console.error('Error deleting order:', err);
+    }
+  };
+
+  const handleDeleteOrder = async (id: string | number) => {
     showConfirm(
       'EXCLUIR ORDEM',
       'TEM CERTEZA QUE DESEJA EXCLUIR ESTA ORDEM DE PRODUÇÃO? ESTA AÇÃO NÃO PODE SER DESFEITA.',
-      async () => {
-        try {
-          await apiService.deleteOrder(id);
-          fetchData();
-        } catch (err) {
-          console.error('Error deleting order:', err);
-        }
-      }
+      () => deleteOrder(id)
     );
   };
 
@@ -715,17 +717,19 @@ export default function App() {
   };
 
   const deleteClient = async (id: string | number) => {
+    try {
+      await apiService.deleteClient(id);
+      fetchData();
+    } catch (err) {
+      console.error('Error deleting client:', err);
+    }
+  };
+
+  const handleDeleteClient = async (id: string | number) => {
     showConfirm(
       'EXCLUIR CLIENTE',
       'TEM CERTEZA QUE DESEJA EXCLUIR ESTE CLIENTE? ESTA AÇÃO NÃO PODE SER DESFEITA.',
-      async () => {
-        try {
-          await apiService.deleteClient(id);
-          fetchData();
-        } catch (err) {
-          console.error('Error deleting client:', err);
-        }
-      }
+      () => deleteClient(id)
     );
   };
 
@@ -749,17 +753,19 @@ export default function App() {
   };
 
   const deleteSupplier = async (id: string | number) => {
+    try {
+      await apiService.deleteSupplier(id);
+      fetchData();
+    } catch (err) {
+      console.error('Error deleting supplier:', err);
+    }
+  };
+
+  const handleDeleteSupplier = async (id: string | number) => {
     showConfirm(
       'EXCLUIR FORNECEDOR',
       'TEM CERTEZA QUE DESEJA EXCLUIR ESTE FORNECEDOR? ESTA AÇÃO NÃO PODE SER DESFEITA.',
-      async () => {
-        try {
-          await apiService.deleteSupplier(id);
-          fetchData();
-        } catch (err) {
-          console.error('Error deleting supplier:', err);
-        }
-      }
+      () => deleteSupplier(id)
     );
   };
 
@@ -816,17 +822,19 @@ export default function App() {
   };
 
   const deleteAsset = async (id: string | number) => {
+    try {
+      await apiService.deleteAsset(id);
+      fetchData();
+    } catch (err) {
+      console.error('Error deleting asset:', err);
+    }
+  };
+
+  const handleDeleteAsset = async (id: string | number) => {
     showConfirm(
       'EXCLUIR PATRIMÔNIO',
       'TEM CERTEZA QUE DESEJA EXCLUIR ESTE PATRIMÔNIO? ESTA AÇÃO NÃO PODE SER DESFEITA.',
-      async () => {
-        try {
-          await apiService.deleteAsset(id);
-          fetchData();
-        } catch (err) {
-          console.error('Error deleting asset:', err);
-        }
-      }
+      () => deleteAsset(id)
     );
   };
 
@@ -974,19 +982,21 @@ export default function App() {
     }
   };
 
+  const deleteProduct = async (id: string | number) => {
+    try {
+      await apiService.deleteProduct(id);
+      fetchData();
+    } catch (err: any) {
+      setGlobalError(err.message || 'Erro ao excluir produto');
+      console.error('Error deleting product:', err);
+    }
+  };
+
   const handleDeleteProduct = async (id: string | number) => {
     showConfirm(
       'EXCLUIR PRODUTO',
       'TEM CERTEZA QUE DESEJA EXCLUIR ESTE PRODUTO? ESTA AÇÃO NÃO PODE SER DESFEITA.',
-      async () => {
-        try {
-          await apiService.deleteProduct(id);
-          fetchData();
-        } catch (err: any) {
-          setGlobalError(err.message || 'Erro ao excluir produto');
-          console.error('Error deleting product:', err);
-        }
-      }
+      () => deleteProduct(id)
     );
   };
 
@@ -1030,7 +1040,7 @@ export default function App() {
           isAdmin={isAdmin}
           onAddProduct={addProduct} 
           onUpdateProduct={handleUpdateProduct}
-          onDeleteProduct={handleDeleteProduct}
+          onDeleteProduct={deleteProduct}
           onAddCategory={addCategory} 
           onAddUnit={addUnit}
           onUpdateCategory={updateCategory}
@@ -1070,8 +1080,9 @@ export default function App() {
           onEdit={(order) => {
             setEditingOrder(order);
             setIsOrderModalOpen(true);
+            setSelectedOrderForDetail(null);
           }}
-          onDelete={deleteOrder}
+          onDelete={handleDeleteOrder}
           onAdd={() => {
             setEditingOrder(null);
             setIsOrderModalOpen(true);
@@ -1430,7 +1441,7 @@ export default function App() {
           setIsOrderModalOpen(true);
           setSelectedOrderForDetail(null);
         }}
-        onDelete={deleteOrder}
+        onDelete={handleDeleteOrder}
         onUpdate={fetchData}
       />
 
@@ -1550,6 +1561,7 @@ export default function App() {
                 <button 
                   onClick={(e) => {
                     e.stopPropagation();
+                    const idToDelete = activeGenericMenuId;
                     const title = activeTab === 'production' ? 'EXCLUIR ORDEM' :
                                   activeTab === 'service_entry' ? 'EXCLUIR ENTRADA' :
                                   activeTab === 'clients' ? 'EXCLUIR CLIENTE' :
@@ -1559,11 +1571,11 @@ export default function App() {
                       title,
                       'TEM CERTEZA QUE DESEJA EXCLUIR ESTE ITEM? ESTA AÇÃO NÃO PODE SER DESFEITA.',
                       () => {
-                        if (activeTab === 'production') deleteOrder(activeGenericMenuId!);
-                        else if (activeTab === 'service_entry') deleteServiceEntry(activeGenericMenuId!);
-                        else if (activeTab === 'clients') deleteClient(activeGenericMenuId!);
-                        else if (activeTab === 'suppliers') deleteSupplier(activeGenericMenuId!);
-                        else if (activeTab === 'assets') deleteAsset(activeGenericMenuId!);
+                        if (activeTab === 'production') deleteOrder(idToDelete!);
+                        else if (activeTab === 'service_entry') deleteServiceEntry(idToDelete!);
+                        else if (activeTab === 'clients') deleteClient(idToDelete!);
+                        else if (activeTab === 'suppliers') deleteSupplier(idToDelete!);
+                        else if (activeTab === 'assets') deleteAsset(idToDelete!);
                       }
                     );
                     setActiveGenericMenuId(null);

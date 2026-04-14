@@ -218,7 +218,7 @@ export const ServiceEntryModal = ({ isOpen, onClose, onSubmit, editingEntry, cli
             onClick={onClose}
             className="px-6 py-2 text-sm font-bold text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100 transition-colors uppercase"
           >
-            Cancelar
+            CANCELAR
           </button>
           <Button type="submit">
             {editingEntry ? 'ATUALIZAR' : 'SALVAR'}

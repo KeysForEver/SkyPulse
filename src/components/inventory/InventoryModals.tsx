@@ -1230,11 +1230,11 @@ export const ProductDetailModal = ({
                   <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800">
                     {isLoading ? (
                       <tr>
-                        <td colSpan={6} className="px-4 py-8 text-center text-zinc-400 dark:text-zinc-500 text-xs">Carregando histórico...</td>
+                        <td colSpan={6} className="px-4 py-8 text-center text-zinc-400 dark:text-zinc-500 text-xs uppercase">CARREGANDO HISTÓRICO...</td>
                       </tr>
                     ) : movements.length === 0 ? (
                       <tr>
-                        <td colSpan={6} className="px-4 py-8 text-center text-zinc-400 dark:text-zinc-500 text-xs">Nenhuma movimentação encontrada.</td>
+                        <td colSpan={6} className="px-4 py-8 text-center text-zinc-400 dark:text-zinc-500 text-xs uppercase">NENHUMA MOVIMENTAÇÃO ENCONTRADA.</td>
                       </tr>
                     ) : (
                       movements.map((m: Movement) => (
