@@ -181,19 +181,20 @@ export const apiService = {
     const response = await fetch('/api/upload', {
       method: 'POST',
       body: formData,
+      credentials: 'include',
     });
 
     if (!response.ok) {
       const text = await response.text();
-      console.error('Upload failed response:', text);
-      throw new Error('Erro ao fazer upload do arquivo');
+      console.error(`Upload failed (Status ${response.status}):`, text);
+      throw new Error(`Erro ao fazer upload (Status ${response.status})`);
     }
 
     const contentType = response.headers.get('content-type');
     if (!contentType || !contentType.includes('application/json')) {
       const text = await response.text();
-      console.error('Expected JSON but got:', text);
-      throw new Error('Servidor retornou formato inválido');
+      console.error(`Expected JSON but got (Status ${response.status}):`, text);
+      throw new Error(`Servidor retornou formato inválido (Status ${response.status})`);
     }
 
     const result = await response.json();
