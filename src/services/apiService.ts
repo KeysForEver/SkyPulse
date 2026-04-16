@@ -782,7 +782,8 @@ export const apiService = {
 
         transaction.update(productRef, {
           quantity: newQty,
-          cost_price: newCost
+          cost_price: newCost,
+          last_supplier: data.supplier_name
         });
 
         const movementRef = doc(collection(db, 'movements'));

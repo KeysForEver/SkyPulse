@@ -31,11 +31,11 @@ export const Card = ({ children, className, title, onClick, noPadding = false }:
     className={cn("bg-white border border-zinc-200 rounded-xl overflow-hidden shadow-sm dark:bg-zinc-900 dark:border-zinc-800/50", className)}
   >
     {title && (
-      <div className="px-6 py-4 border-b border-zinc-100 dark:border-zinc-800">
-        <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">{title.toUpperCase()}</h3>
+      <div className="px-4 py-3 md:px-6 md:py-4 border-b border-zinc-100 dark:border-zinc-800">
+        <h3 className="text-[10px] md:text-sm font-semibold text-zinc-900 dark:text-zinc-100 uppercase tracking-widest">{title}</h3>
       </div>
     )}
-    <div className={cn(noPadding ? "" : "p-6")}>{children}</div>
+    <div className={cn(noPadding ? "" : "p-4 md:p-6")}>{children}</div>
   </div>
 );
 
@@ -72,15 +72,15 @@ export const Modal = ({ isOpen, onClose, title, children, zIndex = 200, noPaddin
           initial={{ opacity: 0, scale: 0.95, y: 20 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.95, y: 20 }}
-          className="relative w-full md:w-[85%] h-[85%] bg-white dark:bg-zinc-900 rounded-2xl shadow-2xl overflow-hidden flex flex-col"
+          className="relative w-full md:w-[92%] h-[92%] md:h-[85%] bg-white dark:bg-zinc-900 rounded-2xl shadow-2xl overflow-hidden flex flex-col"
         >
-          <div className="px-6 py-4 border-b border-zinc-100 dark:border-zinc-800 flex items-center justify-between flex-shrink-0">
-            <h2 className="text-lg font-bold text-zinc-900 dark:text-zinc-100 uppercase tracking-widest">{title}</h2>
+          <div className="px-4 py-3 md:px-6 md:py-4 border-b border-zinc-100 dark:border-zinc-800 flex items-center justify-between flex-shrink-0">
+            <h2 className="text-sm md:text-lg font-bold text-zinc-900 dark:text-zinc-100 uppercase tracking-widest">{title}</h2>
             <button onClick={onClose} className="text-zinc-400 hover:text-zinc-600 dark:text-zinc-500 dark:hover:text-zinc-300">
               <X size={20} />
             </button>
           </div>
-          <div className={cn("overflow-y-auto flex-1 custom-scrollbar", !noPadding && "p-6")}>
+          <div className={cn("overflow-y-auto flex-1 custom-scrollbar", !noPadding && "p-4 md:p-6")}>
             {children}
           </div>
         </motion.div>
