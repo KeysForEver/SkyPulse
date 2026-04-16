@@ -1037,7 +1037,8 @@ export default function App() {
         for (const file of data.invoices) {
           if (file instanceof File) {
             const url = await apiService.uploadFile(file);
-            invoiceUrls.push({ name: file.name, url });
+            const name = file.type === 'application/pdf' ? file.name.replace(/\.pdf$/i, '.webp') : file.name;
+            invoiceUrls.push({ name, url });
           } else {
             // If it's already an object with name and url/data (though in this flow it should be File)
             invoiceUrls.push(file);

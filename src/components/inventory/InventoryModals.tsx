@@ -143,7 +143,7 @@ export const ProductModal = ({
               type="file" 
               ref={fileInputRef}
               onChange={handleFileChange}
-              accept="image/*"
+              accept="image/*,application/pdf"
               className="hidden"
             />
           </div>
@@ -293,7 +293,7 @@ export const ProductModal = ({
             >
               CANCELAR
             </button>
-            <Button onClick={onAddCategory}>
+            <Button type="button" onClick={onAddCategory}>
               SALVAR CATEGORIA
             </Button>
           </div>
@@ -318,7 +318,7 @@ export const ProductModal = ({
             >
               CANCELAR
             </button>
-            <Button onClick={onAddUnit}>
+            <Button type="button" onClick={onAddUnit}>
               SALVAR UNIDADE
             </Button>
           </div>

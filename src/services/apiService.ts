@@ -16,6 +16,7 @@ import {
 } from 'firebase/firestore';
 import { db, auth } from '../firebase';
 import { Product, Client, Supplier, Asset, Order, Movement, OrderStatus } from '../types';
+import { convertPdfToWebP } from '../lib/pdfUtils';
 
 enum OperationType {
   CREATE = 'create',
@@ -175,8 +176,18 @@ export const apiService = {
   uploadFile: async (file: File | string) => {
     if (typeof file === 'string') return file; // Already a URL or base64
 
+    let fileToUpload = file;
+    if (file.type === 'application/pdf') {
+      try {
+        fileToUpload = await convertPdfToWebP(file);
+      } catch (error) {
+        console.error('Error converting PDF to WebP:', error);
+        // Fallback to original file if conversion fails
+      }
+    }
+
     const formData = new FormData();
-    formData.append('file', file);
+    formData.append('file', fileToUpload);
 
     const response = await fetch('/api/upload', {
       method: 'POST',

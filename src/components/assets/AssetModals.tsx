@@ -114,7 +114,7 @@ export const AssetModal = ({ isOpen, onClose, onSave, asset, categories, fieldEr
               type="file" 
               ref={fileInputRef}
               onChange={handlePhotoChange}
-              accept="image/*"
+              accept="image/*,application/pdf"
               className="hidden"
             />
           </div>

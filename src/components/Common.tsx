@@ -170,39 +170,62 @@ export const ErrorAlert = ({ children, className }: { children: React.ReactNode,
   </div>
 );
 
-export const Input = ({ label, icon, onIconClick, className, error, required, ...props }: any) => (
-  <div className="space-y-1.5 flex-1">
-    {label && (
-      <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest ml-1">
-        {label}
-        {required && <span className="text-rose-500 ml-0.5">*</span>}
-      </label>
-    )}
-    <div className="relative group">
-      {icon && (
-        <div 
-          onClick={onIconClick}
-          className={cn(
-            "absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400 transition-colors",
-            onIconClick ? "cursor-pointer hover:text-zinc-900 dark:hover:text-zinc-100" : "group-focus-within:text-zinc-900 dark:group-focus-within:text-zinc-100"
-          )}
-        >
-          {icon}
-        </div>
+export const Input = ({ label, icon, onIconClick, className, error, required, ...props }: any) => {
+  const inputRef = React.useRef<HTMLInputElement>(null);
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (props.onChange) {
+      const start = e.target.selectionStart;
+      const end = e.target.selectionEnd;
+      
+      props.onChange(e);
+      
+      if (start !== null && end !== null) {
+        requestAnimationFrame(() => {
+          if (inputRef.current) {
+            inputRef.current.setSelectionRange(start, end);
+          }
+        });
+      }
+    }
+  };
+
+  return (
+    <div className="space-y-1.5 flex-1">
+      {label && (
+        <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest ml-1">
+          {label}
+          {required && <span className="text-rose-500 ml-0.5">*</span>}
+        </label>
       )}
-      <input 
-        className={cn(
-          "w-full bg-zinc-50 border border-zinc-200 rounded-xl py-2.5 text-sm text-zinc-900 transition-all focus:ring-2 focus:ring-zinc-900/5 focus:border-zinc-900 dark:bg-zinc-800/50 dark:border-zinc-800 dark:text-zinc-100 dark:focus:border-zinc-100",
-          icon ? "pl-10 pr-4" : "px-4",
-          error && "border-rose-500 focus:border-rose-500 focus:ring-rose-500/5",
-          className
+      <div className="relative group">
+        {icon && (
+          <div 
+            onClick={onIconClick}
+            className={cn(
+              "absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400 transition-colors",
+              onIconClick ? "cursor-pointer hover:text-zinc-900 dark:hover:text-zinc-100" : "group-focus-within:text-zinc-900 dark:group-focus-within:text-zinc-100"
+            )}
+          >
+            {icon}
+          </div>
         )}
-        {...props}
-      />
+        <input 
+          ref={inputRef}
+          className={cn(
+            "w-full bg-zinc-50 border border-zinc-200 rounded-xl py-2.5 text-sm text-zinc-900 transition-all focus:ring-2 focus:ring-zinc-900/5 focus:border-zinc-900 dark:bg-zinc-800/50 dark:border-zinc-800 dark:text-zinc-100 dark:focus:border-zinc-100",
+            icon ? "pl-10 pr-4" : "px-4",
+            error && "border-rose-500 focus:border-rose-500 focus:ring-rose-500/5",
+            className
+          )}
+          {...props}
+          onChange={handleChange}
+        />
+      </div>
+      {error && <ErrorText>{error}</ErrorText>}
     </div>
-    {error && <ErrorText>{error}</ErrorText>}
-  </div>
-);
+  );
+};
 
 export const Select = ({ label, icon, options, className, error, required, ...props }: any) => (
   <div className="space-y-1.5 flex-1">
@@ -233,47 +256,91 @@ export const Select = ({ label, icon, options, className, error, required, ...pr
   </div>
 );
 
-export const TextArea = ({ label, icon, className, error, required, ...props }: any) => (
-  <div className="space-y-1.5 flex-1">
-    {label && (
-      <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest ml-1 flex items-center gap-2">
-        {icon}
-        {label}
-        {required && <span className="text-rose-500 ml-0.5">*</span>}
-      </label>
-    )}
-    <textarea 
-      className={cn(
-        "w-full bg-zinc-50 border border-zinc-200 rounded-xl px-4 py-2.5 text-sm transition-all focus:ring-2 focus:ring-zinc-900/5 focus:border-zinc-900 dark:bg-zinc-800/50 dark:border-zinc-800 dark:text-zinc-100 dark:focus:border-zinc-100 min-h-[100px] uppercase",
-        error && "border-rose-500 focus:border-rose-500 focus:ring-rose-500/5",
-        className
-      )}
-      {...props}
-    />
-    {error && <ErrorText>{error}</ErrorText>}
-  </div>
-);
+export const TextArea = ({ label, icon, className, error, required, ...props }: any) => {
+  const textAreaRef = React.useRef<HTMLTextAreaElement>(null);
 
-export const SearchBar = ({ value, onChange, placeholder = "BUSCAR...", className }: { value: string, onChange: (val: string) => void, placeholder?: string, className?: string }) => (
-  <div className={cn("relative flex-1 max-w-xs", className)}>
-    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400 dark:text-zinc-500" size={14} />
-    <input 
-      type="text" 
-      placeholder={placeholder}
-      value={value}
-      onChange={(e) => onChange(e.target.value.toUpperCase())}
-      className="w-full pl-9 pr-10 py-1.5 text-xs border border-zinc-200 dark:border-zinc-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-100 focus:border-transparent bg-white dark:bg-black text-zinc-900 dark:text-zinc-100 uppercase transition-all"
-    />
-    {value && (
-      <button 
-        onClick={() => onChange('')}
-        className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-rose-600 transition-colors"
-      >
-        <X size={14} />
-      </button>
-    )}
-  </div>
-);
+  const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    if (props.onChange) {
+      const start = e.target.selectionStart;
+      const end = e.target.selectionEnd;
+      
+      props.onChange(e);
+      
+      if (start !== null && end !== null) {
+        requestAnimationFrame(() => {
+          if (textAreaRef.current) {
+            textAreaRef.current.setSelectionRange(start, end);
+          }
+        });
+      }
+    }
+  };
+
+  return (
+    <div className="space-y-1.5 flex-1">
+      {label && (
+        <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest ml-1 flex items-center gap-2">
+          {icon}
+          {label}
+          {required && <span className="text-rose-500 ml-0.5">*</span>}
+        </label>
+      )}
+      <textarea 
+        ref={textAreaRef}
+        className={cn(
+          "w-full bg-zinc-50 border border-zinc-200 rounded-xl px-4 py-2.5 text-sm transition-all focus:ring-2 focus:ring-zinc-900/5 focus:border-zinc-900 dark:bg-zinc-800/50 dark:border-zinc-800 dark:text-zinc-100 dark:focus:border-zinc-100 min-h-[100px] uppercase",
+          error && "border-rose-500 focus:border-rose-500 focus:ring-rose-500/5",
+          className
+        )}
+        {...props}
+        onChange={handleChange}
+      />
+      {error && <ErrorText>{error}</ErrorText>}
+    </div>
+  );
+};
+
+export const SearchBar = ({ value, onChange, placeholder = "BUSCAR...", className }: { value: string, onChange: (val: string) => void, placeholder?: string, className?: string }) => {
+  const inputRef = React.useRef<HTMLInputElement>(null);
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const start = e.target.selectionStart;
+    const end = e.target.selectionEnd;
+    const newValue = e.target.value.toUpperCase();
+    
+    onChange(newValue);
+    
+    if (start !== null && end !== null) {
+      requestAnimationFrame(() => {
+        if (inputRef.current) {
+          inputRef.current.setSelectionRange(start, end);
+        }
+      });
+    }
+  };
+
+  return (
+    <div className={cn("relative flex-1 max-w-xs", className)}>
+      <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400 dark:text-zinc-500" size={14} />
+      <input 
+        ref={inputRef}
+        type="text" 
+        placeholder={placeholder}
+        value={value}
+        onChange={handleChange}
+        className="w-full pl-9 pr-10 py-1.5 text-xs border border-zinc-200 dark:border-zinc-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-100 focus:border-transparent bg-white dark:bg-black text-zinc-900 dark:text-zinc-100 uppercase transition-all"
+      />
+      {value && (
+        <button 
+          onClick={() => onChange('')}
+          className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-rose-600 transition-colors"
+        >
+          <X size={14} />
+        </button>
+      )}
+    </div>
+  );
+};
 
 export const Button = ({ children, variant = 'primary', className, isLoading, ...props }: any) => {
   const variants = {
