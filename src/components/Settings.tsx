@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { Download, ShieldCheck, Database as DbIcon, Loader2, Upload, Users as UsersIcon, Plus, Edit, Trash2, Key } from 'lucide-react';
+import { Download, ShieldCheck, Database as DbIcon, Loader2, Upload, Users as UsersIcon, Plus, Edit, Trash2, Key, Eye, EyeOff } from 'lucide-react';
 import { Card, ConfirmModal, ErrorAlert, Modal, Input, Select, Button, cn } from './Common';
 import { motion, AnimatePresence } from 'motion/react';
 import { apiService } from '../services/apiService';
@@ -66,6 +66,7 @@ export const Settings = ({
   const [isDeletingUser, setIsDeletingUser] = useState<User | null>(null);
   const [isSavingUser, setIsSavingUser] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   // Category/Unit Management State
   const [isCatModalOpen, setIsCatModalOpen] = useState(false);
@@ -575,11 +576,13 @@ export const Settings = ({
             />
             <Input 
               label="Senha"
-              type="password"
+              type={showPassword ? "text" : "password"}
               value={userFormData.password}
               onChange={(e: any) => setUserFormData({ ...userFormData, password: e.target.value })}
               placeholder="••••••••"
               required
+              endIcon={userFormData.password ? (showPassword ? <EyeOff size={18} /> : <Eye size={18} />) : null}
+              onEndIconClick={() => setShowPassword(!showPassword)}
             />
           </div>
           <div className="space-y-3">
