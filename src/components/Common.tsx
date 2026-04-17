@@ -65,7 +65,6 @@ export const Modal = ({ isOpen, onClose, title, children, zIndex = 200, noPaddin
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          onClick={onClose}
           className="absolute inset-0 bg-zinc-900/60 backdrop-blur-sm"
         />
         <motion.div 
@@ -117,7 +116,6 @@ export const ConfirmModal = ({
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          onClick={onClose}
           className="absolute inset-0 bg-zinc-900/60 backdrop-blur-sm"
         />
         <motion.div 

@@ -21,6 +21,7 @@ const PERMISSIONS_LIST: { id: Permission; label: string }[] = [
 
 interface SettingsProps {
   users: User[];
+  currentUserEmail?: string | null;
   categories: { id: string | number; name: string }[];
   units: { id: string | number; name: string }[];
   onAddUser: (data: any) => Promise<void>;
@@ -34,6 +35,7 @@ interface SettingsProps {
 
 export const Settings = ({ 
   users, 
+  currentUserEmail,
   categories, 
   units, 
   onAddUser, 
@@ -77,6 +79,8 @@ export const Settings = ({
   const [unitName, setUnitName] = useState('');
   const [isDeletingCat, setIsDeletingCat] = useState<{ id: string | number; name: string } | null>(null);
   const [isDeletingUnit, setIsDeletingUnit] = useState<{ id: string | number; name: string } | null>(null);
+
+  const isSuperAdmin = currentUserEmail === 'admin@skysmart.com' || currentUserEmail === 'Diesel.087@gmail.com';
 
   const handleSyncUsers = async () => {
     setIsSyncing(true);
@@ -223,6 +227,13 @@ export const Settings = ({
     }
   };
 
+  const canDeleteUser = (targetUser: User) => {
+    if (isSuperAdmin) return true;
+    if (targetUser.email === currentUserEmail) return false; // Basic safety
+    const targetHasSettings = targetUser.permissions?.includes('settings');
+    return !targetHasSettings;
+  };
+
   const handleUserSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSavingUser(true);
@@ -255,7 +266,7 @@ export const Settings = ({
     setUserFormData({
       name: user.name,
       username: (user as any).username || '',
-      password: (user as any).password || '',
+      password: isSuperAdmin ? ((user as any).password || '') : '', 
       role: user.role || 'Usuário',
       permissions: user.permissions || []
     });
@@ -363,12 +374,14 @@ export const Settings = ({
                         >
                           <Edit size={16} />
                         </button>
-                        <button 
-                          onClick={() => setIsDeletingUser(user)}
-                          className="p-2 text-zinc-400 hover:text-rose-600 transition-colors"
-                        >
-                          <Trash2 size={16} />
-                        </button>
+                        {canDeleteUser(user) && (
+                          <button 
+                            onClick={() => setIsDeletingUser(user)}
+                            className="p-2 text-zinc-400 hover:text-rose-600 transition-colors"
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>
@@ -577,12 +590,13 @@ export const Settings = ({
             <Input 
               label="Senha"
               type={showPassword ? "text" : "password"}
-              value={userFormData.password}
+              value={editingUser && !isSuperAdmin ? "" : userFormData.password}
               onChange={(e: any) => setUserFormData({ ...userFormData, password: e.target.value })}
-              placeholder="••••••••"
-              required
-              endIcon={userFormData.password ? (showPassword ? <EyeOff size={18} /> : <Eye size={18} />) : null}
-              onEndIconClick={() => setShowPassword(!showPassword)}
+              placeholder={editingUser && !isSuperAdmin ? "********" : "••••••••"}
+              required={!editingUser}
+              disabled={editingUser && !isSuperAdmin}
+              endIcon={!editingUser || isSuperAdmin ? (userFormData.password ? (showPassword ? <EyeOff size={18} /> : <Eye size={18} />) : null) : <ShieldCheck size={18} />}
+              onEndIconClick={() => (!editingUser || isSuperAdmin) && setShowPassword(!showPassword)}
             />
           </div>
           <div className="space-y-3">
