@@ -1545,12 +1545,14 @@ export default function App() {
         editingOrder={editingOrder}
         clients={clients}
         orders={orders}
+        serviceEntries={serviceEntries}
       />
 
       <OrderDetailModal 
         isOpen={!!selectedOrderForDetail}
         onClose={() => setSelectedOrderForDetail(null)}
         order={selectedOrderForDetail}
+        serviceEntries={serviceEntries}
         isAdmin={isAdmin}
         onEdit={(order) => {
           setEditingOrder(order);

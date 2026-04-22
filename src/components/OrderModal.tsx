@@ -12,6 +12,7 @@ interface OrderModalProps {
   editingOrder?: Order | null;
   clients: Client[];
   orders: Order[];
+  serviceEntries: ServiceEntry[];
 }
 
 const IMPRESSION_OPTIONS = ['Impressão 3D', 'Impressão Digital', 'Plotter'];
@@ -30,7 +31,8 @@ export const OrderModal = ({
   onSubmit, 
   editingOrder, 
   clients,
-  orders
+  orders,
+  serviceEntries
 }: OrderModalProps) => {
   const [step, setStep] = useState(1);
   const [error, setError] = useState<string | null>(null);
@@ -40,6 +42,7 @@ export const OrderModal = ({
     title: '',
     description: '',
     client_id: '',
+    service_entry_id: '',
     status: 'ORDENS DE PRODUÇÃO' as OrderStatus,
     details: {
       entry_date: new Date().toISOString().split('T')[0],
@@ -95,6 +98,7 @@ export const OrderModal = ({
         title: editingOrder.title,
         description: editingOrder.description || '',
         client_id: editingOrder.client_id?.toString() || '',
+        service_entry_id: editingOrder.service_entry_id?.toString() || '',
         status: editingOrder.status,
         details: initialDetails
       });
@@ -126,6 +130,7 @@ export const OrderModal = ({
         title: '',
         description: '',
         client_id: '',
+        service_entry_id: '',
         status: 'ORDENS DE PRODUÇÃO',
         details: {
           entry_date: new Date().toISOString().split('T')[0],
@@ -344,11 +349,38 @@ export const OrderModal = ({
     syncItems(key, newCustom);
   };
 
+  const handleServiceEntryChange = (entryId: string) => {
+    const entry = serviceEntries.find(e => e.id.toString() === entryId);
+    if (entry) {
+      setFormData(prev => ({
+        ...prev,
+        service_entry_id: entryId,
+        title: entry.obra.toUpperCase(),
+        client_id: entry.client_id.toString()
+      }));
+    } else {
+      setFormData(prev => ({
+        ...prev,
+        service_entry_id: ''
+      }));
+    }
+  };
+
   const renderStep = () => {
     switch (step) {
       case 1:
         return (
           <div className="space-y-4">
+            <Select
+              label="Vincular Entrada de Serviço (Opcional)"
+              icon={<Briefcase size={18} />}
+              value={formData.service_entry_id}
+              onChange={e => handleServiceEntryChange(e.target.value)}
+              options={[
+                { value: '', label: 'NÃO VINCULAR' },
+                ...serviceEntries.map(e => ({ value: e.id.toString(), label: `${e.obra} - ${e.client_name}`.toUpperCase() }))
+              ]}
+            />
             <Input
               label="Título da Ordem"
               icon={<Type size={18} />}
