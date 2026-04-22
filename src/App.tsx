@@ -1545,12 +1545,6 @@ export default function App() {
         editingOrder={editingOrder}
         clients={clients}
         orders={orders}
-        serviceEntries={serviceEntries}
-        productionProducts={productionProducts}
-        onAddProductionProduct={async (name) => {
-          await apiService.addProductionProduct(name);
-          fetchData();
-        }}
       />
 
       <OrderDetailModal 
