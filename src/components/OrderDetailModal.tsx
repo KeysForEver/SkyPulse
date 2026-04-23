@@ -207,6 +207,12 @@ export const OrderDetailModal = ({
                     <p className="text-sm font-bold uppercase mt-1">{linkedEntry.product_variant}</p>
                   </div>
                 )}
+                {linkedEntry.agencia && (
+                  <div>
+                    <p className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest">Agência</p>
+                    <p className="text-sm font-bold uppercase mt-1">{linkedEntry.agencia}</p>
+                  </div>
+                )}
               </div>
 
               {(linkedEntry.altura || linkedEntry.largura || linkedEntry.profundidade) && (
@@ -226,7 +232,7 @@ export const OrderDetailModal = ({
                   {linkedEntry.profundidade && (
                     <div className="bg-white/5 p-3 rounded-2xl border border-white/5">
                       <p className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest">Profundidade</p>
-                      <p className="text-sm font-bold mt-0.5">{linkedEntry.profundidade}cm</p>
+                      <p className="text-sm font-bold mt-0.5">{linkedEntry.profundidade}m</p>
                     </div>
                   )}
                 </div>

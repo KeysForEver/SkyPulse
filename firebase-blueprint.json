@@ -186,6 +186,7 @@
         "obra": { "type": "string" },
         "local": { "type": "string", "enum": ["Sky 1", "Sky 2"] },
         "valor": { "type": "number" },
+        "agencia": { "type": "string" },
         "product_category": { "type": "string" },
         "product_subcategory": { "type": "string" },
         "product_variant": { "type": "string" },

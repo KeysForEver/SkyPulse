@@ -11,7 +11,8 @@ import {
   User,
   MapPin,
   DollarSign,
-  Briefcase
+  Briefcase,
+  Building2
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { ServiceEntry as ServiceEntryType, Client } from '../types';
@@ -176,6 +177,7 @@ export const ServiceEntryModal = ({ isOpen, onClose, onSubmit, editingEntry, cli
     obra: '',
     local: 'Sky 1' as 'Sky 1' | 'Sky 2',
     valor: '',
+    agencia: '',
     product_category: '',
     product_subcategory: '',
     product_variant: '',
@@ -192,6 +194,7 @@ export const ServiceEntryModal = ({ isOpen, onClose, onSubmit, editingEntry, cli
         obra: editingEntry.obra,
         local: editingEntry.local,
         valor: maskCurrency(editingEntry.valor.toString().replace('.', ',')),
+        agencia: editingEntry.agencia || '',
         product_category: editingEntry.product_category || '',
         product_subcategory: editingEntry.product_subcategory || '',
         product_variant: editingEntry.product_variant || '',
@@ -206,6 +209,7 @@ export const ServiceEntryModal = ({ isOpen, onClose, onSubmit, editingEntry, cli
         obra: '',
         local: 'Sky 1',
         valor: '',
+        agencia: '',
         product_category: '',
         product_subcategory: '',
         product_variant: '',
@@ -278,6 +282,13 @@ export const ServiceEntryModal = ({ isOpen, onClose, onSubmit, editingEntry, cli
             onChange={(e: any) => setFormData({ ...formData, valor: maskCurrency(e.target.value) })}
           />
         </div>
+
+        <Input 
+          label="AGÊNCIA (OPCIONAL)" 
+          icon={<Building2 size={18} />}
+          value={formData.agencia}
+          onChange={(e: any) => setFormData({ ...formData, agencia: e.target.value.toUpperCase() })}
+        />
 
         <div className="pt-4 border-t border-zinc-100 dark:border-zinc-800">
           <h4 className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-4">Detalhes do Produto</h4>
@@ -371,8 +382,8 @@ export const ServiceEntryModal = ({ isOpen, onClose, onSubmit, editingEntry, cli
               )}
               {selectedCategory.fields.includes('profundidade') && (
                 <Input 
-                  label="PROFUNDIDADE (cm)"
-                  placeholder="0"
+                  label="PROFUNDIDADE (m)"
+                  placeholder="0,00"
                   value={formData.profundidade}
                   onChange={(e: any) => setFormData({ ...formData, profundidade: e.target.value })}
                 />
