@@ -1,5 +1,4 @@
 import express from 'express';
-import { createServer as createViteServer } from 'vite';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import fs from 'fs';
@@ -64,24 +63,42 @@ async function startServer() {
     res.status(500).json({ error: err.message || 'Erro interno no servidor' });
   });
 
+  // Determinar se estamos em desenvolvimento ou produção
+  const isDev = process.env.NODE_ENV === 'development';
+  console.log(`Modo: ${isDev ? 'DESENVOLVIMENTO' : 'PRODUÇÃO'}`);
+
   // Vite middleware for development
-  if (process.env.NODE_ENV !== 'production') {
-    const vite = await createViteServer({
-      server: { middlewareMode: true },
-      appType: 'spa',
-    });
-    app.use(vite.middlewares);
+  if (isDev) {
+    try {
+      const { createServer: createViteServer } = await import('vite');
+      const vite = await createViteServer({
+        server: { middlewareMode: true },
+        appType: 'spa',
+      });
+      app.use(vite.middlewares);
+    } catch (e) {
+      console.warn('Vite não encontrado. Tentando rodar em modo produção...');
+      serveStatic(app);
+    }
   } else {
-    const distPath = path.join(process.cwd(), 'dist');
-    app.use(express.static(distPath));
-    app.get('*', (req, res) => {
-      res.sendFile(path.join(distPath, 'index.html'));
-    });
+    serveStatic(app);
   }
 
   app.listen(PORT, '0.0.0.0', () => {
     console.log(`Server running on http://localhost:${PORT}`);
   });
+}
+
+function serveStatic(app: any) {
+  const distPath = path.join(process.cwd(), 'dist');
+  if (fs.existsSync(distPath)) {
+    app.use(express.static(distPath));
+    app.get('*', (req: any, res: any) => {
+      res.sendFile(path.join(distPath, 'index.html'));
+    });
+  } else {
+    console.error('ERRO: Pasta "dist" não encontrada. Execute "npm run build" primeiro.');
+  }
 }
 
 startServer();
