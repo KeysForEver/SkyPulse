@@ -12,7 +12,8 @@ import {
   getDoc,
   runTransaction,
   serverTimestamp,
-  Timestamp
+  Timestamp,
+  deleteField
 } from 'firebase/firestore';
 import { db, auth } from '../firebase';
 import { Product, Client, Supplier, Asset, Order, Movement, OrderStatus } from '../types';
@@ -958,11 +959,19 @@ export const apiService = {
       }
 
       // Sync with Auth via REST API (doesn't require admin SDK)
+      // This is the only place where the plain text password is used
       await apiService.syncUserWithAuth(data.username, data.password);
 
       // Save to Firestore without the password for better security
+      // We explicitly exclude password and ensure it's not even a key in the object
       const { password, ...firestoreData } = data;
-      const docRef = await addDoc(collection(db, 'users'), firestoreData);
+      const cleanData = {
+        ...firestoreData,
+        updated_at: serverTimestamp(),
+        encryption_status: 'auth_managed' // Marker that password is NOT here
+      };
+      
+      const docRef = await addDoc(collection(db, 'users'), cleanData);
       
       return { id: docRef.id };
     } catch (error) {
@@ -971,14 +980,21 @@ export const apiService = {
   },
   updateUser: async (id: string | number, data: any) => {
     try {
-      // Sync with Auth if username or password provided
-      if (data.username || (data.password && data.password.trim() !== '')) {
+      // Sync with Auth if password is provided
+      if (data.password && data.password.trim() !== '') {
+        // Note: Password update for existing users via REST API would require their token
+        // For admin flow, we assume initial sync or manual password management
         await apiService.syncUserWithAuth(data.username || '', data.password || '');
       }
 
       // Save to Firestore without the password
+      // We also use deleteField() concept or just omit it to ensure no leak
       const { password, ...firestoreData } = data;
-      await updateDoc(doc(db, 'users', String(id)), firestoreData);
+      await updateDoc(doc(db, 'users', String(id)), {
+        ...firestoreData,
+        password: deleteField(),
+        updated_at: serverTimestamp()
+      });
 
       return { success: true };
     } catch (error) {
