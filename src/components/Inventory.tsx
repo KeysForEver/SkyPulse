@@ -125,7 +125,7 @@ export const Inventory = ({
   const [endDate, setEndDate] = useState('');
   const [movementTypeFilter, setMovementTypeFilter] = useState<'ALL' | 'IN' | 'OUT'>('ALL');
   const [movementLocationFilter, setMovementLocationFilter] = useState<string>('ALL');
-  const DEFAULT_COLUMNS = ['id', 'name', 'category', 'quantity', 'total_value', 'min_quantity', 'status'];
+  const DEFAULT_COLUMNS = ['name', 'category', 'quantity', 'total_value', 'min_quantity', 'status'];
   const [visibleColumns, setVisibleColumns] = useState<string[]>(() => {
     const saved = localStorage.getItem('inventory_visible_columns');
     return saved ? JSON.parse(saved) : DEFAULT_COLUMNS;

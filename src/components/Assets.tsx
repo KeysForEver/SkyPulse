@@ -52,7 +52,7 @@ export const Assets = ({
   const [selectedAssetForDisposal, setSelectedAssetForDisposal] = useState<Asset | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [sortConfig, setSortConfig] = useState<{ key: keyof Asset | 'status'; direction: 'asc' | 'desc' } | null>(null);
-  const [visibleColumns, setVisibleColumns] = useState<string[]>(['id', 'description', 'asset_number', 'category', 'purchase_value', 'status']);
+  const [visibleColumns, setVisibleColumns] = useState<string[]>(['description', 'asset_number', 'category', 'purchase_value', 'status']);
   const [isColumnSelectorOpen, setIsColumnSelectorOpen] = useState(false);
   const columnSelectorRef = useRef<HTMLDivElement>(null);
 
