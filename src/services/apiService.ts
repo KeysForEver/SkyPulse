@@ -187,30 +187,28 @@ export const apiService = {
       }
     }
 
-    const formData = new FormData();
-    formData.append('file', fileToUpload);
+    try {
+      const formData = new FormData();
+      formData.append('file', fileToUpload);
 
-    const response = await fetch('/api/upload', {
-      method: 'POST',
-      body: formData,
-      credentials: 'include',
-    });
+      const response = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData,
+        credentials: 'include',
+      });
 
-    if (!response.ok) {
-      const text = await response.text();
-      console.error(`Upload failed (Status ${response.status}):`, text);
-      throw new Error(`Erro ao fazer upload (Status ${response.status})`);
+      if (!response.ok) {
+        const text = await response.text();
+        console.error(`Upload failed (Status ${response.status}):`, text);
+        throw new Error(`Erro ao fazer upload (Status ${response.status})`);
+      }
+
+      const result = await response.json();
+      return result.url;
+    } catch (error) {
+      console.error('Error uploading file:', error);
+      throw error;
     }
-
-    const contentType = response.headers.get('content-type');
-    if (!contentType || !contentType.includes('application/json')) {
-      const text = await response.text();
-      console.error(`Expected JSON but got (Status ${response.status}):`, text);
-      throw new Error(`Servidor retornou formato inválido (Status ${response.status})`);
-    }
-
-    const result = await response.json();
-    return result.url;
   },
 
   uploadPhoto: async (file: File | string) => {
