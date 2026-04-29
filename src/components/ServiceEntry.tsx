@@ -281,7 +281,7 @@ export const ServiceEntryModal = ({ isOpen, onClose, onSubmit, editingEntry, cli
         </div>
 
         <Input 
-          label="AGÊNCIA (OPCIONAL)" 
+          label="AGÊNCIA" 
           icon={<Building2 size={18} />}
           value={formData.agencia}
           onChange={(e: any) => setFormData({ ...formData, agencia: e.target.value.toUpperCase() })}
