@@ -501,6 +501,7 @@ export default function App() {
       if (isDuplicate) errors.asset_number = 'NÚMERO JÁ CADASTRADO';
     }
 
+    if (!data.location_or_responsible) errors.location_or_responsible = 'RESPONSÁVEL/LOCALIZAÇÃO É OBRIGATÓRIO';
     if (!data.category) errors.category = 'CATEGORIA É OBRIGATÓRIA';
     if (!data.purchase_date) errors.purchase_date = 'DATA É OBRIGATÓRIA';
     if (!data.purchase_value) errors.purchase_value = 'VALOR É OBRIGATÓRIO';

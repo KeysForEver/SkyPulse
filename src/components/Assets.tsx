@@ -55,7 +55,7 @@ export const Assets = ({
   const [selectedAssetForDisposal, setSelectedAssetForDisposal] = useState<Asset | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [sortConfig, setSortConfig] = useState<{ key: keyof Asset | 'status'; direction: 'asc' | 'desc' } | null>(null);
-  const [visibleColumns, setVisibleColumns] = useState<string[]>(['description', 'asset_number', 'category', 'purchase_value', 'status']);
+  const [visibleColumns, setVisibleColumns] = useState<string[]>(['description', 'asset_number', 'location_or_responsible', 'category', 'purchase_value', 'status']);
   const [isColumnSelectorOpen, setIsColumnSelectorOpen] = useState(false);
   const columnSelectorRef = useRef<HTMLDivElement>(null);
 
@@ -73,6 +73,7 @@ export const Assets = ({
     { id: 'id', label: 'ID' },
     { id: 'description', label: 'Descrição' },
     { id: 'asset_number', label: 'Nº Patrimônio' },
+    { id: 'location_or_responsible', label: 'Responsável/Local' },
     { id: 'category', label: 'Categoria' },
     { id: 'purchase_date', label: 'Data Compra' },
     { id: 'purchase_value', label: 'Valor Compra' },
@@ -124,6 +125,7 @@ export const Assets = ({
         id: 'ID',
         description: 'Descrição',
         asset_number: 'Nº Patrimônio',
+        location_or_responsible: 'Responsável/Local',
         category: 'Categoria',
         purchase_date: 'Data Compra',
         purchase_value: 'Valor Compra',
@@ -147,6 +149,7 @@ export const Assets = ({
       { key: 'id', label: 'ID' },
       { key: 'description', label: 'Descrição' },
       { key: 'asset_number', label: 'Nº Patrimônio' },
+      { key: 'location_or_responsible', label: 'Responsável/Local' },
       { key: 'category', label: 'Categoria' },
       { key: 'purchase_date', label: 'Data Compra' },
       { key: 'purchase_value', label: 'Valor Compra' },
@@ -288,6 +291,7 @@ export const Assets = ({
           const errors: Record<string, string> = {};
           const description = formData.get('description') as string;
           const assetNumber = formData.get('asset_number') as string;
+          const locationOrResponsible = formData.get('location_or_responsible') as string;
 
           if (!description) {
             errors.description = 'DESCRIÇÃO É OBRIGATÓRIA';
@@ -307,6 +311,10 @@ export const Assets = ({
               a.asset_number?.toUpperCase() === assetNumber.toUpperCase()
             );
             if (isDuplicate) errors.asset_number = 'Nº PATRIMÔNIO JÁ CADASTRADO';
+          }
+
+          if (!locationOrResponsible) {
+            errors.location_or_responsible = 'RESPONSÁVEL/LOCALIZAÇÃO É OBRIGATÓRIO';
           }
 
           if (!formData.get('purchase_value')) errors.purchase_value = 'VALOR DE COMPRA É OBRIGATÓRIO';

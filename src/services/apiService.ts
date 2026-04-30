@@ -704,6 +704,7 @@ export const apiService = {
         assetData = {
           description: data.get('description'),
           asset_number: data.get('asset_number'),
+          location_or_responsible: data.get('location_or_responsible'),
           category: data.get('category'),
           purchase_date: data.get('purchase_date'),
           purchase_value: parseFloat(data.get('purchase_value') as string) || 0,
@@ -739,6 +740,7 @@ export const apiService = {
         assetData = {
           description: data.get('description'),
           asset_number: data.get('asset_number'),
+          location_or_responsible: data.get('location_or_responsible'),
           category: data.get('category'),
           purchase_date: data.get('purchase_date'),
           purchase_value: parseFloat(data.get('purchase_value') as string) || 0,

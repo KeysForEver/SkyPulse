@@ -47,6 +47,11 @@ export const AssetTable = ({
               <div className="flex items-center gap-2">Nº Patrimônio {getSortIcon('asset_number')}</div>
             </th>
           )}
+          {visibleColumns.includes('location_or_responsible') && (
+            <th className="px-6 py-4 text-xs font-bold text-zinc-400 uppercase tracking-widest cursor-pointer group" onClick={() => requestSort('location_or_responsible')}>
+              <div className="flex items-center gap-2">Responsável/Local {getSortIcon('location_or_responsible')}</div>
+            </th>
+          )}
           {visibleColumns.includes('category') && (
             <th className="px-6 py-4 text-xs font-bold text-zinc-400 uppercase tracking-widest cursor-pointer group" onClick={() => requestSort('category')}>
               <div className="flex items-center gap-2">Categoria {getSortIcon('category')}</div>
@@ -91,6 +96,9 @@ export const AssetTable = ({
             )}
             {visibleColumns.includes('asset_number') && (
               <td className="px-6 py-4 text-sm text-zinc-600 dark:text-zinc-400">{asset.asset_number || '-'}</td>
+            )}
+            {visibleColumns.includes('location_or_responsible') && (
+              <td className="px-6 py-4 text-sm text-zinc-600 dark:text-zinc-400">{asset.location_or_responsible || '-'}</td>
             )}
             {visibleColumns.includes('category') && (
               <td className="px-6 py-4">

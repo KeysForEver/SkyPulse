@@ -18,6 +18,7 @@ export const AssetModal = ({ isOpen, onClose, onSave, asset, categories, fieldEr
   const [formData, setFormData] = useState({
     description: '',
     asset_number: '',
+    location_or_responsible: '',
     category: '',
     purchase_date: new Date().toISOString().split('T')[0],
     purchase_value: '',
@@ -106,6 +107,7 @@ export const AssetModal = ({ isOpen, onClose, onSave, asset, categories, fieldEr
       setFormData({
         description: asset.description,
         asset_number: asset.asset_number || '',
+        location_or_responsible: asset.location_or_responsible || '',
         category: asset.category || '',
         purchase_date: asset.purchase_date || new Date().toISOString().split('T')[0],
         purchase_value: maskCurrency(asset.purchase_value.toString().replace('.', ',')),
@@ -117,6 +119,7 @@ export const AssetModal = ({ isOpen, onClose, onSave, asset, categories, fieldEr
       setFormData({
         description: '',
         asset_number: '',
+        location_or_responsible: '',
         category: '',
         purchase_date: new Date().toISOString().split('T')[0],
         purchase_value: '',
@@ -160,6 +163,7 @@ export const AssetModal = ({ isOpen, onClose, onSave, asset, categories, fieldEr
     setFormData({
       description: '',
       asset_number: '',
+      location_or_responsible: '',
       category: '',
       purchase_date: new Date().toISOString().split('T')[0],
       purchase_value: '',
@@ -299,6 +303,14 @@ export const AssetModal = ({ isOpen, onClose, onSave, asset, categories, fieldEr
             value={formData.asset_number}
             onChange={(e: any) => setFormData({ ...formData, asset_number: e.target.value.toUpperCase() })}
             error={fieldErrors.asset_number}
+            required
+          />
+          <Input 
+            label="Responsável / Localização" 
+            icon={<Tag size={18} />}
+            value={formData.location_or_responsible}
+            onChange={(e: any) => setFormData({ ...formData, location_or_responsible: e.target.value.toUpperCase() })}
+            error={fieldErrors.location_or_responsible}
             required
           />
           <Select 
