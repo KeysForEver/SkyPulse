@@ -1301,6 +1301,7 @@ export default function App() {
           onUpdateAsset={updateAsset}
           onDeleteAsset={deleteAsset}
           onDisposalAsset={handleDisposalAsset}
+          canSeeValues={canSeeValues}
         />
       );
       case 'financial': return (
