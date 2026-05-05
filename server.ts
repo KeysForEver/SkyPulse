@@ -6,7 +6,6 @@ import multer from 'multer';
 import sharp from 'sharp';
 
 const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
 
 const uploadsDir = path.join(process.cwd(), 'uploads');
 const projectsDir = path.join(uploadsDir, 'projects');
