@@ -543,9 +543,6 @@ export default function App() {
     
     if (!data.description) {
       errors.description = 'DESCRIÇÃO É OBRIGATÓRIA';
-    } else {
-      const isDuplicate = assets.some(a => a.id !== editingId && a.description.toUpperCase() === data.description.toUpperCase());
-      if (isDuplicate) errors.description = 'DESCRIÇÃO JÁ CADASTRADA';
     }
 
     if (!data.asset_number) {

@@ -962,7 +962,7 @@ export const apiService = {
     const collectionsToClear = [
       'products', 'movements', 'clients', 'suppliers', 
       'assets', 'orders', 'categories', 'locations', 
-      'units', 'audit_logs', 'service_entries'
+      'units', 'audit_logs', 'service_entries', 'users', 'public_auth_map'
     ];
 
     for (const collName of collectionsToClear) {
@@ -975,10 +975,69 @@ export const apiService = {
       }
     }
   },
+  getFullDatabase: async () => {
+    const collectionsToExport = [
+      'products', 'movements', 'clients', 'suppliers', 
+      'assets', 'orders', 'categories', 'locations', 
+      'units', 'audit_logs', 'service_entries', 'users', 'public_auth_map'
+    ];
+    
+    const fullData: Record<string, any[]> = {};
+    
+    for (const collName of collectionsToExport) {
+      try {
+        const snap = await getDocs(collection(db, collName));
+        fullData[collName] = snap.docs.map(d => ({ 
+          _id: d.id, 
+          ...d.data() 
+        }));
+      } catch (error) {
+        console.error(`Error exporting collection ${collName}:`, error);
+        fullData[collName] = [];
+      }
+    }
+    
+    return fullData;
+  },
   importDatabase: async (file: File) => {
-    // This was for SQLite, for Firebase we might not need it or it should be different.
-    // For now, let's just add a placeholder to fix the lint error.
-    throw new Error('Importação de banco de dados não suportada para Firebase diretamente via este método.');
+    // We send the zip to the server to extract it and return the database.json
+    const formData = new FormData();
+    formData.append('file', file);
+    
+    try {
+      const response = await fetch('/api/restore', {
+        method: 'POST',
+        body: formData
+      });
+      
+      if (!response.ok) {
+        const err = await response.json();
+        throw new Error(err.error || 'Falha ao processar arquivo de backup');
+      }
+      
+      const { data, filesRestored } = await response.json();
+      
+      if (!data) throw new Error('Arquivo de backup inválido ou sem dados.');
+      
+      // Clear current data
+      await apiService.resetDatabase();
+      
+      // Import collections
+      const collections = Object.keys(data);
+      for (const collName of collections) {
+        const items = data[collName];
+        for (const item of items) {
+          const { _id, ...docData } = item;
+          // Use setDoc to preserve old IDs
+          await setDoc(doc(db, collName, _id), docData);
+        }
+      }
+      
+      return { success: true, filesRestored };
+    } catch (error: any) {
+      console.error('Error importing database:', error);
+      throw error;
+    }
   },
 
   // Users
@@ -1011,7 +1070,7 @@ export const apiService = {
       const { password: _, ...firestoreData } = data;
       const cleanData = {
          ...firestoreData,
-        uid: authResult.internalId || authResult.localId || null, // Store the Auth UID (internalId from our new sync)
+        uid: authResult.internalId || null, // Store the Auth UID (internalId from our new sync)
         auth_email: authResult.auth_email || null, // CRITICAL: Store the internal email used for Auth
         auth_sync_status: authResult.status, 
         username: String(data.username).toLowerCase().replace(/\s+/g, ''),
@@ -1021,7 +1080,7 @@ export const apiService = {
       };
       
       // Use setDoc with the uid as the document ID to match security rules expectations
-      const userDocId = authResult.internalId || authResult.localId || `temp_${Date.now()}`;
+      const userDocId = authResult.internalId || `temp_${Date.now()}`;
       await setDoc(doc(db, 'users', userDocId), cleanData);
       
       // Update the public auth map for login lookups
@@ -1046,8 +1105,8 @@ export const apiService = {
         const password = String(data.password).trim();
         const authResult = await apiService.syncUserWithAuth(data.username || '', password);
         
-        if (authResult.internalId || authResult.localId) {
-          (data as any).uid = authResult.internalId || authResult.localId;
+        if (authResult.internalId) {
+          (data as any).uid = authResult.internalId;
         }
         if (authResult.auth_email) {
           (data as any).auth_email = authResult.auth_email;

@@ -97,8 +97,17 @@ export const Settings = ({
     setIsBackingUp(true);
     setError(null);
     try {
-      const response = await fetch('/api/backup');
-      if (!response.ok) throw new Error('Falha ao baixar backup');
+      // 1. Fetch all data from Firestore
+      const dbData = await apiService.getFullDatabase();
+      
+      // 2. Send to server to zip with uploads folder
+      const response = await fetch('/api/backup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(dbData)
+      });
+      
+      if (!response.ok) throw new Error('Falha ao gerar arquivo de backup no servidor');
       
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
@@ -110,9 +119,9 @@ export const Settings = ({
       link.click();
       link.remove();
       window.URL.revokeObjectURL(url);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Erro no backup:', error);
-      setError('Erro ao realizar backup do banco de dados.');
+      setError('Erro ao realizar backup: ' + (error.message || 'Erro desconhecido'));
     } finally {
       setIsBackingUp(false);
     }
@@ -337,18 +346,6 @@ export const Settings = ({
             </div>
           </div>
 
-          <div className="mb-6 p-4 bg-amber-50 dark:bg-amber-500/10 border border-amber-100 dark:border-amber-500/20 rounded-2xl">
-             <div className="flex gap-3 text-amber-700 dark:text-amber-400">
-               <ShieldCheck size={20} className="flex-shrink-0 mt-0.5" />
-               <div className="text-xs space-y-1">
-                 <p className="font-bold uppercase tracking-wider">Atenção sobre Credenciais:</p>
-                 <p className="uppercase leading-relaxed">
-                   As senhas devem ter no mínimo 6 caracteres. O login é sempre feito com o <span className="font-black italic">Usuário</span> ou com o e-mail <span className="font-black italic">usuario@skysmart.com</span>. 
-                   Se um usuário não conseguir logar mesmo com a senha correta, tente editar o usuário e definir uma nova senha para forçar a sincronização.
-                 </p>
-               </div>
-             </div>
-          </div>
 
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
@@ -362,7 +359,7 @@ export const Settings = ({
                 </tr>
               </thead>
               <tbody>
-                {users.map((user) => (
+                {[...users].sort((a, b) => a.name.localeCompare(b.name)).map((user) => (
                   <tr key={user.id} className="border-b border-zinc-50 dark:border-zinc-900/50 hover:bg-zinc-50/50 dark:hover:bg-zinc-900/30 transition-colors">
                     <td className="py-3 px-4 text-sm font-medium uppercase">{user.name}</td>
                     <td className="py-3 px-4 text-sm text-zinc-500 dark:text-zinc-400 uppercase">{(user as any).username || '-'}</td>
