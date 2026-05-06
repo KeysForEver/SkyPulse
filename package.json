@@ -6,7 +6,7 @@
   "type": "module",
   "scripts": {
     "dev": "tsx server.ts",
-    "build": "vite build && esbuild server.ts --bundle --platform=node --format=esm --outfile=dist/server.js --external:sharp --external:adm-zip --external:vite",
+    "build": "vite build && esbuild server.ts --bundle --platform=node --format=esm --outfile=dist/server.js --packages=external",
     "preview": "vite preview",
     "clean": "rm -rf dist",
     "lint": "tsc --noEmit",
