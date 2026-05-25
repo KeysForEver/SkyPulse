@@ -50,7 +50,7 @@ import { ServiceEntry } from './components/ServiceEntry';
 import { GenericList } from './components/GenericList';
 import { Settings as SettingsView } from './components/Settings';
 import { Assets } from './components/Assets';
-import { SidebarItem, cn, ErrorAlert, Button, Input } from './components/Common';
+import { SidebarItem, cn, ErrorAlert, Button, Input, ToastContainer, showToast } from './components/Common';
 import { OrderModal } from './components/OrderModal';
 import { OrderDetailModal } from './components/OrderDetailModal';
 import { ClientModal, SupplierModal } from './components/EntityModals';
@@ -764,22 +764,28 @@ export default function App() {
   };
 
   const addOrder = async (data: any) => {
+    const toastId = showToast('Criando ordem de produção...', 'loading');
     try {
       await apiService.addOrder(data);
       logAction('ADICIONAR ORDEM', `ORDEM: ${data.title}`);
       fetchData();
-    } catch (err) {
+      showToast('Ordem de produção criada com sucesso!', 'success', 3000, toastId);
+    } catch (err: any) {
       console.error('Error adding order:', err);
+      showToast(err.message || 'Erro ao criar ordem de produção', 'error', 4000, toastId);
     }
   };
 
   const updateOrder = async (id: string | number, data: any) => {
+    const toastId = showToast('Atualizando ordem de produção...', 'loading');
     try {
       await apiService.updateOrder(id, data);
       logAction('ATUALIZAR ORDEM', `ORDEM: ${data.title || id}`);
       fetchData();
-    } catch (err) {
+      showToast('Ordem de produção atualizada com sucesso!', 'success', 3000, toastId);
+    } catch (err: any) {
       console.error('Error updating order:', err);
+      showToast(err.message || 'Erro ao atualizar ordem de produção', 'error', 4000, toastId);
     }
   };
 
@@ -810,15 +816,18 @@ export default function App() {
       return;
     }
 
+    const toastId = showToast('Salvando cliente...', 'loading');
     try {
       await apiService.addClient(data);
       logAction('ADICIONAR CLIENTE', `CLIENTE: ${data.name || data.razao_social}`);
       fetchData();
       setIsClientModalOpen(false);
       setClientFieldErrors({});
+      showToast('Cliente cadastrado com sucesso!', 'success', 3000, toastId);
     } catch (err: any) {
       setGlobalError(err.message || 'Erro ao adicionar cliente');
       console.error('Error adding client:', err);
+      showToast(err.message || 'Erro ao adicionar cliente', 'error', 4000, toastId);
     }
   };
 
@@ -830,15 +839,18 @@ export default function App() {
       return;
     }
 
+    const toastId = showToast('Atualizando cliente...', 'loading');
     try {
       await apiService.updateClient(id, data);
       logAction('ATUALIZAR CLIENTE', `CLIENTE: ${data.name || data.razao_social}`);
       fetchData();
       setIsClientModalOpen(false);
       setClientFieldErrors({});
+      showToast('Cliente atualizado com sucesso!', 'success', 3000, toastId);
     } catch (err: any) {
       setGlobalError(err.message || 'Erro ao atualizar cliente');
       console.error('Error updating client:', err);
+      showToast(err.message || 'Erro ao atualizar cliente', 'error', 4000, toastId);
     }
   };
 
@@ -869,15 +881,18 @@ export default function App() {
       return;
     }
 
+    const toastId = showToast('Atualizando fornecedor...', 'loading');
     try {
       await apiService.updateSupplier(id, data);
       logAction('ATUALIZAR FORNECEDOR', `FORNECEDOR: ${data.name || data.razao_social}`);
       fetchData();
       setIsSupplierModalOpen(false);
       setSupplierFieldErrors({});
+      showToast('Fornecedor atualizado com sucesso!', 'success', 3000, toastId);
     } catch (err: any) {
       setGlobalError(err.message || 'Erro ao atualizar fornecedor');
       console.error('Error updating supplier:', err);
+      showToast(err.message || 'Erro ao atualizar fornecedor', 'error', 4000, toastId);
     }
   };
 
@@ -912,13 +927,16 @@ export default function App() {
       return;
     }
 
+    const toastId = showToast('Cadastrando patrimônio...', 'loading');
     try {
       await apiService.addAsset(formData);
       logAction('ADICIONAR PATRIMÔNIO', `PATRIMÔNIO: ${formData.get('description')}`);
       fetchData();
       setIsAssetModalOpen(false);
-    } catch (err) {
+      showToast('Patrimônio cadastrado com sucesso!', 'success', 3000, toastId);
+    } catch (err: any) {
       console.error('Error adding asset:', err);
+      showToast(err.message || 'Erro ao adicionar patrimônio', 'error', 4000, toastId);
     }
   };
 
@@ -934,25 +952,31 @@ export default function App() {
       return;
     }
 
+    const toastId = showToast('Atualizando patrimônio...', 'loading');
     try {
       await apiService.updateAsset(id, formData);
       logAction('ATUALIZAR PATRIMÔNIO', `PATRIMÔNIO: ${formData.get('description')}`);
       fetchData();
       setIsAssetModalOpen(false);
       setEditingAsset(null);
-    } catch (err) {
+      showToast('Patrimônio atualizado com sucesso!', 'success', 3000, toastId);
+    } catch (err: any) {
       console.error('Error updating asset:', err);
+      showToast(err.message || 'Erro ao atualizar patrimônio', 'error', 4000, toastId);
     }
   };
 
   const handleDisposalAsset = async (id: string | number, data: any) => {
+    const toastId = showToast('Processando baixa...', 'loading');
     try {
       const asset = assets.find(a => a.id === id);
       await apiService.disposalAsset(id, data);
       logAction('BAIXA DE PATRIMÔNIO', `PATRIMÔNIO: ${asset?.description || id}, TIPO: ${data.disposal_type}`);
       fetchData();
-    } catch (err) {
+      showToast('Baixa de patrimônio concluída!', 'success', 3000, toastId);
+    } catch (err: any) {
       console.error('Error in asset disposal:', err);
+      showToast(err.message || 'Erro ao processar baixa de patrimônio', 'error', 4000, toastId);
     }
   };
 
@@ -976,22 +1000,28 @@ export default function App() {
   };
 
   const addServiceEntry = async (data: any) => {
+    const toastId = showToast('Salvando entrada de serviço (OS)...', 'loading');
     try {
       await apiService.addServiceEntry(data);
       logAction('ADICIONAR ENTRADA DE SERVIÇO', `CLIENTE: ${data.client_name}, OBRA: ${data.obra}, VALOR: R$ ${data.valor}`);
       fetchData();
-    } catch (err) {
+      showToast('Entrada de serviço criada com sucesso!', 'success', 3000, toastId);
+    } catch (err: any) {
       console.error('Error adding service entry:', err);
+      showToast(err.message || 'Erro ao criar entrada de serviço', 'error', 4000, toastId);
     }
   };
 
   const updateServiceEntry = async (id: string | number, data: any) => {
+    const toastId = showToast('Atualizando entrada de serviço...', 'loading');
     try {
       await apiService.updateServiceEntry(id, data);
       logAction('ATUALIZAR ENTRADA DE SERVIÇO', `CLIENTE: ${data.client_name}, OBRA: ${data.obra}, VALOR: R$ ${data.valor}`);
       fetchData();
-    } catch (err) {
+      showToast('Entrada de serviço atualizada com sucesso!', 'success', 3000, toastId);
+    } catch (err: any) {
       console.error('Error updating service entry:', err);
+      showToast(err.message || 'Erro ao atualizar entrada de serviço', 'error', 4000, toastId);
     }
   };
 
@@ -1007,13 +1037,16 @@ export default function App() {
   };
 
   const addProduct = async (formData: FormData) => {
+    const toastId = showToast('Cadastrando produto...', 'loading');
     try {
       await apiService.addProduct(formData);
       logAction('ADICIONAR PRODUTO', `PRODUTO: ${formData.get('name')}`);
       fetchData();
+      showToast('Produto cadastrado com sucesso!', 'success', 3000, toastId);
     } catch (err: any) {
       setGlobalError(err.message || 'Erro ao adicionar produto');
       console.error('Error adding product:', err);
+      showToast(err.message || 'Erro ao adicionar produto', 'error', 4000, toastId);
     }
   };
 
@@ -1028,32 +1061,41 @@ export default function App() {
   };
 
   const addCategory = async (name: string) => {
+    const toastId = showToast('Salvando categoria...', 'loading');
     try {
       await apiService.addCategory(name);
       logAction('ADICIONAR CATEGORIA', `CATEGORIA: ${name}`);
       fetchData();
-    } catch (err) {
+      showToast('Categoria cadastrada com sucesso!', 'success', 3000, toastId);
+    } catch (err: any) {
       console.error('Error adding category:', err);
+      showToast(err.message || 'Erro ao adicionar categoria', 'error', 4000, toastId);
     }
   };
 
   const addUnit = async (name: string) => {
+    const toastId = showToast('Salvando unidade de medida...', 'loading');
     try {
       await apiService.addUnit(name);
       logAction('ADICIONAR UNIDADE', `UNIDADE: ${name}`);
       fetchData();
-    } catch (err) {
+      showToast('Unidade cadastrada com sucesso!', 'success', 3000, toastId);
+    } catch (err: any) {
       console.error('Error adding unit:', err);
+      showToast(err.message || 'Erro ao adicionar unidade', 'error', 4000, toastId);
     }
   };
 
   const updateCategory = async (id: string | number, name: string) => {
+    const toastId = showToast('Atualizando categoria...', 'loading');
     try {
       await apiService.updateCategory(id, name);
       logAction('ATUALIZAR CATEGORIA', `CATEGORIA: ${name}`);
       fetchData();
-    } catch (err) {
+      showToast('Categoria atualizada com sucesso!', 'success', 3000, toastId);
+    } catch (err: any) {
       console.error('Error updating category:', err);
+      showToast(err.message || 'Erro ao atualizar categoria', 'error', 4000, toastId);
     }
   };
 
@@ -1069,12 +1111,15 @@ export default function App() {
   };
 
   const updateUnit = async (id: string | number, name: string) => {
+    const toastId = showToast('Atualizando unidade...', 'loading');
     try {
       await apiService.updateUnit(id, name);
       logAction('ATUALIZAR UNIDADE', `UNIDADE: ${name}`);
       fetchData();
-    } catch (err) {
+      showToast('Unidade atualizada com sucesso!', 'success', 3000, toastId);
+    } catch (err: any) {
       console.error('Error updating unit:', err);
+      showToast(err.message || 'Erro ao atualizar unidade', 'error', 4000, toastId);
     }
   };
 
@@ -1096,6 +1141,7 @@ export default function App() {
       setSupplierFieldErrors(errors);
       return;
     }
+    const toastId = showToast('Salvando fornecedor...', 'loading');
     try {
       const payload = typeof data === 'string' ? { name: data, contact: '', tipo: 'PF' } : data;
       
@@ -1104,6 +1150,7 @@ export default function App() {
         const isDuplicate = suppliers.some(s => s.name?.toUpperCase() === data.toUpperCase());
         if (isDuplicate) {
           setGlobalError('FORNECEDOR JÁ CADASTRADO COM ESTE NOME');
+          showToast('FORNECEDOR JÁ CADASTRADO COM ESTE NOME', 'error', 4000, toastId);
           return;
         }
       }
@@ -1113,32 +1160,41 @@ export default function App() {
       fetchData();
       setIsSupplierModalOpen(false);
       setSupplierFieldErrors({});
+      showToast('Fornecedor cadastrado com sucesso!', 'success', 3000, toastId);
     } catch (err: any) {
       setGlobalError(err.message || 'Erro ao adicionar fornecedor');
       console.error('Error adding supplier:', err);
+      showToast(err.message || 'Erro ao adicionar fornecedor', 'error', 4000, toastId);
     }
   };
 
   const addLocation = async (name: string) => {
+    const toastId = showToast('Salvando localização...', 'loading');
     try {
       await apiService.addLocation(name);
       logAction('ADICIONAR LOCALIZAÇÃO', `LOCALIZAÇÃO: ${name}`);
       fetchData();
-    } catch (err) {
+      showToast('Localização cadastrada com sucesso!', 'success', 3000, toastId);
+    } catch (err: any) {
       console.error('Error adding location:', err);
+      showToast(err.message || 'Erro ao adicionar localização', 'error', 4000, toastId);
     }
   };
 
   const updateLocation = async (id: string | number, name: string) => {
+    const toastId = showToast('Atualizando localização...', 'loading');
     try {
       await apiService.updateLocation(id, name);
       fetchData();
-    } catch (err) {
+      showToast('Localização atualizada com sucesso!', 'success', 3000, toastId);
+    } catch (err: any) {
       console.error('Error updating location:', err);
+      showToast(err.message || 'Erro ao atualizar localização', 'error', 4000, toastId);
     }
   };
 
   const handleStockIn = async (data: any) => {
+    const toastId = showToast('Processando entrada de estoque...', 'loading');
     try {
       const product = products.find(p => p.id === parseInt(data.product_id));
       
@@ -1167,32 +1223,40 @@ export default function App() {
       await apiService.stockIn(submissionData);
       logAction('ENTRADA DE ESTOQUE', `PRODUTO: ${product?.name || data.product_id}, QTD: ${data.quantity}`);
       fetchData();
+      showToast('Entrada de estoque realizada com sucesso!', 'success', 3000, toastId);
     } catch (err: any) {
       setGlobalError(err.message || 'Erro ao processar entrada de estoque');
       console.error('Error in stock in:', err);
+      showToast(err.message || 'Erro ao registrar entrada de estoque', 'error', 4000, toastId);
     }
   };
 
   const handleStockOut = async (data: any) => {
+    const toastId = showToast('Processando saída de estoque...', 'loading');
     try {
       const product = products.find(p => p.id === parseInt(data.product_id));
       await apiService.stockOut(data);
       logAction('SAÍDA DE ESTOQUE', `PRODUTO: ${product?.name || data.product_id}, QTD: ${data.quantity}, MOTIVO: ${data.reason}`);
       fetchData();
+      showToast('Saída de estoque realizada com sucesso!', 'success', 3000, toastId);
     } catch (err: any) {
       setGlobalError(err.message || 'Erro ao processar saída');
       console.error('Error in stock out:', err);
+      showToast(err.message || 'Erro ao registrar saída de estoque', 'error', 4000, toastId);
     }
   };
 
   const handleUpdateProduct = async (id: string | number, formData: FormData) => {
+    const toastId = showToast('Salvando alterações do produto...', 'loading');
     try {
       await apiService.updateProduct(id, formData);
       logAction('ATUALIZAR PRODUTO', `PRODUTO: ${formData.get('name')}`);
       fetchData();
+      showToast('Produto atualizado com sucesso!', 'success', 3000, toastId);
     } catch (err: any) {
       setGlobalError(err.message || 'Erro ao atualizar produto');
       console.error('Error updating product:', err);
+      showToast(err.message || 'Erro ao atualizar produto', 'error', 4000, toastId);
     }
   };
 
@@ -1759,6 +1823,8 @@ export default function App() {
         message={confirmModal.message}
         variant={confirmModal.variant}
       />
+
+      <ToastContainer />
     </>
   );
 }

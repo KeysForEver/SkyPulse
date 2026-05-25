@@ -1,8 +1,8 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import { motion, AnimatePresence } from 'motion/react';
-import { X, ChevronDown, AlertTriangle, Search, Loader2 } from 'lucide-react';
+import { X, ChevronDown, AlertTriangle, Search, Loader2, CheckCircle2, Info } from 'lucide-react';
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -407,5 +407,114 @@ export const Button = ({ children, variant = 'primary', className, isLoading, ..
       {isLoading && <Loader2 className="animate-spin" size={16} />}
       {children}
     </button>
+  );
+};
+
+export interface Toast {
+  id: string;
+  message: string;
+  type: 'loading' | 'success' | 'error' | 'info';
+  duration?: number;
+}
+
+export function showToast(
+  message: string, 
+  type: 'loading' | 'success' | 'error' | 'info', 
+  duration?: number, 
+  updateId?: string
+): string {
+  const id = updateId || Math.random().toString(36).substring(2, 9);
+  const event = new CustomEvent('app-toast', {
+    detail: { id, message, type, duration }
+  });
+  window.dispatchEvent(event);
+  return id;
+}
+
+export function dismissToast(id: string) {
+  const event = new CustomEvent('app-toast-dismiss', {
+    detail: { id }
+  });
+  window.dispatchEvent(event);
+}
+
+export const ToastContainer: React.FC = () => {
+  const [toasts, setToasts] = useState<Toast[]>([]);
+
+  useEffect(() => {
+    const handleToastEvent = (e: Event) => {
+      const customEvent = e as CustomEvent<Toast>;
+      const { id, message, type, duration } = customEvent.detail;
+
+      setToasts(prev => {
+        const index = prev.findIndex(t => t.id === id);
+        if (index > -1) {
+          const updated = [...prev];
+          updated[index] = { id, message, type, duration };
+          return updated;
+        } else {
+          return [...prev, { id, message, type, duration }];
+        }
+      });
+
+      if (type !== 'loading') {
+        const timeoutDuration = duration || 3000;
+        const timer = setTimeout(() => {
+          setToasts(prev => prev.filter(t => t.id !== id));
+        }, timeoutDuration);
+        return () => clearTimeout(timer);
+      }
+    };
+
+    const handleDismissEvent = (e: Event) => {
+      const customEvent = e as CustomEvent<{ id: string }>;
+      setToasts(prev => prev.filter(t => t.id !== customEvent.detail.id));
+    };
+
+    window.addEventListener('app-toast', handleToastEvent);
+    window.addEventListener('app-toast-dismiss', handleDismissEvent);
+
+    return () => {
+      window.removeEventListener('app-toast', handleToastEvent);
+      window.removeEventListener('app-toast-dismiss', handleDismissEvent);
+    };
+  }, []);
+
+  return (
+    <div className="fixed bottom-5 right-5 z-[9999] flex flex-col gap-2.5 max-w-sm w-[calc(100%-2.5rem)] pointer-events-none">
+      <AnimatePresence>
+        {toasts.map((toast) => (
+          <motion.div
+            key={toast.id}
+            initial={{ opacity: 0, scale: 0.9, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.9, y: -20 }}
+            className={cn(
+              "p-4 rounded-xl border flex items-center gap-3 shadow-lg pointer-events-auto backdrop-blur-md uppercase tracking-wider font-semibold text-xs transition-colors duration-300",
+              toast.type === 'success' && "bg-emerald-50 border-emerald-200 text-emerald-800 dark:bg-emerald-950/90 dark:border-emerald-800 dark:text-emerald-300",
+              toast.type === 'error' && "bg-rose-50 border-rose-200 text-rose-800 dark:bg-rose-950/90 dark:border-rose-800 dark:text-rose-300",
+              toast.type === 'loading' && "bg-zinc-50 border-zinc-200 text-zinc-800 dark:bg-zinc-900/90 dark:border-zinc-800 dark:text-zinc-300",
+              toast.type === 'info' && "bg-zinc-50 border-zinc-200 text-zinc-800 dark:bg-zinc-900/90 dark:border-zinc-800 dark:text-zinc-300"
+            )}
+          >
+            {toast.type === 'success' && <CheckCircle2 className="text-emerald-500 flex-shrink-0" size={16} />}
+            {toast.type === 'error' && <AlertTriangle className="text-rose-500 flex-shrink-0" size={16} />}
+            {toast.type === 'info' && <Info className="text-zinc-500 flex-shrink-0" size={16} />}
+            {toast.type === 'loading' && <Loader2 className="text-zinc-500 dark:text-zinc-400 animate-spin flex-shrink-0" size={16} />}
+            
+            <div className="flex-1 leading-normal">{toast.message}</div>
+            
+            {toast.type !== 'loading' && (
+              <button 
+                onClick={() => setToasts(prev => prev.filter(t => t.id !== toast.id))}
+                className="text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 transition-colors cursor-pointer"
+              >
+                <X size={14} />
+              </button>
+            )}
+          </motion.div>
+        ))}
+      </AnimatePresence>
+    </div>
   );
 };

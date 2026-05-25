@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { Download, ShieldCheck, ShieldAlert, Database as DbIcon, Loader2, Upload, Users as UsersIcon, Plus, Edit, Trash2, Key, Eye, EyeOff, ChevronUp, ChevronDown } from 'lucide-react';
-import { Card, ConfirmModal, ErrorAlert, Modal, Input, Select, Button, cn } from './Common';
+import { Card, ConfirmModal, ErrorAlert, Modal, Input, Select, Button, cn, showToast } from './Common';
 import { motion, AnimatePresence } from 'motion/react';
 import { apiService } from '../services/apiService';
 import { User, Permission } from '../types';
@@ -97,6 +97,7 @@ export const Settings = ({
   const handleBackup = async () => {
     setIsBackingUp(true);
     setError(null);
+    const toastId = showToast('Gerando backup de dados...', 'loading');
     try {
       // 1. Fetch all data from Firestore
       const dbData = await apiService.getFullDatabase();
@@ -120,9 +121,11 @@ export const Settings = ({
       link.click();
       link.remove();
       window.URL.revokeObjectURL(url);
+      showToast('Backup gerado e baixado com sucesso!', 'success', 3000, toastId);
     } catch (error: any) {
       console.error('Erro no backup:', error);
       setError('Erro ao realizar backup: ' + (error.message || 'Erro desconhecido'));
+      showToast('Erro ao realizar backup', 'error', 4000, toastId);
     } finally {
       setIsBackingUp(false);
     }
@@ -152,12 +155,17 @@ export const Settings = ({
     setIsImporting(true);
     setShowConfirmRestore(false);
     setError(null);
+    const toastId = showToast('Restaurando banco de dados a partir do backup...', 'loading');
     try {
       await apiService.importDatabase(pendingFile);
-      window.location.reload();
+      showToast('Banco de dados restaurado com sucesso! Atualizando...', 'success', 3000, toastId);
+      setTimeout(() => {
+        window.location.reload();
+      }, 1000);
     } catch (error: any) {
       console.error('Erro na importação:', error);
       setError('Erro ao importar banco de dados: ' + error.message);
+      showToast('Erro ao importar banco de dados', 'error', 4000, toastId);
     } finally {
       setIsImporting(false);
       setPendingFile(null);
@@ -167,12 +175,17 @@ export const Settings = ({
   const handleResetDatabase = async () => {
     setIsResetting(true);
     setError(null);
+    const toastId = showToast('Limpando e reiniciando banco de dados...', 'loading');
     try {
       await apiService.resetDatabase();
       await apiService.createAuditLog('RESET DE SISTEMA', 'O BANCO DE DADOS FOI REINICIADO PELO ADMINISTRADOR.');
-      window.location.reload();
+      showToast('Banco de dados limpo com sucesso! Atualizando...', 'success', 3000, toastId);
+      setTimeout(() => {
+        window.location.reload();
+      }, 1000);
     } catch (err: any) {
       setError('Erro ao resetar banco: ' + err.message);
+      showToast('Erro ao reiniciar banco de dados', 'error', 4000, toastId);
     } finally {
       setIsResetting(false);
       setResetStep(0);
