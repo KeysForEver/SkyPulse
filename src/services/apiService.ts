@@ -757,7 +757,9 @@ export const apiService = {
           depreciation_percentage: parseFloat(data.get('depreciation_percentage') as string) || 0,
           status: 'ATIVO',
           photo: photoUrl,
-          invoice_pdf: invoiceUrls.length > 0 ? JSON.stringify(invoiceUrls) : ''
+          invoice_pdf: invoiceUrls.length > 0 ? JSON.stringify(invoiceUrls) : '',
+          doc_number: data.get('doc_number') || '',
+          supplier_name: data.get('supplier_name') || ''
         };
       }
 
@@ -826,7 +828,9 @@ export const apiService = {
           depreciation_type: data.get('depreciation_type'),
           depreciation_percentage: parseFloat(data.get('depreciation_percentage') as string) || 0,
           photo: photoUrl,
-          invoice_pdf: invoiceUrls.length > 0 ? JSON.stringify(invoiceUrls) : ''
+          invoice_pdf: invoiceUrls.length > 0 ? JSON.stringify(invoiceUrls) : '',
+          doc_number: data.get('doc_number') || '',
+          supplier_name: data.get('supplier_name') || ''
         };
       }
 

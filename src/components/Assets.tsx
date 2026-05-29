@@ -13,7 +13,7 @@ import {
   Download
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Asset } from '../types';
+import { Asset, Supplier } from '../types';
 import { apiService } from '../services/apiService';
 import { Card, cn, Button, SearchBar } from './Common';
 import { AssetTable } from './assets/AssetTable';
@@ -33,6 +33,7 @@ interface AssetsProps {
   onDeleteAsset: (id: string | number) => Promise<void>;
   onDisposalAsset: (id: string | number, data: any) => Promise<void>;
   canSeeValues?: boolean;
+  suppliers?: Supplier[];
 }
 
 export const Assets = ({ 
@@ -44,7 +45,8 @@ export const Assets = ({
   onUpdateAsset,
   onDeleteAsset,
   onDisposalAsset,
-  canSeeValues = true
+  canSeeValues = true,
+  suppliers = []
 }: AssetsProps) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
@@ -405,6 +407,7 @@ export const Assets = ({
         asset={editingAsset}
         categories={categories}
         fieldErrors={assetFieldErrors}
+        suppliers={suppliers}
       />
 
       <AssetDisposalModal 

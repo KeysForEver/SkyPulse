@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { X, Camera, Calendar, DollarSign, Percent, Tag, FileText, Hash, ArrowDownLeft, ArrowUpRight, Plus, Edit, Trash2, Settings } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Asset } from '../../types';
+import { Asset, Supplier } from '../../types';
 import { Modal, Input, Select, Button, cn, ConfirmModal } from '../Common';
 import { maskCurrency, parseCurrency } from '../../lib/masks';
 import { calculateDepreciation } from '../../lib/depreciation';
@@ -14,9 +14,10 @@ interface AssetModalProps {
   asset?: Asset | null;
   categories: { id: string | number, name: string }[];
   fieldErrors?: Record<string, string>;
+  suppliers?: Supplier[];
 }
 
-export const AssetModal = ({ isOpen, onClose, onSave, asset, categories, fieldErrors = {} }: AssetModalProps) => {
+export const AssetModal = ({ isOpen, onClose, onSave, asset, categories, fieldErrors = {}, suppliers = [] }: AssetModalProps) => {
   const [formData, setFormData] = useState({
     description: '',
     asset_number: '',
@@ -26,6 +27,8 @@ export const AssetModal = ({ isOpen, onClose, onSave, asset, categories, fieldEr
     purchase_value: '',
     depreciation_type: 'MENSAL',
     depreciation_percentage: '',
+    doc_number: '',
+    supplier_name: '',
   });
   const [photo, setPhoto] = useState<File | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
@@ -116,6 +119,8 @@ export const AssetModal = ({ isOpen, onClose, onSave, asset, categories, fieldEr
         purchase_value: maskCurrency(asset.purchase_value.toString().replace('.', ',')),
         depreciation_type: asset.depreciation_type || 'MENSAL',
         depreciation_percentage: asset.depreciation_percentage.toString(),
+        doc_number: asset.doc_number || '',
+        supplier_name: asset.supplier_name || '',
       });
       setPhotoPreview(asset.photo || null);
 
@@ -138,6 +143,8 @@ export const AssetModal = ({ isOpen, onClose, onSave, asset, categories, fieldEr
         purchase_value: '',
         depreciation_type: 'MENSAL',
         depreciation_percentage: '',
+        doc_number: '',
+        supplier_name: '',
       });
       setPhoto(null);
       setPhotoPreview(null);
@@ -192,6 +199,8 @@ export const AssetModal = ({ isOpen, onClose, onSave, asset, categories, fieldEr
       purchase_value: '',
       depreciation_type: 'MENSAL',
       depreciation_percentage: '',
+      doc_number: '',
+      supplier_name: '',
     });
     setPhoto(null);
     setPhotoPreview(null);
@@ -365,6 +374,27 @@ export const AssetModal = ({ isOpen, onClose, onSave, asset, categories, fieldEr
             onChange={(e: any) => setFormData({ ...formData, purchase_value: maskCurrency(e.target.value) })}
             error={fieldErrors.purchase_value}
             required
+          />
+          <div className="relative">
+            <Input 
+              label="Fornecedor / Fabricante" 
+              icon={<Tag size={18} />}
+              value={formData.supplier_name}
+              onChange={(e: any) => setFormData({ ...formData, supplier_name: e.target.value.toUpperCase() })}
+              list="suppliers-list"
+            />
+            <datalist id="suppliers-list">
+              {suppliers.map((s: Supplier) => {
+                const name = s.tipo === 'PF' ? s.name || '' : s.razao_social || s.nome_fantasia || '';
+                return <option key={s.id} value={name.toUpperCase()} />;
+              })}
+            </datalist>
+          </div>
+          <Input 
+            label="Documento Fiscal (Nº NF)" 
+            icon={<FileText size={18} />}
+            value={formData.doc_number}
+            onChange={(e: any) => setFormData({ ...formData, doc_number: e.target.value.toUpperCase() })}
           />
           <Select 
             label="Tipo Depreciação" 

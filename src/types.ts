@@ -92,6 +92,8 @@ export interface Asset {
   disposal_date?: string;
   disposal_value?: number;
   invoice_pdf?: string;
+  doc_number?: string;
+  supplier_name?: string;
 }
 
 export type OrderStatus = 'ENTRADA DE SERVIÇO' | 'ORDENS DE PRODUÇÃO' | 'SEPARAÇÃO DE MATERIAL' | 'PRODUÇÃO' | 'REVISÃO PRODUÇÃO' | 'INSTALAÇÃO' | 'REVISÃO INSTALAÇÃO' | 'CONCLUIDO';

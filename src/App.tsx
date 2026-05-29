@@ -682,16 +682,29 @@ export default function App() {
       const movements = movementsData || [];
       setMovements(movements);
       
-      // Populate financial entries from IN movements
-      const financial = movements
-        .filter((m: any) => m.type === 'IN')
-        .map((m: any) => {
-          const product = (productsData || []).find((p: any) => p.id.toString() === m.product_id.toString());
-          return {
-            ...m,
-            product_name: product ? product.name : 'PRODUTO NÃO ENCONTRADO'
-          };
-        });
+      // Populate financial entries from IN movements and Assets
+      const financial = [
+        ...movements
+          .filter((m: any) => m.type === 'IN')
+          .map((m: any) => {
+            const product = (productsData || []).find((p: any) => p.id.toString() === m.product_id.toString());
+            return {
+              ...m,
+              isAsset: false,
+              product_name: product ? product.name : 'PRODUTO NÃO ENCONTRADO'
+            };
+          }),
+        ...(assetsData || []).map((a: any) => ({
+          ...a,
+          isAsset: true,
+          supplier_name: a.supplier_name || 'AQUISIÇÃO DE PATRIMÔNIO',
+          product_name: `[PATRIMÔNIO] ${a.description || 'CONTA DE PATRIMÔNIO'}`,
+          quantity: 1,
+          unit_price: a.purchase_value || 0,
+          issue_date: a.purchase_date,
+          date: a.purchase_date ? `${a.purchase_date}T12:00:00` : new Date().toISOString()
+        }))
+      ];
       setFinancialEntries(financial);
 
       setAuditLogs(auditLogsData || []);
@@ -1466,16 +1479,18 @@ export default function App() {
           onDeleteAsset={deleteAsset}
           onDisposalAsset={handleDisposalAsset}
           canSeeValues={canSeeValues}
+          suppliers={suppliers}
         />
       );
       case 'financial': return (
         <GenericList 
-          title="FINANCEIRO (ENTRADAS DE ESTOQUE)" 
+          title="FINANCEIRO (ENTRADAS DE ESTOQUE e PATRIMÔNIO)" 
           hideTitle={true}
           showAddButton={false}
           showActions={false}
           items={financialEntries.map(e => ({
             ...e,
+            id: e.isAsset ? `PAT-${e.id.toString().substring(0, 6).toUpperCase()}` : `EST-${e.id.toString().substring(0, 6).toUpperCase()}`,
             total_value: formatCurrency(e.quantity * e.unit_price, canSeeValues),
             unit_price_fmt: formatCurrency(e.unit_price, canSeeValues),
             quantity_fmt: maskValue(e.quantity, canSeeValues),
@@ -1488,7 +1503,7 @@ export default function App() {
             { key: 'date_fmt', label: 'DATA MOVIMENTO' },
             { key: 'doc_number', label: 'DOC. FISCAL' },
             { key: 'supplier_name', label: 'FORNECEDOR' },
-            { key: 'product_name', label: 'PRODUTO' },
+            { key: 'product_name', label: 'PRODUTO / PATRIMÔNIO' },
             { key: 'quantity_fmt', label: 'QUANTIDADE' },
             { key: 'unit_price_fmt', label: 'V. UNITÁRIO' },
             { key: 'total_value', label: 'V. TOTAL' }
