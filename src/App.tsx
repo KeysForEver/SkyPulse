@@ -586,142 +586,227 @@ export default function App() {
     });
   };
 
-  useEffect(() => {
-    if (user) {
-      fetchData();
-    }
-  }, [user]);
+  const [loadedModules, setLoadedModules] = useState<Record<string, boolean>>({});
 
-  const fetchData = async () => {
-    if (!user || isFetching) return;
+  // Individual fetchers for modular lazy loading
+  const fetchUsers = async () => {
+    const usersData = await apiService.getUsers();
+    setSystemUsers(usersData || []);
+    setLoadedModules(prev => ({ ...prev, users: true }));
+    return usersData || [];
+  };
+
+  const fetchMetaData = async () => {
+    const [categoriesData, locationsData, unitsData, productionProductsData] = await Promise.all([
+      apiService.getCategories(),
+      apiService.getLocations(),
+      apiService.getUnits(),
+      apiService.getProductionProducts()
+    ]);
+    
+    const sortedCategories = (categoriesData || []).slice().sort((a: any, b: any) => 
+      (a.name || '').localeCompare(b.name || '', 'pt-BR', { sensitivity: 'base' })
+    );
+    setCategories(sortedCategories);
+
+    const sortedLocations = (locationsData || []).slice().sort((a: any, b: any) => 
+      (a.name || '').localeCompare(b.name || '', 'pt-BR', { sensitivity: 'base' })
+    );
+    setLocations(sortedLocations);
+
+    const sortedUnits = (unitsData || []).slice().sort((a: any, b: any) => 
+      (a.name || '').localeCompare(b.name || '', 'pt-BR', { sensitivity: 'base' })
+    );
+    setUnits(sortedUnits);
+
+    const sortedProductionProducts = (productionProductsData || []).slice().sort((a: any, b: any) => 
+      (a.name || '').localeCompare(b.name || '', 'pt-BR', { sensitivity: 'base' })
+    );
+    setProductionProducts(sortedProductionProducts);
+
+    setLoadedModules(prev => ({ ...prev, metaData: true }));
+  };
+
+  const fetchProducts = async () => {
+    const productsData = await apiService.getProducts();
+    const sortedProducts = (productsData || []).slice().sort((a: any, b: any) => 
+      (a.name || '').localeCompare(b.name || '', 'pt-BR', { sensitivity: 'base' })
+    );
+    setProducts(sortedProducts);
+    setLoadedModules(prev => ({ ...prev, products: true }));
+    return sortedProducts;
+  };
+
+  const fetchOrders = async () => {
+    const ordersData = await apiService.getOrders();
+    const sortedOrders = (ordersData || []).slice().sort((a: any, b: any) => 
+      (a.title || '').localeCompare(b.title || '', 'pt-BR', { sensitivity: 'base' })
+    );
+    setOrders(sortedOrders);
+    setLoadedModules(prev => ({ ...prev, orders: true }));
+    return sortedOrders;
+  };
+
+  const fetchClients = async () => {
+    const clientsData = await apiService.getClients();
+    const sortedClients = (clientsData || []).slice().sort((a: any, b: any) => {
+      const nameA = a.tipo_cliente === 'PF' ? (a.name || '') : (a.razao_social || '');
+      const nameB = b.tipo_cliente === 'PF' ? (b.name || '') : (b.razao_social || '');
+      return nameA.localeCompare(nameB, 'pt-BR', { sensitivity: 'base' });
+    });
+    setClients(sortedClients);
+    setLoadedModules(prev => ({ ...prev, clients: true }));
+    return sortedClients;
+  };
+
+  const fetchSuppliers = async () => {
+    const suppliersData = await apiService.getSuppliers();
+    const sortedSuppliers = (suppliersData || []).slice().sort((a: any, b: any) => {
+      const nameA = a.tipo === 'PF' ? (a.name || '') : (a.razao_social || '');
+      const nameB = b.tipo === 'PF' ? (b.name || '') : (b.razao_social || '');
+      return nameA.localeCompare(nameB, 'pt-BR', { sensitivity: 'base' });
+    });
+    setSuppliers(sortedSuppliers);
+    setLoadedModules(prev => ({ ...prev, suppliers: true }));
+    return sortedSuppliers;
+  };
+
+  const fetchAssets = async () => {
+    const assetsData = await apiService.getAssets();
+    const sortedAssets = (assetsData || []).slice().sort((a: any, b: any) => 
+      (a.description || '').localeCompare(b.description || '', 'pt-BR', { sensitivity: 'base' })
+    );
+    setAssets(sortedAssets);
+    setLoadedModules(prev => ({ ...prev, assets: true }));
+    return sortedAssets;
+  };
+
+  const fetchServiceEntries = async () => {
+    const serviceEntriesData = await apiService.getServiceEntries();
+    const sortedServiceEntries = (serviceEntriesData || []).slice().sort((a: any, b: any) => {
+      const strA = `${a.obra || ''} - ${a.client_name || ''}`;
+      const strB = `${b.obra || ''} - ${b.client_name || ''}`;
+      return strA.localeCompare(strB, 'pt-BR', { sensitivity: 'base' });
+    });
+    setServiceEntries(sortedServiceEntries);
+    setLoadedModules(prev => ({ ...prev, serviceEntries: true }));
+    return sortedServiceEntries;
+  };
+
+  const fetchMovements = async () => {
+    const movementsData = await apiService.getMovements();
+    setMovements(movementsData || []);
+    setLoadedModules(prev => ({ ...prev, movements: true }));
+    return movementsData || [];
+  };
+
+  const fetchAuditLogs = async () => {
+    const auditLogsData = await apiService.getAuditLogs();
+    setAuditLogs(auditLogsData || []);
+    setLoadedModules(prev => ({ ...prev, auditLogs: true }));
+    return auditLogsData || [];
+  };
+
+  // Recompute financial entries whenever movements, products, or assets change
+  useEffect(() => {
+    const financial = [
+      ...movements
+        .filter((m: any) => m.type === 'IN')
+        .map((m: any) => {
+          const product = (products || []).find((p: any) => p.id?.toString() === m.product_id?.toString());
+          return {
+            ...m,
+            isAsset: false,
+            product_name: product ? product.name : 'PRODUTO NÃO ENCONTRADO'
+          };
+        }),
+      ...assets.map((a: any) => ({
+        ...a,
+        isAsset: true,
+        supplier_name: a.supplier_name || 'AQUISIÇÃO DE PATRIMÔNIO',
+        product_name: `[PATRIMÔNIO] ${a.description || 'CONTA DE PATRIMÔNIO'}`,
+        quantity: 1,
+        unit_price: a.purchase_value || 0,
+        issue_date: a.purchase_date,
+        date: a.purchase_date ? `${a.purchase_date}T12:00:00` : new Date().toISOString()
+      }))
+    ];
+    setFinancialEntries(financial);
+  }, [movements, products, assets]);
+
+  // Load tab dependencies lazily
+  const loadTabDependencies = async (tab: string, forceRefresh = false) => {
+    if (!user) return;
     setIsFetching(true);
     try {
-      const [
-        productsData,
-        ordersData,
-        clientsData,
-        suppliersData,
-        assetsData,
-        categoriesData,
-        locationsData,
-        unitsData,
-        productionProductsData,
-        movementsData,
-        auditLogsData,
-        usersData,
-        serviceEntriesData
-      ] = await Promise.all([
-        apiService.getProducts(),
-        apiService.getOrders(),
-        apiService.getClients(),
-        apiService.getSuppliers(),
-        apiService.getAssets(),
-        apiService.getCategories(),
-        apiService.getLocations(),
-        apiService.getUnits(),
-        apiService.getProductionProducts(),
-        apiService.getMovements(),
-        apiService.getAuditLogs(),
-        apiService.getUsers(),
-        apiService.getServiceEntries()
-      ]);
+      const promises: Promise<any>[] = [];
 
-      const statsData = await apiService.getStats(productsData, ordersData, movementsData);
+      // Always load users & metaData lazily on first view
+      if (!loadedModules.users || forceRefresh) promises.push(fetchUsers());
+      if (!loadedModules.metaData || forceRefresh) promises.push(fetchMetaData());
 
-      setStats(statsData);
-
-      const sortedProducts = (productsData || []).slice().sort((a: any, b: any) => 
-        (a.name || '').localeCompare(b.name || '', 'pt-BR', { sensitivity: 'base' })
-      );
-      setProducts(sortedProducts);
-
-      const sortedOrders = (ordersData || []).slice().sort((a: any, b: any) => 
-        (a.title || '').localeCompare(b.title || '', 'pt-BR', { sensitivity: 'base' })
-      );
-      setOrders(sortedOrders);
-
-      const sortedClients = (clientsData || []).slice().sort((a: any, b: any) => {
-        const nameA = a.tipo_cliente === 'PF' ? (a.name || '') : (a.razao_social || '');
-        const nameB = b.tipo_cliente === 'PF' ? (b.name || '') : (b.razao_social || '');
-        return nameA.localeCompare(nameB, 'pt-BR', { sensitivity: 'base' });
-      });
-      setClients(sortedClients);
-
-      const sortedSuppliers = (suppliersData || []).slice().sort((a: any, b: any) => {
-        const nameA = a.tipo === 'PF' ? (a.name || '') : (a.razao_social || '');
-        const nameB = b.tipo === 'PF' ? (b.name || '') : (b.razao_social || '');
-        return nameA.localeCompare(nameB, 'pt-BR', { sensitivity: 'base' });
-      });
-      setSuppliers(sortedSuppliers);
-
-      const sortedAssets = (assetsData || []).slice().sort((a: any, b: any) => 
-        (a.description || '').localeCompare(b.description || '', 'pt-BR', { sensitivity: 'base' })
-      );
-      setAssets(sortedAssets);
-
-      const sortedCategories = (categoriesData || []).slice().sort((a: any, b: any) => 
-        (a.name || '').localeCompare(b.name || '', 'pt-BR', { sensitivity: 'base' })
-      );
-      setCategories(sortedCategories);
-
-      const sortedLocations = (locationsData || []).slice().sort((a: any, b: any) => 
-        (a.name || '').localeCompare(b.name || '', 'pt-BR', { sensitivity: 'base' })
-      );
-      setLocations(sortedLocations);
-
-      const sortedUnits = (unitsData || []).slice().sort((a: any, b: any) => 
-        (a.name || '').localeCompare(b.name || '', 'pt-BR', { sensitivity: 'base' })
-      );
-      setUnits(sortedUnits);
-
-      const sortedProductionProducts = (productionProductsData || []).slice().sort((a: any, b: any) => 
-        (a.name || '').localeCompare(b.name || '', 'pt-BR', { sensitivity: 'base' })
-      );
-      setProductionProducts(sortedProductionProducts);
-
-      const movements = movementsData || [];
-      setMovements(movements);
-      
-      // Populate financial entries from IN movements and Assets
-      const financial = [
-        ...movements
-          .filter((m: any) => m.type === 'IN')
-          .map((m: any) => {
-            const product = (productsData || []).find((p: any) => p.id.toString() === m.product_id.toString());
-            return {
-              ...m,
-              isAsset: false,
-              product_name: product ? product.name : 'PRODUTO NÃO ENCONTRADO'
-            };
-          }),
-        ...(assetsData || []).map((a: any) => ({
-          ...a,
-          isAsset: true,
-          supplier_name: a.supplier_name || 'AQUISIÇÃO DE PATRIMÔNIO',
-          product_name: `[PATRIMÔNIO] ${a.description || 'CONTA DE PATRIMÔNIO'}`,
-          quantity: 1,
-          unit_price: a.purchase_value || 0,
-          issue_date: a.purchase_date,
-          date: a.purchase_date ? `${a.purchase_date}T12:00:00` : new Date().toISOString()
-        }))
-      ];
-      setFinancialEntries(financial);
-
-      setAuditLogs(auditLogsData || []);
-      setSystemUsers(usersData || []);
-
-      const sortedServiceEntries = (serviceEntriesData || []).slice().sort((a: any, b: any) => {
-        const strA = `${a.obra || ''} - ${a.client_name || ''}`;
-        const strB = `${b.obra || ''} - ${b.client_name || ''}`;
-        return strA.localeCompare(strB, 'pt-BR', { sensitivity: 'base' });
-      });
-      setServiceEntries(sortedServiceEntries);
+      if (tab === 'dashboard') {
+        let p = products;
+        let o = orders;
+        let m = movements;
+        if (!loadedModules.products || forceRefresh) p = await fetchProducts();
+        if (!loadedModules.orders || forceRefresh) o = await fetchOrders();
+        if (!loadedModules.movements || forceRefresh) m = await fetchMovements();
+        await Promise.all(promises);
+        const statsData = await apiService.getStats(p, o, m);
+        setStats(statsData);
+      } else if (tab === 'kanban' || tab === 'production') {
+        if (!loadedModules.orders || forceRefresh) promises.push(fetchOrders());
+        if (!loadedModules.clients || forceRefresh) promises.push(fetchClients());
+        if (!loadedModules.serviceEntries || forceRefresh) promises.push(fetchServiceEntries());
+        await Promise.all(promises);
+      } else if (tab === 'service_entry') {
+        if (!loadedModules.serviceEntries || forceRefresh) promises.push(fetchServiceEntries());
+        if (!loadedModules.clients || forceRefresh) promises.push(fetchClients());
+        await Promise.all(promises);
+      } else if (tab === 'clients') {
+        if (!loadedModules.clients || forceRefresh) promises.push(fetchClients());
+        await Promise.all(promises);
+      } else if (tab === 'suppliers') {
+        if (!loadedModules.suppliers || forceRefresh) promises.push(fetchSuppliers());
+        await Promise.all(promises);
+      } else if (tab === 'assets') {
+        if (!loadedModules.assets || forceRefresh) promises.push(fetchAssets());
+        if (!loadedModules.suppliers || forceRefresh) promises.push(fetchSuppliers());
+        await Promise.all(promises);
+      } else if (tab === 'inventory') {
+        if (!loadedModules.products || forceRefresh) promises.push(fetchProducts());
+        if (!loadedModules.suppliers || forceRefresh) promises.push(fetchSuppliers());
+        if (!loadedModules.movements || forceRefresh) promises.push(fetchMovements());
+        if (!loadedModules.orders || forceRefresh) promises.push(fetchOrders());
+        await Promise.all(promises);
+      } else if (tab === 'financial') {
+        if (!loadedModules.movements || forceRefresh) promises.push(fetchMovements());
+        if (!loadedModules.assets || forceRefresh) promises.push(fetchAssets());
+        if (!loadedModules.products || forceRefresh) promises.push(fetchProducts());
+        await Promise.all(promises);
+      } else if (tab === 'audit') {
+        if (!loadedModules.auditLogs || forceRefresh) promises.push(fetchAuditLogs());
+        await Promise.all(promises);
+      } else {
+        await Promise.all(promises);
+      }
     } catch (err) {
-      console.error('Error fetching data:', err);
-      setGlobalError('ERRO AO ATUALIZAR DADOS. TENTE NOVAMENTE.');
+      console.error('Error loading tab data:', err);
+      setGlobalError('ERRO AO CARREGAR DADOS DA ABA.');
     } finally {
       setIsFetching(false);
     }
+  };
+
+  useEffect(() => {
+    if (user) {
+      loadTabDependencies(activeTab);
+    }
+  }, [user, activeTab]);
+
+  const fetchData = async () => {
+    await loadTabDependencies(activeTab, true);
   };
 
   const updateOrderStatus = async (id: string | number, status: OrderStatus) => {
@@ -770,7 +855,7 @@ export default function App() {
 
       await apiService.patchOrder(id, { status });
       logAction('ATUALIZAR STATUS ORDEM', `ORDEM: ${order?.title || id}, NOVO STATUS: ${status}`);
-      fetchData();
+      setOrders(prev => prev.map(o => o.id === id ? { ...o, status } : o));
     } catch (err) {
       console.error('Error updating order:', err);
     }
@@ -779,9 +864,10 @@ export default function App() {
   const addOrder = async (data: any) => {
     const toastId = showToast('Criando ordem de produção...', 'loading');
     try {
-      await apiService.addOrder(data);
+      const res = await apiService.addOrder(data);
       logAction('ADICIONAR ORDEM', `ORDEM: ${data.title}`);
-      fetchData();
+      const newOrder = { ...data, id: res?.id, created_at: new Date().toISOString() };
+      setOrders(prev => [newOrder, ...prev].sort((a, b) => (a.title || '').localeCompare(b.title || '', 'pt-BR', { sensitivity: 'base' })));
       showToast('Ordem de produção criada com sucesso!', 'success', 3000, toastId);
     } catch (err: any) {
       console.error('Error adding order:', err);
@@ -794,7 +880,7 @@ export default function App() {
     try {
       await apiService.updateOrder(id, data);
       logAction('ATUALIZAR ORDEM', `ORDEM: ${data.title || id}`);
-      fetchData();
+      setOrders(prev => prev.map(o => o.id === id ? { ...o, ...data } : o).sort((a, b) => (a.title || '').localeCompare(b.title || '', 'pt-BR', { sensitivity: 'base' })));
       showToast('Ordem de produção atualizada com sucesso!', 'success', 3000, toastId);
     } catch (err: any) {
       console.error('Error updating order:', err);
@@ -807,7 +893,7 @@ export default function App() {
       const order = orders.find(o => o.id === id);
       await apiService.deleteOrder(id);
       logAction('EXCLUIR ORDEM', `ORDEM: ${order?.title || id}`);
-      fetchData();
+      setOrders(prev => prev.filter(o => o.id !== id));
     } catch (err) {
       console.error('Error deleting order:', err);
     }
@@ -831,9 +917,14 @@ export default function App() {
 
     const toastId = showToast('Salvando cliente...', 'loading');
     try {
-      await apiService.addClient(data);
+      const res = await apiService.addClient(data);
       logAction('ADICIONAR CLIENTE', `CLIENTE: ${data.name || data.razao_social}`);
-      fetchData();
+      const newClient = { ...data, id: res?.id };
+      setClients(prev => [...prev, newClient].sort((a, b) => {
+        const nameA = a.tipo_cliente === 'PF' ? (a.name || '') : (a.razao_social || '');
+        const nameB = b.tipo_cliente === 'PF' ? (b.name || '') : (b.razao_social || '');
+        return nameA.localeCompare(nameB, 'pt-BR', { sensitivity: 'base' });
+      }));
       setIsClientModalOpen(false);
       setClientFieldErrors({});
       showToast('Cliente cadastrado com sucesso!', 'success', 3000, toastId);
@@ -856,7 +947,11 @@ export default function App() {
     try {
       await apiService.updateClient(id, data);
       logAction('ATUALIZAR CLIENTE', `CLIENTE: ${data.name || data.razao_social}`);
-      fetchData();
+      setClients(prev => prev.map(c => c.id === id ? { ...c, ...data } : c).sort((a, b) => {
+        const nameA = a.tipo_cliente === 'PF' ? (a.name || '') : (a.razao_social || '');
+        const nameB = b.tipo_cliente === 'PF' ? (b.name || '') : (b.razao_social || '');
+        return nameA.localeCompare(nameB, 'pt-BR', { sensitivity: 'base' });
+      }));
       setIsClientModalOpen(false);
       setClientFieldErrors({});
       showToast('Cliente atualizado com sucesso!', 'success', 3000, toastId);
@@ -872,7 +967,7 @@ export default function App() {
       const client = clients.find(c => c.id === id);
       await apiService.deleteClient(id);
       logAction('EXCLUIR CLIENTE', `CLIENTE: ${client?.name || client?.razao_social || id}`);
-      fetchData();
+      setClients(prev => prev.filter(c => c.id !== id));
     } catch (err) {
       console.error('Error deleting client:', err);
     }
@@ -898,7 +993,11 @@ export default function App() {
     try {
       await apiService.updateSupplier(id, data);
       logAction('ATUALIZAR FORNECEDOR', `FORNECEDOR: ${data.name || data.razao_social}`);
-      fetchData();
+      setSuppliers(prev => prev.map(s => s.id === id ? { ...s, ...data } : s).sort((a, b) => {
+        const nameA = a.tipo === 'PF' ? (a.name || '') : (a.razao_social || '');
+        const nameB = b.tipo === 'PF' ? (b.name || '') : (b.razao_social || '');
+        return nameA.localeCompare(nameB, 'pt-BR', { sensitivity: 'base' });
+      }));
       setIsSupplierModalOpen(false);
       setSupplierFieldErrors({});
       showToast('Fornecedor atualizado com sucesso!', 'success', 3000, toastId);
@@ -914,7 +1013,7 @@ export default function App() {
       const supplier = suppliers.find(s => s.id === id);
       await apiService.deleteSupplier(id);
       logAction('EXCLUIR FORNECEDOR', `FORNECEDOR: ${supplier?.name || supplier?.razao_social || id}`);
-      fetchData();
+      setSuppliers(prev => prev.filter(s => s.id !== id));
     } catch (err) {
       console.error('Error deleting supplier:', err);
     }
@@ -942,9 +1041,22 @@ export default function App() {
 
     const toastId = showToast('Cadastrando patrimônio...', 'loading');
     try {
-      await apiService.addAsset(formData);
+      const res = await apiService.addAsset(formData);
       logAction('ADICIONAR PATRIMÔNIO', `PATRIMÔNIO: ${formData.get('description')}`);
-      fetchData();
+      const newAsset = {
+        id: res?.id,
+        description: formData.get('description') as string,
+        asset_number: formData.get('asset_number') as string,
+        location_or_responsible: formData.get('location_or_responsible') as string,
+        category: formData.get('category') as string,
+        purchase_date: formData.get('purchase_date') as string,
+        purchase_value: parseFloat(formData.get('purchase_value') as string) || 0,
+        depreciation_type: formData.get('depreciation_type') as string,
+        depreciation_percentage: parseFloat(formData.get('depreciation_percentage') as string) || 0,
+        status: 'ATIVO',
+        supplier_name: formData.get('supplier_name') as string || ''
+      };
+      setAssets(prev => [...prev, newAsset].sort((a, b) => (a.description || '').localeCompare(b.description || '', 'pt-BR', { sensitivity: 'base' })));
       setIsAssetModalOpen(false);
       showToast('Patrimônio cadastrado com sucesso!', 'success', 3000, toastId);
     } catch (err: any) {
@@ -969,7 +1081,21 @@ export default function App() {
     try {
       await apiService.updateAsset(id, formData);
       logAction('ATUALIZAR PATRIMÔNIO', `PATRIMÔNIO: ${formData.get('description')}`);
-      fetchData();
+      setAssets(prev => prev.map(a => {
+        if (a.id === id) {
+          return {
+            ...a,
+            description: (formData.get('description') as string) || a.description,
+            asset_number: (formData.get('asset_number') as string) || a.asset_number,
+            category: (formData.get('category') as string) || a.category,
+            location_or_responsible: (formData.get('location_or_responsible') as string) || a.location_or_responsible,
+            purchase_date: (formData.get('purchase_date') as string) || a.purchase_date,
+            purchase_value: formData.get('purchase_value') ? parseFloat(formData.get('purchase_value') as string) : a.purchase_value,
+            supplier_name: (formData.get('supplier_name') as string) || a.supplier_name
+          };
+        }
+        return a;
+      }).sort((a, b) => (a.description || '').localeCompare(b.description || '', 'pt-BR', { sensitivity: 'base' })));
       setIsAssetModalOpen(false);
       setEditingAsset(null);
       showToast('Patrimônio atualizado com sucesso!', 'success', 3000, toastId);
@@ -985,7 +1111,7 @@ export default function App() {
       const asset = assets.find(a => a.id === id);
       await apiService.disposalAsset(id, data);
       logAction('BAIXA DE PATRIMÔNIO', `PATRIMÔNIO: ${asset?.description || id}, TIPO: ${data.disposal_type}`);
-      fetchData();
+      setAssets(prev => prev.map(a => a.id === id ? { ...a, status: 'BAIXADO', disposal_data: data } : a));
       showToast('Baixa de patrimônio concluída!', 'success', 3000, toastId);
     } catch (err: any) {
       console.error('Error in asset disposal:', err);
@@ -998,7 +1124,7 @@ export default function App() {
       const asset = assets.find(a => a.id === id);
       await apiService.deleteAsset(id);
       logAction('EXCLUIR PATRIMÔNIO', `PATRIMÔNIO: ${asset?.description || id}`);
-      fetchData();
+      setAssets(prev => prev.filter(a => a.id !== id));
     } catch (err) {
       console.error('Error deleting asset:', err);
     }
@@ -1015,9 +1141,14 @@ export default function App() {
   const addServiceEntry = async (data: any) => {
     const toastId = showToast('Salvando entrada de serviço (OS)...', 'loading');
     try {
-      await apiService.addServiceEntry(data);
+      const res = await apiService.addServiceEntry(data);
       logAction('ADICIONAR ENTRADA DE SERVIÇO', `CLIENTE: ${data.client_name}, OBRA: ${data.obra}, VALOR: R$ ${data.valor}`);
-      fetchData();
+      const newEntry = { ...data, id: res?.id, date: new Date().toISOString() };
+      setServiceEntries(prev => [...prev, newEntry].sort((a, b) => {
+        const strA = `${a.obra || ''} - ${a.client_name || ''}`;
+        const strB = `${b.obra || ''} - ${b.client_name || ''}`;
+        return strA.localeCompare(strB, 'pt-BR', { sensitivity: 'base' });
+      }));
       showToast('Entrada de serviço criada com sucesso!', 'success', 3000, toastId);
     } catch (err: any) {
       console.error('Error adding service entry:', err);
@@ -1030,7 +1161,11 @@ export default function App() {
     try {
       await apiService.updateServiceEntry(id, data);
       logAction('ATUALIZAR ENTRADA DE SERVIÇO', `CLIENTE: ${data.client_name}, OBRA: ${data.obra}, VALOR: R$ ${data.valor}`);
-      fetchData();
+      setServiceEntries(prev => prev.map(e => e.id === id ? { ...e, ...data } : e).sort((a, b) => {
+        const strA = `${a.obra || ''} - ${a.client_name || ''}`;
+        const strB = `${b.obra || ''} - ${b.client_name || ''}`;
+        return strA.localeCompare(strB, 'pt-BR', { sensitivity: 'base' });
+      }));
       showToast('Entrada de serviço atualizada com sucesso!', 'success', 3000, toastId);
     } catch (err: any) {
       console.error('Error updating service entry:', err);
@@ -1043,7 +1178,7 @@ export default function App() {
       const entry = serviceEntries.find(e => e.id === id);
       await apiService.deleteServiceEntry(id);
       logAction('EXCLUIR ENTRADA DE SERVIÇO', `CLIENTE: ${entry?.client_name}, OBRA: ${entry?.obra}`);
-      fetchData();
+      setServiceEntries(prev => prev.filter(e => e.id !== id));
     } catch (err) {
       console.error('Error deleting service entry:', err);
     }
@@ -1052,9 +1187,18 @@ export default function App() {
   const addProduct = async (formData: FormData) => {
     const toastId = showToast('Cadastrando produto...', 'loading');
     try {
-      await apiService.addProduct(formData);
+      const res = await apiService.addProduct(formData);
       logAction('ADICIONAR PRODUTO', `PRODUTO: ${formData.get('name')}`);
-      fetchData();
+      const newProd = {
+        id: res?.id,
+        name: formData.get('name') as string,
+        category: formData.get('category') as string,
+        unit: formData.get('unit') as string,
+        cost_price: parseFloat(formData.get('cost_price') as string) || 0,
+        min_quantity: formData.get('min_quantity') ? parseFloat(formData.get('min_quantity') as string) : 0,
+        quantity: 0
+      };
+      setProducts(prev => [...prev, newProd].sort((a, b) => (a.name || '').localeCompare(b.name || '', 'pt-BR', { sensitivity: 'base' })));
       showToast('Produto cadastrado com sucesso!', 'success', 3000, toastId);
     } catch (err: any) {
       setGlobalError(err.message || 'Erro ao adicionar produto');
@@ -1066,7 +1210,7 @@ export default function App() {
   const deleteLocation = async (id: string | number) => {
     try {
       await apiService.deleteLocation(id);
-      await fetchData();
+      setLocations(prev => prev.filter(l => l.id !== id));
       await logAction('EXCLUSÃO DE LOCALIZAÇÃO', `UMA LOCALIZAÇÃO FOI REMOVIDA.`);
     } catch (err: any) {
       setGlobalError('ERRO AO EXCLUIR LOCALIZAÇÃO: ' + err.message);
@@ -1076,9 +1220,10 @@ export default function App() {
   const addCategory = async (name: string) => {
     const toastId = showToast('Salvando categoria...', 'loading');
     try {
-      await apiService.addCategory(name);
+      const res = await apiService.addCategory(name);
       logAction('ADICIONAR CATEGORIA', `CATEGORIA: ${name}`);
-      fetchData();
+      const newCat = { id: res?.id, name };
+      setCategories(prev => [...prev, newCat].sort((a, b) => (a.name || '').localeCompare(b.name || '', 'pt-BR', { sensitivity: 'base' })));
       showToast('Categoria cadastrada com sucesso!', 'success', 3000, toastId);
     } catch (err: any) {
       console.error('Error adding category:', err);
@@ -1089,9 +1234,10 @@ export default function App() {
   const addUnit = async (name: string) => {
     const toastId = showToast('Salvando unidade de medida...', 'loading');
     try {
-      await apiService.addUnit(name);
+      const res = await apiService.addUnit(name);
       logAction('ADICIONAR UNIDADE', `UNIDADE: ${name}`);
-      fetchData();
+      const newUnit = { id: res?.id, name };
+      setUnits(prev => [...prev, newUnit].sort((a, b) => (a.name || '').localeCompare(b.name || '', 'pt-BR', { sensitivity: 'base' })));
       showToast('Unidade cadastrada com sucesso!', 'success', 3000, toastId);
     } catch (err: any) {
       console.error('Error adding unit:', err);
@@ -1104,7 +1250,7 @@ export default function App() {
     try {
       await apiService.updateCategory(id, name);
       logAction('ATUALIZAR CATEGORIA', `CATEGORIA: ${name}`);
-      fetchData();
+      setCategories(prev => prev.map(c => c.id === id ? { ...c, name } : c).sort((a, b) => (a.name || '').localeCompare(b.name || '', 'pt-BR', { sensitivity: 'base' })));
       showToast('Categoria atualizada com sucesso!', 'success', 3000, toastId);
     } catch (err: any) {
       console.error('Error updating category:', err);
@@ -1117,7 +1263,7 @@ export default function App() {
       const category = categories.find(c => c.id === id);
       await apiService.deleteCategory(id);
       logAction('EXCLUIR CATEGORIA', `CATEGORIA: ${category?.name || id}`);
-      fetchData();
+      setCategories(prev => prev.filter(c => c.id !== id));
     } catch (err) {
       console.error('Error deleting category:', err);
     }
@@ -1128,7 +1274,7 @@ export default function App() {
     try {
       await apiService.updateUnit(id, name);
       logAction('ATUALIZAR UNIDADE', `UNIDADE: ${name}`);
-      fetchData();
+      setUnits(prev => prev.map(u => u.id === id ? { ...u, name } : u).sort((a, b) => (a.name || '').localeCompare(b.name || '', 'pt-BR', { sensitivity: 'base' })));
       showToast('Unidade atualizada com sucesso!', 'success', 3000, toastId);
     } catch (err: any) {
       console.error('Error updating unit:', err);
@@ -1141,7 +1287,7 @@ export default function App() {
       const unit = units.find(u => u.id === id);
       await apiService.deleteUnit(id);
       logAction('EXCLUIR UNIDADE', `UNIDADE: ${unit?.name || id}`);
-      fetchData();
+      setUnits(prev => prev.filter(u => u.id !== id));
     } catch (err) {
       console.error('Error deleting unit:', err);
     }
@@ -1158,7 +1304,6 @@ export default function App() {
     try {
       const payload = typeof data === 'string' ? { name: data, contact: '', tipo: 'PF' } : data;
       
-      // If it's a simple string (from quick add), we still check uniqueness
       if (typeof data === 'string') {
         const isDuplicate = suppliers.some(s => s.name?.toUpperCase() === data.toUpperCase());
         if (isDuplicate) {
@@ -1168,9 +1313,14 @@ export default function App() {
         }
       }
 
-      await apiService.addSupplier(payload);
+      const res = await apiService.addSupplier(payload);
       logAction('ADICIONAR FORNECEDOR', `FORNECEDOR: ${payload.name || payload.razao_social}`);
-      fetchData();
+      const newSupplier = { ...payload, id: res?.id };
+      setSuppliers(prev => [...prev, newSupplier].sort((a, b) => {
+        const nameA = a.tipo === 'PF' ? (a.name || '') : (a.razao_social || '');
+        const nameB = b.tipo === 'PF' ? (b.name || '') : (b.razao_social || '');
+        return nameA.localeCompare(nameB, 'pt-BR', { sensitivity: 'base' });
+      }));
       setIsSupplierModalOpen(false);
       setSupplierFieldErrors({});
       showToast('Fornecedor cadastrado com sucesso!', 'success', 3000, toastId);
@@ -1184,9 +1334,10 @@ export default function App() {
   const addLocation = async (name: string) => {
     const toastId = showToast('Salvando localização...', 'loading');
     try {
-      await apiService.addLocation(name);
+      const res = await apiService.addLocation(name);
       logAction('ADICIONAR LOCALIZAÇÃO', `LOCALIZAÇÃO: ${name}`);
-      fetchData();
+      const newLoc = { id: res?.id, name };
+      setLocations(prev => [...prev, newLoc].sort((a, b) => (a.name || '').localeCompare(b.name || '', 'pt-BR', { sensitivity: 'base' })));
       showToast('Localização cadastrada com sucesso!', 'success', 3000, toastId);
     } catch (err: any) {
       console.error('Error adding location:', err);
@@ -1198,7 +1349,7 @@ export default function App() {
     const toastId = showToast('Atualizando localização...', 'loading');
     try {
       await apiService.updateLocation(id, name);
-      fetchData();
+      setLocations(prev => prev.map(l => l.id === id ? { ...l, name } : l).sort((a, b) => (a.name || '').localeCompare(b.name || '', 'pt-BR', { sensitivity: 'base' })));
       showToast('Localização atualizada com sucesso!', 'success', 3000, toastId);
     } catch (err: any) {
       console.error('Error updating location:', err);
@@ -1211,7 +1362,6 @@ export default function App() {
     try {
       const product = products.find(p => p.id === parseInt(data.product_id));
       
-      // Upload invoices if they are File objects
       let invoiceUrls = [];
       if (data.invoices && data.invoices.length > 0) {
         for (const file of data.invoices) {
@@ -1220,7 +1370,6 @@ export default function App() {
             const name = file.type === 'application/pdf' ? file.name.replace(/\.pdf$/i, '.webp') : file.name;
             invoiceUrls.push({ name, url });
           } else {
-            // If it's already an object with name and url/data (though in this flow it should be File)
             invoiceUrls.push(file);
           }
         }
@@ -1230,12 +1379,25 @@ export default function App() {
         ...data,
         invoice_pdf: invoiceUrls.length > 0 ? JSON.stringify(invoiceUrls) : ''
       };
-      // Remove the raw File objects from submissionData
       delete (submissionData as any).invoices;
 
       await apiService.stockIn(submissionData);
       logAction('ENTRADA DE ESTOQUE', `PRODUTO: ${product?.name || data.product_id}, QTD: ${data.quantity}`);
-      fetchData();
+      const qty = parseFloat(data.quantity) || 0;
+      setProducts(prev => prev.map(p => p.id === parseInt(data.product_id) ? { ...p, quantity: (p.quantity || 0) + qty } : p));
+      const newMov = {
+        id: Date.now().toString(),
+        product_id: data.product_id,
+        type: 'IN',
+        quantity: qty,
+        unit_price: parseFloat(data.unit_price) || 0,
+        supplier_name: data.supplier_name,
+        invoice_number: data.invoice_number,
+        invoice_pdf: submissionData.invoice_pdf,
+        location: data.location,
+        date: new Date().toISOString()
+      };
+      setMovements(prev => [newMov, ...prev]);
       showToast('Entrada de estoque realizada com sucesso!', 'success', 3000, toastId);
     } catch (err: any) {
       setGlobalError(err.message || 'Erro ao processar entrada de estoque');
@@ -1250,7 +1412,19 @@ export default function App() {
       const product = products.find(p => p.id === parseInt(data.product_id));
       await apiService.stockOut(data);
       logAction('SAÍDA DE ESTOQUE', `PRODUTO: ${product?.name || data.product_id}, QTD: ${data.quantity}, MOTIVO: ${data.reason}`);
-      fetchData();
+      const qty = parseFloat(data.quantity) || 0;
+      setProducts(prev => prev.map(p => p.id === parseInt(data.product_id) ? { ...p, quantity: Math.max(0, (p.quantity || 0) - qty) } : p));
+      const newMov = {
+        id: Date.now().toString(),
+        product_id: data.product_id,
+        type: 'OUT',
+        quantity: qty,
+        reason: data.reason,
+        order_id: data.order_id,
+        location: data.location,
+        date: new Date().toISOString()
+      };
+      setMovements(prev => [newMov, ...prev]);
       showToast('Saída de estoque realizada com sucesso!', 'success', 3000, toastId);
     } catch (err: any) {
       setGlobalError(err.message || 'Erro ao processar saída');
@@ -1264,7 +1438,14 @@ export default function App() {
     try {
       await apiService.updateProduct(id, formData);
       logAction('ATUALIZAR PRODUTO', `PRODUTO: ${formData.get('name')}`);
-      fetchData();
+      setProducts(prev => prev.map(p => p.id === id ? {
+        ...p,
+        name: (formData.get('name') as string) || p.name,
+        category: (formData.get('category') as string) || p.category,
+        unit: (formData.get('unit') as string) || p.unit,
+        cost_price: formData.get('cost_price') ? parseFloat(formData.get('cost_price') as string) : p.cost_price,
+        min_quantity: formData.get('min_quantity') ? parseFloat(formData.get('min_quantity') as string) : p.min_quantity
+      } : p).sort((a, b) => (a.name || '').localeCompare(b.name || '', 'pt-BR', { sensitivity: 'base' })));
       showToast('Produto atualizado com sucesso!', 'success', 3000, toastId);
     } catch (err: any) {
       setGlobalError(err.message || 'Erro ao atualizar produto');
@@ -1278,7 +1459,7 @@ export default function App() {
       const product = products.find(p => p.id === id);
       await apiService.deleteProduct(id);
       logAction('EXCLUIR PRODUTO', `PRODUTO: ${product?.name || id}`);
-      fetchData();
+      setProducts(prev => prev.filter(p => p.id !== id));
     } catch (err: any) {
       setGlobalError(err.message || 'Erro ao excluir produto');
       console.error('Error deleting product:', err);
@@ -1542,11 +1723,11 @@ export default function App() {
           }}
           onUpdateUser={async (id, data) => {
             await apiService.updateUser(id, data);
-            fetchData();
+            fetchUsers();
           }}
           onDeleteUser={async (id) => {
             await apiService.deleteUser(id);
-            fetchData();
+            fetchUsers();
           }}
           onUpdateCategory={updateCategory}
           onDeleteCategory={deleteCategory}

@@ -667,32 +667,21 @@ export const StockInModal = ({
 
           {/* Linha 3: Fornecedor e Documento Fiscal */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="flex gap-2 items-end">
-              <div className="flex-1">
-                <Select 
-                  label="FORNECEDOR" 
-                  icon={<User size={18} />}
-                  required
-                  value={stockInData.supplier_id}
-                  onChange={(e: any) => setStockInData({...stockInData, supplier_id: e.target.value})}
-                  options={[
-                    { value: '', label: 'SELECIONE' },
-                    ...suppliers.map((s: Supplier) => ({ 
-                      value: s.id.toString(), 
-                      label: (s.tipo === 'PF' ? s.name : s.razao_social || 'SEM NOME')?.toUpperCase() || 'SEM NOME'
-                    }))
-                  ]}
-                  error={fieldErrors.supplier_id}
-                />
-              </div>
-              <button 
-                type="button"
-                onClick={() => setIsAddingSupplier(true)}
-                className="p-2.5 bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 rounded-xl hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors mb-[1px]"
-              >
-                <Plus size={20} />
-              </button>
-            </div>
+            <Select 
+              label="FORNECEDOR" 
+              icon={<User size={18} />}
+              required
+              value={stockInData.supplier_id}
+              onChange={(e: any) => setStockInData({...stockInData, supplier_id: e.target.value})}
+              options={[
+                { value: '', label: 'SELECIONE' },
+                ...suppliers.map((s: Supplier) => ({ 
+                  value: s.id.toString(), 
+                  label: (s.tipo === 'PF' ? s.name : s.razao_social || 'SEM NOME')?.toUpperCase() || 'SEM NOME'
+                }))
+              ]}
+              error={fieldErrors.supplier_id}
+            />
             <Input 
               label="DOCUMENTO FISCAL" 
               icon={<FileText size={18} />}
