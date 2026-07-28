@@ -137,13 +137,21 @@ export const apiService = {
   },
 
   // Stats
-  getStats: async () => {
+  getStats: async (prefetchedProducts?: any[], prefetchedOrders?: any[], prefetchedMovements?: any[]) => {
     try {
-      const productsSnap = await getDocs(collection(db, 'products'));
-      const products = productsSnap.docs.map(d => ({ id: d.id, ...d.data() } as any));
+      let products = prefetchedProducts;
+      if (!products) {
+        const productsSnap = await getDocs(collection(db, 'products'));
+        products = productsSnap.docs.map(d => ({ id: d.id, ...d.data() } as any));
+      }
       
-      const ordersSnap = await getDocs(query(collection(db, 'orders'), where('status', '!=', 'CONCLUIDO')));
-      const activeOrders = ordersSnap.size;
+      let activeOrders = 0;
+      if (prefetchedOrders) {
+        activeOrders = prefetchedOrders.filter(o => o.status !== 'CONCLUIDO').length;
+      } else {
+        const ordersSnap = await getDocs(query(collection(db, 'orders'), where('status', '!=', 'CONCLUIDO')));
+        activeOrders = ordersSnap.size;
+      }
 
       const totalProducts = products.length;
       const lowStock = products.filter(p => p.quantity <= p.min_quantity).length;
@@ -166,15 +174,20 @@ export const apiService = {
       const low_stock_count = products.filter(p => p.quantity <= p.min_quantity).length;
       const normal_stock_count = products.length - low_stock_count;
 
-      const recentMovementsSnap = await getDocs(query(collection(db, 'movements'), orderBy('date', 'desc'), limit(5)));
-      const recentMovements = recentMovementsSnap.docs.map(d => {
-        const data = d.data();
-        return {
-          ...data,
-          id: d.id,
-          date: data.date instanceof Timestamp ? data.date.toDate().toISOString() : data.date
-        };
-      });
+      let recentMovements: any[] = [];
+      if (prefetchedMovements && prefetchedMovements.length > 0) {
+        recentMovements = prefetchedMovements.slice(0, 5);
+      } else {
+        const recentMovementsSnap = await getDocs(query(collection(db, 'movements'), orderBy('date', 'desc'), limit(5)));
+        recentMovements = recentMovementsSnap.docs.map(d => {
+          const data = d.data();
+          return {
+            ...data,
+            id: d.id,
+            date: data.date instanceof Timestamp ? data.date.toDate().toISOString() : data.date
+          };
+        });
+      }
 
       return {
         totalProducts,
@@ -863,7 +876,7 @@ export const apiService = {
   // Movements
   getMovements: async () => {
     try {
-      const snap = await getDocs(query(collection(db, 'movements'), orderBy('date', 'desc')));
+      const snap = await getDocs(query(collection(db, 'movements'), orderBy('date', 'desc'), limit(300)));
       return snap.docs.map(d => {
         const data = d.data();
         let date = data.date;
@@ -986,7 +999,7 @@ export const apiService = {
   // Audit Logs
   getAuditLogs: async () => {
     try {
-      const snap = await getDocs(query(collection(db, 'audit_logs'), orderBy('created_at', 'desc')));
+      const snap = await getDocs(query(collection(db, 'audit_logs'), orderBy('created_at', 'desc'), limit(150)));
       return snap.docs.map(d => {
         const data = d.data();
         let created_at = data.created_at;

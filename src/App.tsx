@@ -597,7 +597,6 @@ export default function App() {
     setIsFetching(true);
     try {
       const [
-        statsData,
         productsData,
         ordersData,
         clientsData,
@@ -612,7 +611,6 @@ export default function App() {
         usersData,
         serviceEntriesData
       ] = await Promise.all([
-        apiService.getStats(),
         apiService.getProducts(),
         apiService.getOrders(),
         apiService.getClients(),
@@ -627,6 +625,8 @@ export default function App() {
         apiService.getUsers(),
         apiService.getServiceEntries()
       ]);
+
+      const statsData = await apiService.getStats(productsData, ordersData, movementsData);
 
       setStats(statsData);
 
