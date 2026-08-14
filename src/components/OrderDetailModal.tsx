@@ -240,19 +240,19 @@ export const OrderDetailModal = ({
                   {linkedEntry.altura && (
                     <div className="bg-white/5 p-3 rounded-2xl border border-white/5">
                       <p className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest">Altura</p>
-                      <p className="text-sm font-bold mt-0.5">{maskValue(linkedEntry.altura, canSeeValues)}m</p>
+                      <p className="text-sm font-bold mt-0.5">{linkedEntry.altura}m</p>
                     </div>
                   )}
                   {linkedEntry.largura && (
                     <div className="bg-white/5 p-3 rounded-2xl border border-white/5">
                       <p className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest">Largura</p>
-                      <p className="text-sm font-bold mt-0.5">{maskValue(linkedEntry.largura, canSeeValues)}m</p>
+                      <p className="text-sm font-bold mt-0.5">{linkedEntry.largura}m</p>
                     </div>
                   )}
                   {linkedEntry.profundidade && (
                     <div className="bg-white/5 p-3 rounded-2xl border border-white/5">
                       <p className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest">Profundidade</p>
-                      <p className="text-sm font-bold mt-0.5">{maskValue(linkedEntry.profundidade, canSeeValues)}m</p>
+                      <p className="text-sm font-bold mt-0.5">{linkedEntry.profundidade}m</p>
                     </div>
                   )}
                 </div>

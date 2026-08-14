@@ -1246,12 +1246,12 @@ export const ProductDetailModal = ({
                 <div>
                   <p className="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider mb-1">Estoque Atual</p>
                   <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
-                    {maskValue(product.quantity, canSeeValues)} {product.unit}
+                    {product.quantity} {product.unit}
                   </p>
                 </div>
                 <div>
                   <p className="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider mb-1">Estoque Mínimo</p>
-                  <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100">{product.min_quantity !== null ? maskValue(product.min_quantity, canSeeValues) : 'Não definido'} {product.min_quantity !== null ? product.unit : ''}</p>
+                  <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100">{product.min_quantity !== null ? product.min_quantity : 'Não definido'} {product.min_quantity !== null ? product.unit : ''}</p>
                 </div>
                 <div>
                   <p className="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider mb-1">Valor Unitário (Média)</p>
@@ -1360,7 +1360,7 @@ export const ProductDetailModal = ({
                                 {m.type === 'IN' ? 'ENTRADA' : 'SAÍDA'}
                               </span>
                             </td>
-                            <td className="px-4 py-3 text-xs font-bold text-zinc-900 dark:text-zinc-100">{maskValue(m.quantity, canSeeValues)}</td>
+                            <td className="px-4 py-3 text-xs font-bold text-zinc-900 dark:text-zinc-100">{m.quantity}</td>
                             <td className="px-4 py-3 text-xs text-zinc-500 dark:text-zinc-400">
                               {m.unit_price > 0 ? formatCurrency(m.unit_price, canSeeValues) : '-'}
                             </td>

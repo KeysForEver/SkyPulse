@@ -9,10 +9,10 @@ export const exportToCSV = (products: Product[], canSeeValues = true) => {
     p.id,
     p.name,
     p.category,
-    maskValue(p.quantity, canSeeValues),
+    p.quantity,
     p.unit,
     formatCurrency(p.cost_price, canSeeValues),
-    p.min_quantity !== null ? maskValue(p.min_quantity, canSeeValues) : '-',
+    p.min_quantity !== null ? p.min_quantity : '-',
     (p.min_quantity !== null && p.quantity <= p.min_quantity) ? 'Estoque Baixo' : 'Normal'
   ]);
 
@@ -59,8 +59,8 @@ export const exportToPDF = (products: Product[], selectedFields: string[], inclu
     return activeFields.map(field => {
       if (field === 'cost_price') return formatCurrency(p.cost_price, canSeeValues);
       if (field === 'total_value') return formatCurrency(p.quantity * p.cost_price, canSeeValues);
-      if (field === 'quantity') return maskValue(p.quantity, canSeeValues);
-      if (field === 'min_quantity') return p.min_quantity !== null ? maskValue(p.min_quantity, canSeeValues) : '-';
+      if (field === 'quantity') return p.quantity;
+      if (field === 'min_quantity') return p.min_quantity !== null ? p.min_quantity : '-';
       if (field === 'status') return (p.min_quantity !== null && p.quantity <= p.min_quantity) ? 'Estoque Baixo' : 'Normal';
       return (p as any)[field] ?? '-';
     });
@@ -91,7 +91,7 @@ export const exportMovementsToPDF = (movements: Movement[], canSeeValues = true)
     const type = m.type === 'IN' ? 'ENTRADA' : 'SAÍDA';
     const origin = m.type === 'IN' ? (m.supplier_name || m.location) : m.destination;
     const docVal = m.type === 'IN' ? m.doc_number : m.reason;
-    return [date, type, m.product_name, maskValue(m.quantity, canSeeValues), origin, docVal];
+    return [date, type, m.product_name, m.quantity, origin, docVal];
   });
 
   autoTable(doc, {
@@ -114,7 +114,7 @@ export const exportMovementsToCSV = (movements: Movement[], canSeeValues = true)
     const type = m.type === 'IN' ? 'ENTRADA' : 'SAÍDA';
     const origin = m.type === 'IN' ? (m.supplier_name || m.location) : m.destination;
     const doc = m.type === 'IN' ? m.doc_number : m.reason;
-    return `"${date}","${type}","${m.product_name}","${maskValue(m.quantity, canSeeValues)}","${origin}","${doc}"`;
+    return `"${date}","${type}","${m.product_name}","${m.quantity}","${origin}","${doc}"`;
   }).join("\n");
   
   const csvContent = headers + rows;

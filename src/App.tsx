@@ -1674,7 +1674,7 @@ export default function App() {
             id: e.isAsset ? `PAT-${e.id.toString().substring(0, 6).toUpperCase()}` : `EST-${e.id.toString().substring(0, 6).toUpperCase()}`,
             total_value: formatCurrency(e.quantity * e.unit_price, canSeeValues),
             unit_price_fmt: formatCurrency(e.unit_price, canSeeValues),
-            quantity_fmt: maskValue(e.quantity, canSeeValues),
+            quantity_fmt: e.quantity,
             issue_date_fmt: e.issue_date ? new Date(e.issue_date + 'T12:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '-',
             date_fmt: new Date(e.date).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })
           }))} 

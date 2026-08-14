@@ -203,7 +203,7 @@ export const ProductTable = ({
                   isLowStock ? "text-amber-600 dark:text-amber-400 flex items-center gap-2" : "text-zinc-900 dark:text-zinc-100"
                 )}>
                   {isLowStock && <AlertTriangle size={14} />}
-                  {maskValue(p.quantity, canSeeValues)} {p.unit}
+                  {p.quantity} {p.unit}
                 </td>
               )}
               {visibleColumns.includes('unit') && (
@@ -221,7 +221,7 @@ export const ProductTable = ({
               )}
               {visibleColumns.includes('min_quantity') && (
                 <td className="px-6 py-4 text-sm text-zinc-500 dark:text-zinc-400">
-                  {p.min_quantity !== null ? maskValue(p.min_quantity, canSeeValues) : '-'} {p.min_quantity !== null ? p.unit : ''}
+                  {p.min_quantity !== null ? p.min_quantity : '-'} {p.min_quantity !== null ? p.unit : ''}
                 </td>
               )}
               {visibleColumns.includes('status') && (

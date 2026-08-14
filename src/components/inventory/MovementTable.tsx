@@ -178,7 +178,7 @@ export const MovementTable = ({
                 </td>
               )}
               {visibleColumns.includes('product_name') && <td className="px-6 py-4 text-sm font-medium text-zinc-900 dark:text-zinc-100">{m.product_name}</td>}
-              {visibleColumns.includes('quantity') && <td className="px-6 py-4 text-sm text-zinc-900 dark:text-zinc-100 font-bold">{maskValue(m.quantity, canSeeValues)}</td>}
+              {visibleColumns.includes('quantity') && <td className="px-6 py-4 text-sm text-zinc-900 dark:text-zinc-100 font-bold">{m.quantity}</td>}
               {visibleColumns.includes('supplier_name') && (
                 <td className="px-6 py-4 text-sm text-zinc-500 dark:text-zinc-400">
                   {m.type === 'IN' ? (m.supplier_name || '-') : '-'}

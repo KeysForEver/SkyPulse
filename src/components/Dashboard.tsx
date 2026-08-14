@@ -41,21 +41,21 @@ export const Dashboard = ({ stats, isDarkMode, onNavigate, canSeeValues = true }
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard 
           label="TOTAL PRODUTOS" 
-          value={maskValue(stats?.totalProducts || 0, canSeeValues)} 
+          value={stats?.totalProducts || 0} 
           icon={Package} 
           color="bg-blue-500" 
           onClick={() => onNavigate('inventory', '')}
         />
         <StatCard 
           label="ESTOQUE BAIXO" 
-          value={maskValue(stats?.lowStock || 0, canSeeValues)} 
+          value={stats?.lowStock || 0} 
           icon={AlertTriangle} 
           color="bg-amber-500" 
           onClick={() => onNavigate('inventory', 'ESTOQUE BAIXO')}
         />
         <StatCard 
           label="ORDENS ATIVAS" 
-          value={maskValue(stats?.activeOrders || 0, canSeeValues)} 
+          value={stats?.activeOrders || 0} 
           icon={ClipboardList} 
           color="bg-indigo-500" 
           onClick={() => onNavigate('kanban')}
@@ -123,7 +123,7 @@ export const Dashboard = ({ stats, isDarkMode, onNavigate, canSeeValues = true }
                   ))}
                 </Pie>
                 <Tooltip 
-                  formatter={(value: number) => maskValue(value, canSeeValues)}
+                  formatter={(value: number) => value}
                   contentStyle={{ 
                     borderRadius: '12px', 
                     border: 'none', 
@@ -145,9 +145,9 @@ export const Dashboard = ({ stats, isDarkMode, onNavigate, canSeeValues = true }
               <BarChart data={stats?.topProducts || []}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={gridColor} />
                 <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fontSize: 10, fill: textColor}} />
-                <YAxis axisLine={false} tickLine={false} tick={{fontSize: 10, fill: textColor}} hide={!canSeeValues} />
+                <YAxis axisLine={false} tickLine={false} tick={{fontSize: 10, fill: textColor}} />
                 <Tooltip 
-                  formatter={(value: number) => maskValue(value, canSeeValues)}
+                  formatter={(value: number) => value}
                   contentStyle={{ 
                     borderRadius: '12px', 
                     border: 'none', 
