@@ -3,7 +3,7 @@ import autoTable from 'jspdf-autotable';
 import { Product, Movement } from '../types';
 import { maskValue, formatCurrency } from '../lib/valueMask';
 
-export const exportToCSV = (products: Product[], canSeeValues = true) => {
+export const exportToCSV = (products: Product[], canSeeValues = false) => {
   const headers = ['ID', 'Nome', 'Categoria', 'Estoque', 'Unidade', 'Preço de Custo', 'Estoque Mínimo', 'Status'];
   const rows = products.map(p => [
     p.id,
@@ -33,7 +33,7 @@ export const exportToCSV = (products: Product[], canSeeValues = true) => {
   document.body.removeChild(link);
 };
 
-export const exportToPDF = (products: Product[], selectedFields: string[], includeTotalValue: boolean, canSeeValues = true) => {
+export const exportToPDF = (products: Product[], selectedFields: string[], includeTotalValue: boolean, canSeeValues = false) => {
   const doc = new jsPDF();
   
   const fieldLabels: Record<string, string> = {
@@ -83,7 +83,7 @@ export const exportToPDF = (products: Product[], selectedFields: string[], inclu
   doc.save(`estoque_${new Date().toISOString().split('T')[0]}.pdf`);
 };
 
-export const exportMovementsToPDF = (movements: Movement[], canSeeValues = true) => {
+export const exportMovementsToPDF = (movements: Movement[], canSeeValues = false) => {
   const doc = new jsPDF();
   const tableColumn = ['Data', 'Tipo', 'Produto', 'Qtd', 'Origem/Destino', 'Doc/Motivo'];
   const tableRows = movements.map(m => {
@@ -107,7 +107,7 @@ export const exportMovementsToPDF = (movements: Movement[], canSeeValues = true)
   doc.save(`movimentacoes_${new Date().toISOString().split('T')[0]}.pdf`);
 };
 
-export const exportMovementsToCSV = (movements: Movement[], canSeeValues = true) => {
+export const exportMovementsToCSV = (movements: Movement[], canSeeValues = false) => {
   const headers = "Data,Tipo,Produto,Quantidade,Origem/Destino,Documento/Motivo\n";
   const rows = movements.map(m => {
     const date = new Date(m.date).toLocaleString('pt-BR');

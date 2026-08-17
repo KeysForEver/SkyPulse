@@ -18,7 +18,7 @@ export const MovementTable = ({
   visibleColumns, 
   requestSort,
   getSortIcon,
-  canSeeValues = true 
+  canSeeValues = false 
 }: MovementTableProps) => {
   const [visibleCount, setVisibleCount] = useState(30);
   const sentinelRef = useRef<HTMLTableRowElement>(null);
@@ -195,28 +195,32 @@ export const MovementTable = ({
                 </td>
               )}
               {visibleColumns.includes('xml') && (
-                <td className="px-6 py-4 text-sm text-zinc-500 dark:text-zinc-400 truncate max-w-[150px]" title={m.xml}>
-                  {m.xml || '-'}
+                <td className="px-6 py-4 text-sm text-zinc-500 dark:text-zinc-400 truncate max-w-[150px]" title={canSeeValues ? m.xml : ''}>
+                  {canSeeValues ? (m.xml || '-') : '*'}
                 </td>
               )}
               {visibleColumns.includes('attachments') && (
                 <td className="px-6 py-4 text-sm text-zinc-500 dark:text-zinc-400">
-                  <div className="flex flex-wrap gap-1">
-                    {invoices.map((inv: any, idx: number) => (
-                      <a 
-                        key={idx} 
-                        href={inv.url} 
-                        download={inv.name}
-                        target="_blank" 
-                        rel="noopener noreferrer"
-                        className="p-1.5 bg-zinc-100 dark:bg-zinc-800 rounded-lg text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors"
-                        title={inv.name}
-                      >
-                        <FileText size={14} />
-                      </a>
-                    ))}
-                    {invoices.length === 0 && '-'}
-                  </div>
+                  {canSeeValues ? (
+                    <div className="flex flex-wrap gap-1">
+                      {invoices.map((inv: any, idx: number) => (
+                        <a 
+                          key={idx} 
+                          href={inv.url} 
+                          download={inv.name}
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="p-1.5 bg-zinc-100 dark:bg-zinc-800 rounded-lg text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors"
+                          title={inv.name}
+                        >
+                          <FileText size={14} />
+                        </a>
+                      ))}
+                      {invoices.length === 0 && '-'}
+                    </div>
+                  ) : (
+                    <span title="Acesso a notas fiscais restrito a usuários com permissão financeira" className="text-zinc-400 font-mono text-sm">*</span>
+                  )}
                 </td>
               )}
             </tr>

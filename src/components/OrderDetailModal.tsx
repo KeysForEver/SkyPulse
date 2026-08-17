@@ -24,7 +24,7 @@ export const OrderDetailModal = ({
   order, 
   serviceEntries,
   isAdmin = false,
-  canSeeValues = true,
+  canSeeValues = false,
   onEdit,
   onDelete,
   onUpdate

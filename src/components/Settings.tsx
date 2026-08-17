@@ -17,7 +17,7 @@ const PERMISSIONS_LIST: { id: Permission; label: string }[] = [
   { id: 'financial', label: 'CONTROLE FINANCEIRO' },
   { id: 'settings', label: 'CONFIGURAÇÕES DO SISTEMA' },
   { id: 'audit', label: 'HISTÓRICO DE AÇÕES' },
-  { id: 'values', label: 'VISUALIZAR VALORES FINANCEIROS' },
+  { id: 'values', label: 'VISUALIZAR VALORES FINANCEIROS E NOTAS FISCAIS' },
 ];
 
 interface SettingsProps {

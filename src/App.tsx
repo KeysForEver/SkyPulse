@@ -339,13 +339,20 @@ export default function App() {
   const [serviceEntries, setServiceEntries] = useState<ServiceEntryType[]>([]);
   const [systemUsers, setSystemUsers] = useState<User[]>([]);
 
-  const currentUserProfile = systemUsers.find(u => u.uid === user?.uid || u.id === user?.uid);
-  const isAdmin = (user?.email === 'admin@skysmart.com' || user?.email === 'Diesel.087@gmail.com' || currentUserProfile?.role === 'Administrador');
+  const currentUserProfile = systemUsers.find(u => 
+    (user?.uid && (u.uid === user.uid || u.id === user.uid)) ||
+    (user?.email && (
+      u.email?.toLowerCase() === user.email.toLowerCase() ||
+      (u as any).auth_email?.toLowerCase() === user.email.toLowerCase() ||
+      (u as any).username?.toLowerCase() === user.email.toLowerCase().replace('@skysmart.com', '')
+    ))
+  );
+  const isAdmin = Boolean(user?.email === 'admin@skysmart.com' || user?.email === 'Diesel.087@gmail.com' || currentUserProfile?.role === 'Administrador');
   const userPermissions = isAdmin
     ? ['dashboard', 'kanban', 'service_entry', 'production', 'clients', 'suppliers', 'assets', 'inventory', 'financial', 'audit', 'settings', 'values']
     : (currentUserProfile?.permissions || []);
   
-  const canSeeValues = isAdmin || userPermissions.includes('values');
+  const canSeeValues = Boolean(isAdmin || userPermissions.includes('values'));
   
   const logAction = async (action: string, details: string) => {
     await apiService.createAuditLog(action, details, currentUserProfile?.name || user?.email || undefined);
@@ -1510,6 +1517,7 @@ export default function App() {
             setActiveTab(tab);
             if (search !== undefined) setInventorySearchTerm(search);
           }} 
+          canSeeValues={canSeeValues}
         />
       );
       case 'inventory': return (
@@ -1535,6 +1543,7 @@ export default function App() {
           onStockOut={handleStockOut}
           initialSearchTerm={inventorySearchTerm}
           onSearchTermChange={setInventorySearchTerm}
+          canSeeValues={canSeeValues}
         />
       );
       case 'production': return (
@@ -1582,6 +1591,7 @@ export default function App() {
           clients={clients}
           isAdmin={isAdmin}
           currentUserId={user?.uid}
+          canSeeValues={canSeeValues}
           onAdd={addServiceEntry}
           onUpdate={updateServiceEntry}
           onDelete={deleteServiceEntry}

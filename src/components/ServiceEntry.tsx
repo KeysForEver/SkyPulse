@@ -42,7 +42,7 @@ export const ServiceEntry = ({
   clients, 
   isAdmin = false,
   currentUserId,
-  canSeeValues = true,
+  canSeeValues = false,
   onAdd,
   onUpdate,
   onDelete,
@@ -126,6 +126,7 @@ export const ServiceEntry = ({
         onSubmit={handleSave}
         editingEntry={editingEntry}
         clients={clients}
+        canSeeValues={canSeeValues}
       />
     </div>
   );
@@ -137,6 +138,7 @@ interface ServiceEntryModalProps {
   onSubmit: (data: any) => Promise<void>;
   editingEntry: ServiceEntryType | null;
   clients: Client[];
+  canSeeValues?: boolean;
 }
 
 const PRODUCT_OPTIONS: any = {
@@ -161,9 +163,13 @@ const PRODUCT_OPTIONS: any = {
   'PLACA': {
     sub: ['ILUMINADA', 'SEM ILUMINAÇÃO'],
     dependentSub: {
-      'ILUMINADA': ['CHAPA AÇO', 'ACRÍLICO', 'ACM', 'LONA'],
-      'SEM ILUMINAÇÃO': ['CHAPA AÇO', 'ACRÍLICO', 'ACM', 'MDF', 'PS', 'PVC']
+      'ILUMINADA': ['CHAPA AÇO', 'ACRÍLICO', 'ACM', 'LONA', 'AÇO C/ ACRÍLICO'],
+      'SEM ILUMINAÇÃO': ['CHAPA AÇO', 'ACRÍLICO', 'ACM', 'LONA', 'MDF', 'PS', 'PVC']
     },
+    fields: ['altura', 'largura', 'profundidade']
+  },
+  'MOBILIÁRIO': {
+    sub: ['MDF (MARCENARIA)', 'AÇO (SERRALHERIA)', 'MDF/AÇO (MARCENARIA + SERRALHERIA)'],
     fields: ['altura', 'largura', 'profundidade']
   },
   'PAINEL DE LED': {
@@ -171,7 +177,7 @@ const PRODUCT_OPTIONS: any = {
   }
 };
 
-export const ServiceEntryModal = ({ isOpen, onClose, onSubmit, editingEntry, clients }: ServiceEntryModalProps) => {
+export const ServiceEntryModal = ({ isOpen, onClose, onSubmit, editingEntry, clients, canSeeValues = false }: ServiceEntryModalProps) => {
   const [formData, setFormData] = useState({
     client_id: '',
     obra: '',
@@ -274,13 +280,15 @@ export const ServiceEntryModal = ({ isOpen, onClose, onSubmit, editingEntry, cli
               { value: 'Sky 2', label: 'SKY 2' }
             ]}
           />
-          <Input 
-            label="VALOR (R$)" 
-            icon={<DollarSign size={18} />}
-            required
-            value={formData.valor}
-            onChange={(e: any) => setFormData({ ...formData, valor: maskCurrency(e.target.value) })}
-          />
+          {canSeeValues && (
+            <Input 
+              label="VALOR (R$)" 
+              icon={<DollarSign size={18} />}
+              required
+              value={formData.valor}
+              onChange={(e: any) => setFormData({ ...formData, valor: maskCurrency(e.target.value) })}
+            />
+          )}
         </div>
 
         <Input 
@@ -313,6 +321,7 @@ export const ServiceEntryModal = ({ isOpen, onClose, onSubmit, editingEntry, cli
                 { value: 'PAINEL REVESTIMENTO', label: 'PAINEL REVESTIMENTO' },
                 { value: 'LETRA CAIXA', label: 'LETRA CAIXA' },
                 { value: 'PLACA', label: 'PLACA' },
+                { value: 'MOBILIÁRIO', label: 'MOBILIÁRIO' },
                 { value: 'PAINEL DE LED', label: 'PAINEL DE LED' }
               ].sort((a, b) => a.label.localeCompare(b.label, 'pt-BR'))
             ]}

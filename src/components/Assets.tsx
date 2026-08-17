@@ -45,7 +45,7 @@ export const Assets = ({
   onUpdateAsset,
   onDeleteAsset,
   onDisposalAsset,
-  canSeeValues = true,
+  canSeeValues = false,
   suppliers = []
 }: AssetsProps) => {
   const [isModalOpen, setIsModalOpen] = useState(false);

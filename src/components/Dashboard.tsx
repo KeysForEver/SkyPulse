@@ -29,7 +29,7 @@ interface DashboardProps {
   canSeeValues?: boolean;
 }
 
-export const Dashboard = ({ stats, isDarkMode, onNavigate, canSeeValues = true }: DashboardProps) => {
+export const Dashboard = ({ stats, isDarkMode, onNavigate, canSeeValues = false }: DashboardProps) => {
   const textColor = isDarkMode ? '#a1a1aa' : '#71717a';
   const gridColor = isDarkMode ? '#27272a' : '#f1f1f1';
   const barColor = isDarkMode ? '#f4f4f5' : '#18181b';

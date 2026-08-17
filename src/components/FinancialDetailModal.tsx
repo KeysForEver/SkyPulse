@@ -24,11 +24,19 @@ export const FinancialDetailModal = ({
   isOpen,
   onClose,
   entry,
-  canSeeValues = true
+  canSeeValues = false
 }: FinancialDetailModalProps) => {
   if (!entry) return null;
 
   const renderInvoices = () => {
+    if (!canSeeValues) {
+      return (
+        <div className="p-4 bg-zinc-50 dark:bg-zinc-800/50 rounded-xl border border-dashed border-zinc-200 dark:border-zinc-800 flex flex-col items-center justify-center text-zinc-400 gap-2">
+          <FileText size={24} strokeWidth={1} />
+          <span className="text-xs font-medium uppercase text-center">Visualização de notas fiscais restrita a usuários com permissão financeira</span>
+        </div>
+      );
+    }
     if (!entry.invoice_pdf) return (
       <div className="p-4 bg-zinc-50 dark:bg-zinc-800/50 rounded-xl border border-dashed border-zinc-200 dark:border-zinc-800 flex flex-col items-center justify-center text-zinc-400 gap-2">
         <FileText size={24} strokeWidth={1} />

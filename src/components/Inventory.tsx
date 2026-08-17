@@ -81,7 +81,7 @@ export const Inventory = ({
   onStockOut,
   initialSearchTerm = '',
   onSearchTermChange,
-  canSeeValues = true
+  canSeeValues = false
 }: InventoryProps) => {
   const [activeSubTab, setActiveSubTab] = useState<'products' | 'movements'>('products');
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -931,6 +931,7 @@ export const Inventory = ({
         stockInError={stockInError}
         fieldErrors={stockInFieldErrors}
         onClear={resetStockInForm}
+        canSeeValues={canSeeValues}
       />
 
       <StockOutModal 

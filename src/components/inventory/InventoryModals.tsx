@@ -406,7 +406,8 @@ export const StockInModal = ({
   products,
   stockInError,
   fieldErrors,
-  onClear
+  onClear,
+  canSeeValues = false
 }: any) => {
   const [searchTerm, setSearchTerm] = useState('');
   const debouncedSearchTerm = useDebounce(searchTerm, 300);
@@ -1133,7 +1134,7 @@ export const ProductDetailModal = ({
   movements,
   isLoading,
   isAdmin = false,
-  canSeeValues = true,
+  canSeeValues = false,
   onEdit,
   onDelete
 }: any) => {
@@ -1373,26 +1374,30 @@ export const ProductDetailModal = ({
                             <td className="px-4 py-3 text-xs text-zinc-500 dark:text-zinc-400 truncate max-w-[100px]">
                               {m.type === 'IN' ? (m.doc_number || '-') : (m.reason || '-')}
                             </td>
-                            <td className="px-4 py-3 text-xs text-zinc-500 dark:text-zinc-400 truncate max-w-[100px]" title={m.xml}>
-                              {m.xml || '-'}
+                            <td className="px-4 py-3 text-xs text-zinc-500 dark:text-zinc-400 truncate max-w-[100px]" title={canSeeValues ? m.xml : ''}>
+                              {canSeeValues ? (m.xml || '-') : '*'}
                             </td>
                             <td className="px-4 py-3 text-xs text-zinc-500 dark:text-zinc-400">
-                              <div className="flex flex-wrap gap-1">
-                                {invoices.map((inv: any, idx: number) => (
-                                  <a 
-                                    key={idx} 
-                                    href={inv.url} 
-                                    download={inv.name}
-                                    target="_blank" 
-                                    rel="noopener noreferrer"
-                                    className="p-1 bg-zinc-100 dark:bg-zinc-800 rounded text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors"
-                                    title={inv.name}
-                                  >
-                                    <FileText size={12} />
-                                  </a>
-                                ))}
-                                {invoices.length === 0 && '-'}
-                              </div>
+                              {canSeeValues ? (
+                                <div className="flex flex-wrap gap-1">
+                                  {invoices.map((inv: any, idx: number) => (
+                                    <a 
+                                      key={idx} 
+                                      href={inv.url} 
+                                      download={inv.name}
+                                      target="_blank" 
+                                      rel="noopener noreferrer"
+                                      className="p-1 bg-zinc-100 dark:bg-zinc-800 rounded text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors"
+                                      title={inv.name}
+                                    >
+                                      <FileText size={12} />
+                                    </a>
+                                  ))}
+                                  {invoices.length === 0 && '-'}
+                                </div>
+                              ) : (
+                                <span title="Acesso a notas fiscais restrito a usuários com permissão financeira" className="text-zinc-400 font-mono text-xs">*</span>
+                              )}
                             </td>
                           </tr>
                         );

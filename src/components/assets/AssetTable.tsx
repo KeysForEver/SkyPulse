@@ -23,7 +23,7 @@ export const AssetTable = ({
   getSortIcon, 
   onAssetClick,
   isAdmin = false,
-  canSeeValues = true
+  canSeeValues = false
 }: AssetTableProps) => {
   const [visibleCount, setVisibleCount] = useState(30);
   const sentinelRef = useRef<HTMLTableRowElement>(null);

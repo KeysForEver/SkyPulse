@@ -22,7 +22,7 @@ export const ProductTable = ({
   getSortIcon,
   onProductClick,
   isAdmin = false,
-  canSeeValues = true
+  canSeeValues = false
 }: ProductTableProps) => {
   const [visibleCount, setVisibleCount] = useState(30);
   const sentinelRef = useRef<HTMLTableRowElement>(null);

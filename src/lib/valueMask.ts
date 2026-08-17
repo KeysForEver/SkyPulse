@@ -4,7 +4,7 @@
  * @param canSeeValues Boolean indicating if the user has permission to see values
  * @returns The original value formatted or '*'
  */
-export const maskValue = (value: any, canSeeValues: boolean = true) => {
+export const maskValue = (value: any, canSeeValues: boolean = false) => {
   if (canSeeValues) return value;
   return '*';
 };
@@ -12,7 +12,7 @@ export const maskValue = (value: any, canSeeValues: boolean = true) => {
 /**
  * Specifically for currency/number formatting but with masking support.
  */
-export const formatCurrency = (value: number, canSeeValues: boolean = true) => {
+export const formatCurrency = (value: number, canSeeValues: boolean = false) => {
   if (!canSeeValues) return '*';
   return new Intl.NumberFormat('pt-BR', {
     style: 'currency',
@@ -20,7 +20,7 @@ export const formatCurrency = (value: number, canSeeValues: boolean = true) => {
   }).format(value);
 };
 
-export const formatNumber = (value: number, canSeeValues: boolean = true) => {
+export const formatNumber = (value: number, canSeeValues: boolean = false) => {
   if (!canSeeValues) return '*';
   return new Intl.NumberFormat('pt-BR').format(value);
 };

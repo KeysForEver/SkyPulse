@@ -630,7 +630,7 @@ export const AssetDetailModal = ({
   onClose,
   asset,
   isAdmin = false,
-  canSeeValues = true,
+  canSeeValues = false,
   onEdit,
   onDelete
 }: {
@@ -750,7 +750,7 @@ export const AssetDetailModal = ({
                     <div>
                       <p className="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider mb-1">Valor Compra</p>
                       <p className="text-sm font-bold text-zinc-900 dark:text-zinc-100">
-                        {maskCurrency(asset.purchase_value.toString().replace('.', ','))}
+                        {canSeeValues ? maskCurrency(asset.purchase_value.toString().replace('.', ',')) : '*'}
                       </p>
                     </div>
                     <div>
@@ -762,6 +762,7 @@ export const AssetDetailModal = ({
 
                 {/* Nota Fiscal / Anexos section */}
                 {(() => {
+                  if (!canSeeValues) return null;
                   let assetInvoices: any[] = [];
                   if (asset.invoice_pdf) {
                     try {
