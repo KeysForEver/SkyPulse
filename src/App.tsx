@@ -1753,23 +1753,14 @@ export default function App() {
                 </div>
               )}
             </div>
-            {/* Close button on mobile / Collapse toggle button on desktop */}
+            {/* Close button strictly on mobile drawer */}
             <button 
-              onClick={() => {
-                if (window.innerWidth < 1024) {
-                  setIsSidebarOpen(false);
-                } else {
-                  setIsSidebarCollapsed(prev => !prev);
-                }
-              }}
-              className="p-2 rounded-xl text-zinc-400 hover:text-zinc-700 dark:text-zinc-500 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800/60 transition-colors"
-              title={isSidebarCollapsed ? "Expandir menu" : "Recolher menu"}
-              aria-label="Recolher menu"
+              onClick={() => setIsSidebarOpen(false)}
+              className="p-2 rounded-xl text-zinc-400 hover:text-zinc-700 dark:text-zinc-500 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800/60 transition-colors lg:hidden"
+              title="Fechar menu"
+              aria-label="Fechar menu"
             >
-              <X size={20} className="lg:hidden" />
-              <span className="hidden lg:inline">
-                <Menu size={18} />
-              </span>
+              <X size={20} />
             </button>
           </div>
 
