@@ -505,7 +505,7 @@ export const OrderModal = ({
               error={fieldErrors.client_id}
             />
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <Input
                 label="DATA DE ENTRADA"
                 icon={<Calendar size={18} />}
@@ -773,7 +773,7 @@ export const OrderModal = ({
             )}
 
             {step === 9 && (
-              <div className="pt-4 border-t border-zinc-100 dark:border-zinc-800 grid grid-cols-2 gap-4">
+              <div className="pt-4 border-t border-zinc-100 dark:border-zinc-800 grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <Input
                   label="TEMPERATURA (K)"
                   icon={<Thermometer size={18} />}
@@ -807,9 +807,9 @@ export const OrderModal = ({
           />
         </div>
 
-        <form ref={formRef} noValidate onSubmit={(e) => e.preventDefault()} className="p-6 space-y-6 overflow-y-auto flex-1">
+        <form ref={formRef} noValidate onSubmit={(e) => e.preventDefault()} className="p-4 sm:p-6 space-y-4 sm:space-y-6 overflow-y-auto flex-1">
           {error && <ErrorAlert>{error}</ErrorAlert>}
-          <div className="min-h-[300px]">
+          <div className="min-h-[220px] sm:min-h-[300px]">
             <AnimatePresence mode="wait">
               <motion.div
                 key={step}
@@ -818,8 +818,8 @@ export const OrderModal = ({
                 exit={{ opacity: 0, x: -20 }}
                 transition={{ duration: 0.2 }}
               >
-                <div className="mb-6">
-                  <h3 className="text-xl font-bold text-zinc-900 dark:text-zinc-100 uppercase">
+                <div className="mb-4 sm:mb-6">
+                  <h3 className="text-base sm:text-xl font-bold text-zinc-900 dark:text-zinc-100 uppercase">
                     {step === 1 && 'DADOS INICIAIS'}
                     {step === 2 && 'KANBAN'}
                     {step === 3 && 'IMPRESSÃO'}
@@ -832,7 +832,7 @@ export const OrderModal = ({
                     {step === 10 && 'ACESSÓRIOS'}
                     {step === 11 && 'COLAGEM'}
                   </h3>
-                  <p className="text-xs text-zinc-500 dark:text-zinc-400 uppercase mt-1">
+                  <p className="text-[11px] sm:text-xs text-zinc-500 dark:text-zinc-400 uppercase mt-1">
                     {step === 1 && 'PREENCHA AS INFORMAÇÕES BÁSICAS DA ORDEM.'}
                     {step === 2 && 'SELECIONE O STATUS INICIAL NO QUADRO KANBAN.'}
                     {step > 2 && 'SELECIONE OS ITENS NECESSÁRIOS PARA ESTA ETAPA.'}
@@ -843,12 +843,12 @@ export const OrderModal = ({
             </AnimatePresence>
           </div>
 
-          <div className="flex justify-between items-center pt-6 border-t border-zinc-100 dark:border-zinc-800">
+          <div className="flex flex-col-reverse sm:flex-row justify-between items-stretch sm:items-center gap-3 pt-4 sm:pt-6 border-t border-zinc-100 dark:border-zinc-800">
             <Button 
               variant="ghost"
               onClick={handleBack}
               disabled={step === 1}
-              className="flex items-center gap-2"
+              className="flex items-center justify-center gap-2"
             >
               <ChevronLeft size={18} />
               ANTERIOR
@@ -859,7 +859,7 @@ export const OrderModal = ({
                 <Button 
                   variant="primary"
                   onClick={handleNext}
-                  className="flex items-center gap-2 px-8"
+                  className="flex-1 sm:flex-initial flex items-center justify-center gap-2 px-6 sm:px-8"
                 >
                   PRÓXIMO
                   <ChevronRight size={18} />
@@ -873,7 +873,7 @@ export const OrderModal = ({
                       onClose();
                     }
                   }}
-                  className="px-10"
+                  className="flex-1 sm:flex-initial px-6 sm:px-10 justify-center"
                 >
                   FINALIZAR E CRIAR ORDEM
                 </Button>

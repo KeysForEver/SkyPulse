@@ -47,17 +47,20 @@ export const InventoryFilters = ({
   }, [searchTerm]);
 
   return (
-    <div className="flex items-center gap-4 flex-1">
-      <SearchBar 
-        value={localSearchTerm}
-        onChange={setLocalSearchTerm}
-      />
+    <div className="flex flex-col sm:flex-row sm:items-center gap-3 flex-1 w-full">
+      <div className="w-full sm:flex-1">
+        <SearchBar 
+          value={localSearchTerm}
+          onChange={setLocalSearchTerm}
+          placeholder="Buscar produtos, código..."
+        />
+      </div>
       {activeSubTab === 'movements' && (
         <div className="flex flex-wrap items-center gap-2">
           <select
             value={movementTypeFilter}
             onChange={(e) => setMovementTypeFilter(e.target.value as any)}
-            className="px-3 py-2 bg-white border border-zinc-200 rounded-xl text-sm focus:ring-2 focus:ring-zinc-900 outline-none dark:bg-black dark:border-zinc-800 dark:text-zinc-100 dark:focus:ring-zinc-100 uppercase"
+            className="px-2.5 sm:px-3 py-2 bg-white border border-zinc-200 rounded-xl text-xs sm:text-sm focus:ring-2 focus:ring-zinc-900 outline-none dark:bg-zinc-900 dark:border-zinc-800 dark:text-zinc-100 uppercase"
           >
             <option value="ALL">TODOS OS TIPOS</option>
             <option value="IN">ENTRADA</option>
@@ -67,7 +70,7 @@ export const InventoryFilters = ({
           <select
             value={movementLocationFilter}
             onChange={(e) => setMovementLocationFilter(e.target.value)}
-            className="px-3 py-2 bg-white border border-zinc-200 rounded-xl text-sm focus:ring-2 focus:ring-zinc-900 outline-none dark:bg-black dark:border-zinc-800 dark:text-zinc-100 dark:focus:ring-zinc-100 uppercase"
+            className="px-2.5 sm:px-3 py-2 bg-white border border-zinc-200 rounded-xl text-xs sm:text-sm focus:ring-2 focus:ring-zinc-900 outline-none dark:bg-zinc-900 dark:border-zinc-800 dark:text-zinc-100 uppercase"
           >
             <option value="ALL">TODAS AS LOCALIZAÇÕES</option>
             {locations.map(loc => (
@@ -79,14 +82,14 @@ export const InventoryFilters = ({
             type="date" 
             value={startDate}
             onChange={(e) => setStartDate(e.target.value)}
-            className="px-3 py-2 bg-white border border-zinc-200 rounded-xl text-sm focus:ring-2 focus:ring-zinc-900 outline-none dark:bg-black dark:border-zinc-800 dark:text-zinc-100 dark:focus:ring-zinc-100"
+            className="px-2.5 sm:px-3 py-2 bg-white border border-zinc-200 rounded-xl text-xs sm:text-sm focus:ring-2 focus:ring-zinc-900 outline-none dark:bg-zinc-900 dark:border-zinc-800 dark:text-zinc-100"
           />
           <span className="text-zinc-400 dark:text-zinc-500 text-xs font-bold uppercase">até</span>
           <input 
             type="date" 
             value={endDate}
             onChange={(e) => setEndDate(e.target.value)}
-            className="px-3 py-2 bg-white border border-zinc-200 rounded-xl text-sm focus:ring-2 focus:ring-zinc-900 outline-none dark:bg-black dark:border-zinc-800 dark:text-zinc-100 dark:focus:ring-zinc-100"
+            className="px-2.5 sm:px-3 py-2 bg-white border border-zinc-200 rounded-xl text-xs sm:text-sm focus:ring-2 focus:ring-zinc-900 outline-none dark:bg-zinc-900 dark:border-zinc-800 dark:text-zinc-100"
           />
           {(startDate || endDate || movementTypeFilter !== 'ALL' || movementLocationFilter !== 'ALL') && (
             <button 

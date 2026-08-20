@@ -45,14 +45,14 @@ export const StatCard = ({ label, value, icon: Icon, trend, color, onClick }: { 
     onClick={onClick}
   >
     <div className="flex items-center justify-between">
-      <span className="text-xs font-medium text-zinc-500 uppercase tracking-wider dark:text-zinc-400">{label.toUpperCase()}</span>
-      <div className={cn("p-2 rounded-xl", color)}>
+      <span className="text-[11px] sm:text-xs font-semibold text-zinc-500 uppercase tracking-wider dark:text-zinc-400 truncate mr-2">{label.toUpperCase()}</span>
+      <div className={cn("p-1.5 sm:p-2 rounded-xl flex-shrink-0", color)}>
         <Icon size={16} className="text-white" />
       </div>
     </div>
-    <div className="flex items-end gap-2 mt-2">
-      <span className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">{value}</span>
-      {trend && <span className="text-xs font-medium text-emerald-600 dark:text-emerald-400 mb-1">{trend}</span>}
+    <div className="flex items-baseline gap-2 mt-1 sm:mt-2">
+      <span className="text-xl sm:text-2xl font-bold text-zinc-900 dark:text-zinc-100 tracking-tight">{value}</span>
+      {trend && <span className="text-[10px] sm:text-xs font-semibold text-emerald-600 dark:text-emerald-400">{trend}</span>}
     </div>
   </Card>
 );
@@ -71,26 +71,31 @@ export const Modal = ({ isOpen, onClose, title, children, zIndex = 200, noPaddin
   return (
     <AnimatePresence>
       {isOpen && (
-        <div className={cn("fixed inset-0 flex items-center justify-center p-4 sm:p-6", zIndex === 200 ? "z-[200]" : "z-[300]")}>
+        <div className={cn("fixed inset-0 flex items-center justify-center p-2 sm:p-4 md:p-6", zIndex === 200 ? "z-[200]" : "z-[300]")}>
           <motion.div 
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="absolute inset-0 bg-zinc-900/60 backdrop-blur-sm"
+            onClick={onClose}
           />
           <motion.div 
-            initial={{ opacity: 0, scale: 0.95, y: 20 }}
+            initial={{ opacity: 0, scale: 0.96, y: 15 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.95, y: 20 }}
-            className="relative w-full md:w-[92%] h-[92%] md:h-[85%] bg-white dark:bg-zinc-900 rounded-2xl shadow-2xl overflow-hidden flex flex-col"
+            exit={{ opacity: 0, scale: 0.96, y: 15 }}
+            className="relative w-full max-w-5xl h-[95vh] sm:h-[90vh] md:h-[85vh] max-h-[96vh] bg-white dark:bg-zinc-900 rounded-2xl shadow-2xl overflow-hidden flex flex-col"
           >
-            <div className="px-4 py-3 md:px-6 md:py-4 border-b border-zinc-100 dark:border-zinc-800 flex items-center justify-between flex-shrink-0">
-              <h2 className="text-sm md:text-lg font-bold text-zinc-900 dark:text-zinc-100 uppercase tracking-widest">{title}</h2>
-              <button onClick={onClose} className="text-zinc-400 hover:text-zinc-600 dark:text-zinc-500 dark:hover:text-zinc-300">
-                <X size={20} />
+            <div className="px-3.5 py-3 sm:px-6 sm:py-4 border-b border-zinc-100 dark:border-zinc-800 flex items-center justify-between flex-shrink-0">
+              <h2 className="text-xs sm:text-base md:text-lg font-bold text-zinc-900 dark:text-zinc-100 uppercase tracking-wider truncate">{title}</h2>
+              <button 
+                onClick={onClose} 
+                className="p-1.5 rounded-xl text-zinc-400 hover:text-zinc-600 dark:text-zinc-500 dark:hover:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+                aria-label="Fechar"
+              >
+                <X size={18} />
               </button>
             </div>
-            <div className={cn("overflow-y-auto flex-1 custom-scrollbar", !noPadding && "p-4 md:p-6")}>
+            <div className={cn("overflow-y-auto flex-1 custom-scrollbar", !noPadding && "p-3 sm:p-5 md:p-6")}>
               {children}
             </div>
           </motion.div>

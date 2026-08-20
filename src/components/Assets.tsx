@@ -242,22 +242,25 @@ export const Assets = ({
   return (
     <>
       <Card className="p-0 overflow-visible">
-        <div className="px-6 py-4 border-b border-zinc-100 dark:border-zinc-800 flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div className="flex items-center gap-4 flex-1">
-            {!hideTitle && <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100 whitespace-nowrap uppercase">Gestão de Patrimônio</h3>}
-            <SearchBar 
-              value={searchTerm}
-              onChange={setSearchTerm}
-            />
+        <div className="p-3 sm:p-4 md:px-6 md:py-4 border-b border-zinc-100 dark:border-zinc-800 flex flex-col lg:flex-row lg:items-center justify-between gap-3 sm:gap-4">
+          <div className="flex items-center gap-3 sm:gap-4 flex-1">
+            {!hideTitle && <h3 className="text-sm font-bold text-zinc-900 dark:text-zinc-100 whitespace-nowrap uppercase">Gestão de Patrimônio</h3>}
+            <div className="flex-1 w-full">
+              <SearchBar 
+                value={searchTerm}
+                onChange={setSearchTerm}
+                placeholder="Buscar patrimônio, responsável, categoria..."
+              />
+            </div>
           </div>
 
-          <div className="flex items-center gap-3 flex-wrap">
+          <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap justify-end">
             <div className="relative" ref={columnSelectorRef}>
               <button 
                 onClick={() => setIsColumnSelectorOpen(!isColumnSelectorOpen)}
-                className="flex items-center gap-2 px-4 py-2 text-sm font-bold text-zinc-600 bg-zinc-100 rounded-xl hover:bg-zinc-200 transition-colors dark:text-zinc-300 dark:bg-zinc-800 dark:hover:bg-zinc-700 uppercase"
+                className="flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 md:px-4 py-2 text-xs sm:text-sm font-bold text-zinc-600 bg-zinc-100 rounded-xl hover:bg-zinc-200 transition-colors dark:text-zinc-300 dark:bg-zinc-800 dark:hover:bg-zinc-700 uppercase active:scale-95"
               >
-                <Settings size={18} />
+                <Settings size={16} />
                 Colunas
               </button>
               <AnimatePresence>
@@ -296,41 +299,41 @@ export const Assets = ({
 
             <button 
               onClick={() => { setSelectedPdfFields([]); setIsPdfOptionsModalOpen(true); }}
-              className="flex items-center gap-2 px-4 py-2 text-sm font-bold text-zinc-600 bg-zinc-100 rounded-xl hover:bg-zinc-200 transition-colors dark:text-zinc-300 dark:bg-zinc-800 dark:hover:bg-zinc-700 uppercase"
+              className="flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 md:px-4 py-2 text-xs sm:text-sm font-bold text-zinc-600 bg-zinc-100 rounded-xl hover:bg-zinc-200 transition-colors dark:text-zinc-300 dark:bg-zinc-800 dark:hover:bg-zinc-700 uppercase active:scale-95"
             >
-              <FileText size={18} />
+              <FileText size={16} />
               PDF
             </button>
 
             <button 
               onClick={handleExportCsv}
-              className="flex items-center gap-2 px-4 py-2 text-sm font-bold text-zinc-600 bg-zinc-100 rounded-xl hover:bg-zinc-200 transition-colors dark:text-zinc-300 dark:bg-zinc-800 dark:hover:bg-zinc-700 uppercase"
+              className="flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 md:px-4 py-2 text-xs sm:text-sm font-bold text-zinc-600 bg-zinc-100 rounded-xl hover:bg-zinc-200 transition-colors dark:text-zinc-300 dark:bg-zinc-800 dark:hover:bg-zinc-700 uppercase active:scale-95"
             >
-              <Download size={18} />
+              <Download size={16} />
               CSV
             </button>
 
             <button 
               onClick={() => { setSelectedAssetForDisposal(null); setIsDisposalModalOpen(true); }}
-              className="flex items-center gap-2 px-4 py-2 text-sm font-bold text-rose-600 bg-rose-50 rounded-xl hover:bg-rose-100 transition-colors dark:text-rose-400 dark:bg-rose-500/10 dark:hover:bg-rose-500/20 uppercase"
+              className="flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 md:px-4 py-2 text-xs sm:text-sm font-bold text-rose-600 bg-rose-50 rounded-xl hover:bg-rose-100 transition-colors dark:text-rose-400 dark:bg-rose-500/10 dark:hover:bg-rose-500/20 uppercase active:scale-95"
             >
-              <ArrowUpRight size={18} />
+              <ArrowUpRight size={16} />
               SAÍDA
             </button>
 
             <button 
               onClick={() => { setEditingAsset(null); setIsModalOpen(true); }}
-              className="flex items-center gap-2 px-4 py-2 text-sm font-bold text-emerald-600 bg-emerald-50 rounded-xl hover:bg-emerald-100 transition-colors dark:text-emerald-400 dark:bg-emerald-500/10 dark:hover:bg-emerald-500/20 uppercase"
+              className="flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 md:px-4 py-2 text-xs sm:text-sm font-bold text-emerald-600 bg-emerald-50 rounded-xl hover:bg-emerald-100 transition-colors dark:text-emerald-400 dark:bg-emerald-500/10 dark:hover:bg-emerald-500/20 uppercase active:scale-95"
             >
-              <ArrowDownLeft size={18} />
+              <ArrowDownLeft size={16} />
               ENTRADA
             </button>
 
             <button 
               onClick={() => { setEditingAsset(null); setIsModalOpen(true); }}
-              className="flex items-center gap-2 px-4 py-2 text-sm font-bold text-white bg-zinc-900 rounded-xl hover:bg-zinc-800 transition-colors dark:bg-zinc-100 dark:text-zinc-900 uppercase"
+              className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 text-xs sm:text-sm font-bold text-white bg-zinc-900 rounded-xl hover:bg-zinc-800 transition-colors dark:bg-zinc-100 dark:text-zinc-900 uppercase active:scale-95"
             >
-              <Plus size={18} />
+              <Plus size={16} />
               NOVO PATRIMÔNIO
             </button>
           </div>

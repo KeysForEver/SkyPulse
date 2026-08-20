@@ -164,22 +164,25 @@ export const GenericList = ({
 
   return (
     <Card className="p-0 overflow-visible">
-      <div className="px-6 py-4 border-b border-zinc-100 dark:border-zinc-800 flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div className="flex items-center gap-4 flex-1">
-          {!hideTitle && title && <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100 whitespace-nowrap uppercase">{title}</h3>}
-          <SearchBar 
-            value={inputValue}
-            onChange={setInputValue}
-          />
+      <div className="p-3 sm:p-4 md:px-6 md:py-4 border-b border-zinc-100 dark:border-zinc-800 flex flex-col lg:flex-row lg:items-center justify-between gap-3 sm:gap-4">
+        <div className="flex items-center gap-3 sm:gap-4 flex-1">
+          {!hideTitle && title && <h3 className="text-sm font-bold text-zinc-900 dark:text-zinc-100 whitespace-nowrap uppercase">{title}</h3>}
+          <div className="flex-1 w-full">
+            <SearchBar 
+              value={inputValue}
+              onChange={setInputValue}
+              placeholder="Buscar..."
+            />
+          </div>
         </div>
         
-        <div className="flex items-center gap-2 flex-wrap">
+        <div className="flex items-center gap-2 flex-wrap justify-end">
           <div className="relative" ref={columnSelectorRef}>
             <button 
               onClick={() => setIsColumnSelectorOpen(!isColumnSelectorOpen)}
-              className="flex items-center gap-2 px-4 py-2 text-sm font-bold text-zinc-600 bg-zinc-100 rounded-xl hover:bg-zinc-200 transition-colors dark:text-zinc-300 dark:bg-zinc-800 dark:hover:bg-zinc-700 uppercase"
+              className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 text-xs sm:text-sm font-bold text-zinc-600 bg-zinc-100 rounded-xl hover:bg-zinc-200 transition-colors dark:text-zinc-300 dark:bg-zinc-800 dark:hover:bg-zinc-700 uppercase"
             >
-              <Settings size={18} />
+              <Settings size={16} />
               Colunas
             </button>
             <AnimatePresence>
@@ -218,26 +221,26 @@ export const GenericList = ({
 
           <button 
             onClick={() => exportGenericToPDF(filteredItems, activeColumns, title, title.toLowerCase().replace(/\s+/g, '_'))}
-            className="flex items-center gap-2 px-4 py-2 text-sm font-bold text-zinc-600 bg-zinc-100 rounded-xl hover:bg-zinc-200 transition-colors dark:text-zinc-300 dark:bg-zinc-800 dark:hover:bg-zinc-700 uppercase"
+            className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 text-xs sm:text-sm font-bold text-zinc-600 bg-zinc-100 rounded-xl hover:bg-zinc-200 transition-colors dark:text-zinc-300 dark:bg-zinc-800 dark:hover:bg-zinc-700 uppercase"
           >
-            <FileText size={18} />
+            <FileText size={16} />
             PDF
           </button>
           
           <button 
             onClick={() => exportGenericToCSV(filteredItems, activeColumns, title.toLowerCase().replace(/\s+/g, '_'))}
-            className="flex items-center gap-2 px-4 py-2 text-sm font-bold text-zinc-600 bg-zinc-100 rounded-xl hover:bg-zinc-200 transition-colors dark:text-zinc-300 dark:bg-zinc-800 dark:hover:bg-zinc-700 uppercase"
+            className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 text-xs sm:text-sm font-bold text-zinc-600 bg-zinc-100 rounded-xl hover:bg-zinc-200 transition-colors dark:text-zinc-300 dark:bg-zinc-800 dark:hover:bg-zinc-700 uppercase"
           >
-            <Download size={18} />
+            <Download size={16} />
             CSV
           </button>
 
           {showAddButton && onAdd && (
             <button 
               onClick={onAdd}
-              className="flex items-center gap-2 px-4 py-2 bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 text-sm font-bold rounded-xl hover:bg-zinc-800 dark:hover:bg-zinc-200 transition-colors uppercase ml-2 shadow-lg shadow-zinc-900/10 dark:shadow-none"
+              className="flex items-center gap-1.5 sm:gap-2 px-3.5 sm:px-4 py-2 bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 text-xs sm:text-sm font-bold rounded-xl hover:bg-zinc-800 dark:hover:bg-zinc-200 transition-colors uppercase shadow-lg shadow-zinc-900/10 dark:shadow-none active:scale-95"
             >
-              <Plus size={18} />
+              <Plus size={16} />
               {addButtonLabel}
             </button>
           )}
@@ -251,7 +254,7 @@ export const GenericList = ({
                 <th 
                   key={col.key} 
                   onClick={() => requestSort(col.key)}
-                  className="px-6 py-3 text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider cursor-pointer group/th"
+                  className="px-3.5 sm:px-6 py-3 text-[11px] sm:text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider cursor-pointer group/th whitespace-nowrap"
                 >
                   <div className="flex items-center gap-1">
                     {col.label}
@@ -272,7 +275,7 @@ export const GenericList = ({
                 )}
               >
                 {activeColumns.map(col => (
-                  <td key={col.key} className={cn("px-6 py-4 text-sm", col.mono ? "font-mono text-zinc-500 dark:text-zinc-400" : "text-zinc-900 dark:text-zinc-100")}>
+                  <td key={col.key} className={cn("px-3.5 sm:px-6 py-3 sm:py-4 text-xs sm:text-sm", col.mono ? "font-mono text-zinc-500 dark:text-zinc-400" : "text-zinc-900 dark:text-zinc-100")}>
                     {col.render ? col.render(item[col.key], item) : item[col.key]}
                   </td>
                 ))}
@@ -280,14 +283,14 @@ export const GenericList = ({
             ))}
             {filteredItems.length > visibleCount && (
               <tr ref={sentinelRef} className="bg-zinc-50/10 dark:bg-zinc-800/10">
-                <td colSpan={activeColumns.length} className="px-6 py-4 text-center text-xs font-semibold text-zinc-500 dark:text-zinc-400 animate-pulse uppercase tracking-wider">
+                <td colSpan={activeColumns.length} className="px-3.5 sm:px-6 py-4 text-center text-xs font-semibold text-zinc-500 dark:text-zinc-400 animate-pulse uppercase tracking-wider">
                   CARREGANDO MAIS REGISTROS...
                 </td>
               </tr>
             )}
             {filteredItems.length === 0 && (
               <tr>
-                <td colSpan={activeColumns.length} className="px-6 py-8 text-center text-zinc-400 dark:text-zinc-500 text-sm italic uppercase">
+                <td colSpan={activeColumns.length} className="px-3.5 sm:px-6 py-8 text-center text-zinc-400 dark:text-zinc-500 text-xs sm:text-sm italic uppercase">
                   NENHUM REGISTRO ENCONTRADO.
                 </td>
               </tr>

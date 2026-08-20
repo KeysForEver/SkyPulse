@@ -10,34 +10,24 @@
   /* Proportional scaling based on screen size */
   html {
     font-size: 16px; /* Default Desktop */
-  }
-
-  @media screen and (max-width: 1280px) {
-    html {
-      font-size: 15px; /* Large Tablets / Small Laptops */
-    }
+    -webkit-text-size-adjust: 100%;
   }
 
   @media screen and (max-width: 1024px) {
     html {
-      font-size: 14px; /* Tablets Landscape */
+      font-size: 15px; /* Tablets */
     }
   }
 
-  @media screen and (max-width: 768px) {
+  @media screen and (max-width: 640px) {
     html {
-      font-size: 13px; /* Mobile Landscape Large */
-    }
-  }
-
-  @media screen and (max-width: 480px) {
-    html {
-      font-size: 12px; /* Mobile Landscape Small */
+      font-size: 14.5px; /* Mobile Phones */
     }
   }
 
   body {
     @apply antialiased text-zinc-900 bg-white transition-colors duration-300;
+    touch-action: manipulation;
   }
   .dark body {
     @apply text-zinc-100 bg-black;
@@ -47,28 +37,9 @@
   }
 }
 
-/* Portrait Mode Warning */
-#portrait-warning {
-  display: none;
-  position: fixed;
-  inset: 0;
-  z-index: 9999;
-  background: #09090b;
-  color: #fafafa;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
-  padding: 2rem;
-}
-
-@media screen and (max-width: 1024px) and (orientation: portrait) {
-  #portrait-warning {
-    display: flex;
-  }
-  #root > div:not(#portrait-warning) {
-    display: none !important;
-  }
+/* Mobile & Touch optimization */
+.overflow-x-auto, .overflow-y-auto {
+  -webkit-overflow-scrolling: touch;
 }
 
 /* Landscape spacing adjustments */

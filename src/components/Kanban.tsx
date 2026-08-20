@@ -161,20 +161,23 @@ export const Kanban = ({ orders, serviceEntries, onUpdateStatus, onEdit, onDelet
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between gap-4">
-        <SearchBar 
-          value={searchTerm}
-          onChange={setSearchTerm}
-        />
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="w-full sm:w-80">
+          <SearchBar 
+            value={searchTerm}
+            onChange={setSearchTerm}
+            placeholder="Buscar ordens, clientes, itens..."
+          />
+        </div>
         <button 
           onClick={onAdd}
-          className="flex items-center gap-2 px-4 py-2 bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 text-sm font-bold rounded-xl hover:bg-zinc-800 dark:hover:bg-zinc-200 transition-all shadow-lg shadow-zinc-900/10 uppercase"
+          className="flex items-center justify-center gap-2 px-4 py-2.5 bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 text-xs sm:text-sm font-bold rounded-xl hover:bg-zinc-800 dark:hover:bg-zinc-200 transition-all shadow-lg shadow-zinc-900/10 uppercase active:scale-95 flex-shrink-0"
         >
           <Plus size={18} />
           NOVA ORDEM DE PRODUÇÃO
         </button>
       </div>
-      <div className="flex gap-4 overflow-x-auto pb-4 min-h-[calc(100vh-16rem)] items-start">
+      <div className="flex gap-4 overflow-x-auto pb-4 min-h-[calc(100vh-14rem)] items-start">
         {/* Service Entries Column */}
         <div className="flex-shrink-0 w-64 lg:w-72 flex flex-col gap-3 self-stretch">
           <div className="flex items-center justify-between px-1">

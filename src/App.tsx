@@ -315,19 +315,6 @@ export default function App() {
     }
   }, [isDarkMode]);
 
-  useEffect(() => {
-    const lockOrientation = async () => {
-      try {
-        if (screen.orientation && (screen.orientation as any).lock) {
-          await (screen.orientation as any).lock('landscape');
-        }
-      } catch (err) {
-        // This often fails if not in fullscreen or not supported, which is expected
-      }
-    };
-    lockOrientation();
-  }, []);
-
   const [activeTab, setActiveTab] = useState('dashboard');
   const [inventorySearchTerm, setInventorySearchTerm] = useState('');
   const [stats, setStats] = useState<any>(null);
@@ -390,9 +377,8 @@ export default function App() {
   const [movements, setMovements] = useState<Movement[]>([]);
   const [financialEntries, setFinancialEntries] = useState<any[]>([]);
   const [auditLogs, setAuditLogs] = useState<any[]>([]);
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
-  const [lastScrollY, setLastScrollY] = useState(0);
   const [globalError, setGlobalError] = useState<string | null>(null);
   const [isFetching, setIsFetching] = useState(false);
   const mainContentRef = useRef<HTMLDivElement>(null);
@@ -402,57 +388,25 @@ export default function App() {
     const handleResize = () => {
       const width = window.innerWidth;
       if (width >= 1024) {
-        // On desktop, ensure sidebar is "open" (drawer state)
         setIsSidebarOpen(true);
-        // On desktop, we generally want the sidebar expanded unless scrolling down
-        // Resetting it here ensures that when returning from mobile it's in a clean state
-        setIsSidebarCollapsed(false);
       } else {
-        // On mobile/tablet, default to closed drawer
         setIsSidebarOpen(false);
-        setIsSidebarCollapsed(false);
       }
     };
 
     window.addEventListener('resize', handleResize);
-    // Initial check
     handleResize();
     
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  useEffect(() => {
-    const handleScroll = () => {
-      if (!mainContentRef.current) return;
-      const currentScrollY = mainContentRef.current.scrollTop;
-      
-      // Only trigger collapse on screens below 1280px (xl)
-      if (window.innerWidth < 1280) {
-        if (currentScrollY > lastScrollY && currentScrollY > 50) {
-          // Scrolling down - collapse
-          setIsSidebarCollapsed(true);
-          // Also close mobile drawer if it's open
-          if (window.innerWidth < 1024 && isSidebarOpen) {
-            setIsSidebarOpen(false);
-          }
-        } else if (currentScrollY < lastScrollY || currentScrollY <= 10) {
-          // Scrolling up or at top - expand
-          setIsSidebarCollapsed(false);
-        }
-      }
-      setLastScrollY(currentScrollY);
-    };
-
-    const container = mainContentRef.current;
-    if (container) {
-      container.addEventListener('scroll', handleScroll);
+  const handleToggleSidebar = () => {
+    if (window.innerWidth < 1024) {
+      setIsSidebarOpen(prev => !prev);
+    } else {
+      setIsSidebarCollapsed(prev => !prev);
     }
-    return () => {
-      if (container) {
-        container.removeEventListener('scroll', handleScroll);
-      }
-    };
-  }, [lastScrollY, isSidebarOpen]);
+  };
 
   const [isOrderModalOpen, setIsOrderModalOpen] = useState(false);
   const [editingOrder, setEditingOrder] = useState<Order | null>(null);
@@ -1766,18 +1720,6 @@ export default function App() {
 
   return (
     <>
-      <div id="portrait-warning">
-        <div className="bg-zinc-800/50 p-6 rounded-3xl border border-zinc-700/50 shadow-2xl backdrop-blur-xl">
-          <div className="w-20 h-20 bg-zinc-100 rounded-2xl flex items-center justify-center mx-auto mb-6 animate-bounce">
-            <RotateCcw className="text-zinc-900" size={40} />
-          </div>
-          <h2 className="text-2xl font-bold mb-3 uppercase">Gire seu dispositivo</h2>
-          <p className="text-zinc-400 text-sm max-w-[240px] mx-auto leading-relaxed uppercase">
-            Esta aplicação foi otimizada para visualização em modo <span className="text-white font-semibold">paisagem (deitado)</span> para oferecer a melhor experiência de gestão.
-          </p>
-        </div>
-      </div>
-
       <div className="flex h-screen bg-white font-sans text-zinc-900 dark:bg-black dark:text-zinc-100 transition-colors duration-300">
       {/* Mobile Overlay */}
       <AnimatePresence>
@@ -1794,26 +1736,44 @@ export default function App() {
 
       {/* Sidebar */}
       <aside className={cn(
-        "fixed inset-y-0 left-0 z-50 bg-white border-r border-zinc-200 transition-all duration-300 lg:relative lg:translate-x-0 dark:bg-zinc-950 dark:border-zinc-800 flex-shrink-0",
-        isSidebarCollapsed ? "w-20" : "w-64 md:w-56 lg:w-64",
+        "fixed inset-y-0 left-0 z-50 bg-white border-r border-zinc-200 transition-all duration-300 lg:relative lg:translate-x-0 dark:bg-zinc-950 dark:border-zinc-800 flex-shrink-0 shadow-2xl lg:shadow-none",
+        isSidebarCollapsed ? "w-20" : "w-72 sm:w-64",
         !isSidebarOpen && "-translate-x-full lg:translate-x-0"
       )}>
         <div className="flex flex-col h-full overflow-hidden">
-          <div className={cn("p-6 flex items-center justify-between", isSidebarCollapsed && "px-0 justify-center")}>
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-zinc-900 rounded-lg flex items-center justify-center dark:bg-zinc-100 flex-shrink-0">
+          <div className={cn("p-4 sm:p-5 flex items-center justify-between border-b border-zinc-100 dark:border-zinc-800/80", isSidebarCollapsed && "px-2 justify-center")}>
+            <div className="flex items-center gap-3 overflow-hidden">
+              <div className="w-9 h-9 bg-zinc-900 rounded-xl flex items-center justify-center dark:bg-zinc-100 flex-shrink-0 shadow-sm">
                 <Package className="text-white dark:text-zinc-900" size={20} />
               </div>
-              {!isSidebarCollapsed && <span className="font-bold text-lg tracking-tight dark:text-white truncate">SkySmart</span>}
+              {!isSidebarCollapsed && (
+                <div className="flex flex-col min-w-0">
+                  <span className="font-bold text-base tracking-tight dark:text-white truncate">SkySmart</span>
+                  <span className="text-[10px] text-zinc-400 dark:text-zinc-500 uppercase tracking-widest font-semibold">ERP System</span>
+                </div>
+              )}
             </div>
-            {!isSidebarCollapsed && (
-              <button onClick={() => setIsSidebarOpen(false)} className="lg:hidden text-zinc-400 dark:text-zinc-500">
-                <X size={20} />
-              </button>
-            )}
+            {/* Close button on mobile / Collapse toggle button on desktop */}
+            <button 
+              onClick={() => {
+                if (window.innerWidth < 1024) {
+                  setIsSidebarOpen(false);
+                } else {
+                  setIsSidebarCollapsed(prev => !prev);
+                }
+              }}
+              className="p-2 rounded-xl text-zinc-400 hover:text-zinc-700 dark:text-zinc-500 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800/60 transition-colors"
+              title={isSidebarCollapsed ? "Expandir menu" : "Recolher menu"}
+              aria-label="Recolher menu"
+            >
+              <X size={20} className="lg:hidden" />
+              <span className="hidden lg:inline">
+                <Menu size={18} />
+              </span>
+            </button>
           </div>
 
-          <nav className="flex-1 px-4 space-y-1 overflow-y-auto custom-scrollbar overflow-x-hidden">
+          <nav className="flex-1 px-3 py-3 space-y-1 overflow-y-auto custom-scrollbar overflow-x-hidden">
             {visibleSidebarItems.map((item) => (
               <SidebarItem 
                 key={item.id}
@@ -1821,16 +1781,26 @@ export default function App() {
                 label={item.label} 
                 active={activeTab === item.id} 
                 isCollapsed={isSidebarCollapsed} 
-                onClick={() => { setActiveTab(item.id as any); setIsSidebarOpen(false); }} 
+                onClick={() => { 
+                  setActiveTab(item.id as any); 
+                  if (window.innerWidth < 1024) {
+                    setIsSidebarOpen(false); 
+                  }
+                }} 
               />
             ))}
           </nav>
 
-          <div className="p-4 border-t border-zinc-100 dark:border-zinc-800">
+          <div className="p-3 border-t border-zinc-100 dark:border-zinc-800">
             <button 
-              onClick={() => setIsProfileModalOpen(true)}
+              onClick={() => {
+                setIsProfileModalOpen(true);
+                if (window.innerWidth < 1024) {
+                  setIsSidebarOpen(false);
+                }
+              }}
               className={cn(
-                "w-full flex items-center gap-3 px-2 py-3 rounded-xl bg-zinc-50 dark:bg-zinc-900/50 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-all group", 
+                "w-full flex items-center gap-3 px-2.5 py-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-900/50 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-all group", 
                 isSidebarCollapsed && "justify-center px-0"
               )}
             >
@@ -1868,12 +1838,17 @@ export default function App() {
             </div>
           )}
         </AnimatePresence>
-        <header className="h-16 bg-white border-b border-zinc-200 flex items-center justify-between px-6 flex-shrink-0 dark:bg-zinc-950 dark:border-zinc-800">
-          <div className="flex items-center gap-4">
-            <button onClick={() => setIsSidebarOpen(true)} className="lg:hidden text-zinc-400 dark:text-zinc-500">
-              <Menu size={20} />
+        <header className="h-16 bg-white border-b border-zinc-200 flex items-center justify-between px-3 sm:px-4 md:px-6 flex-shrink-0 dark:bg-zinc-950 dark:border-zinc-800">
+          <div className="flex items-center gap-2.5 sm:gap-4 min-w-0">
+            <button 
+              onClick={handleToggleSidebar} 
+              className="p-2 rounded-xl text-zinc-600 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800/80 transition-colors active:scale-95 focus:outline-none"
+              title={isSidebarCollapsed ? "Expandir menu lateral" : "Recolher menu lateral"}
+              aria-label="Alternar menu"
+            >
+              <Menu size={22} />
             </button>
-            <h1 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">
+            <h1 className="text-sm sm:text-base md:text-lg font-bold text-zinc-900 dark:text-zinc-100 truncate uppercase tracking-tight">
               {activeTab === 'dashboard' && 'PAINEL'}
               {activeTab === 'kanban' && 'KANBAN'}
               {activeTab === 'service_entry' && 'ENTRADA DE SERVIÇO'}
@@ -1887,22 +1862,23 @@ export default function App() {
               {activeTab === 'audit' && 'HISTÓRICO DE AÇÕES'}
             </h1>
           </div>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 sm:gap-4 flex-shrink-0">
             <button 
               onClick={() => fetchData()}
               disabled={isFetching}
               className={cn(
-                "flex items-center gap-2 px-3 py-1.5 bg-zinc-100 dark:bg-zinc-800 rounded-full text-xs font-medium text-zinc-600 dark:text-zinc-400 uppercase transition-all hover:bg-zinc-200 dark:hover:bg-zinc-700",
+                "flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3.5 py-1.5 bg-zinc-100 dark:bg-zinc-800 rounded-xl text-xs font-bold text-zinc-700 dark:text-zinc-300 uppercase transition-all hover:bg-zinc-200 dark:hover:bg-zinc-700 active:scale-95",
                 isFetching && "opacity-50 cursor-not-allowed"
               )}
+              title="Atualizar Dados"
             >
-              <RotateCcw className={cn("w-3 h-3", isFetching && "animate-spin")} />
-              {isFetching ? 'Atualizando...' : 'Atualizar Dados'}
+              <RotateCcw className={cn("w-3.5 h-3.5", isFetching && "animate-spin")} />
+              <span className="hidden sm:inline">{isFetching ? 'Atualizando...' : 'Atualizar Dados'}</span>
             </button>
           </div>
         </header>
 
-        <div className="flex-1 overflow-y-auto p-6" ref={mainContentRef}>
+        <div className="flex-1 overflow-y-auto p-3 sm:p-4 md:p-6" ref={mainContentRef}>
           <AnimatePresence mode="wait">
             <motion.div
               key={activeTab}
