@@ -203,67 +203,107 @@ export const OrderDetailModal = ({
           </div>
 
           {/* Linked Service Entry Product Details */}
-          {linkedEntry && linkedEntry.product_category && (
+          {linkedEntry && ((linkedEntry.products && linkedEntry.products.length > 0) || linkedEntry.product_category) && (
             <div className="p-5 bg-zinc-900 text-white rounded-3xl space-y-4 shadow-xl">
-              <div className="flex items-center gap-2 border-b border-white/10 pb-3">
-                <Box size={18} className="text-zinc-400" />
-                <h3 className="text-xs font-bold uppercase tracking-[0.2em]">Especificações da Obra</h3>
+              <div className="flex items-center justify-between border-b border-white/10 pb-3 flex-wrap gap-2">
+                <div className="flex items-center gap-2">
+                  <Box size={18} className="text-zinc-400" />
+                  <h3 className="text-xs font-bold uppercase tracking-[0.2em]">Especificações da Obra</h3>
+                </div>
+                {linkedEntry.agencia && (
+                  <span className="text-xs text-zinc-400 font-medium uppercase">
+                    Agência: <strong className="text-white">{linkedEntry.agencia}</strong>
+                  </span>
+                )}
               </div>
               
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                <div>
-                  <p className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest">Produto</p>
-                  <p className="text-sm font-bold uppercase mt-1">{linkedEntry.product_category}</p>
-                </div>
-                {linkedEntry.product_subcategory && (
-                  <div>
-                    <p className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest">Tipo / Opção</p>
-                    <p className="text-sm font-bold uppercase mt-1">{linkedEntry.product_subcategory}</p>
-                  </div>
-                )}
-                {linkedEntry.product_variant && (
-                  <div>
-                    <p className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest">Material / Acabamento</p>
-                    <p className="text-sm font-bold uppercase mt-1">{linkedEntry.product_variant}</p>
-                  </div>
-                )}
-                {linkedEntry.agencia && (
-                  <div>
-                    <p className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest">Agência</p>
-                    <p className="text-sm font-bold uppercase mt-1">{linkedEntry.agencia}</p>
-                  </div>
-                )}
-              </div>
+              {(() => {
+                const entryProducts = (linkedEntry.products && linkedEntry.products.length > 0)
+                  ? linkedEntry.products
+                  : (linkedEntry.product_category ? [{
+                      product_category: linkedEntry.product_category,
+                      product_subcategory: linkedEntry.product_subcategory,
+                      product_variant: linkedEntry.product_variant,
+                      altura: linkedEntry.altura,
+                      largura: linkedEntry.largura,
+                      profundidade: linkedEntry.profundidade,
+                      observacao: linkedEntry.observacao
+                    }] : []);
 
-              {(linkedEntry.altura || linkedEntry.largura || linkedEntry.profundidade) && (
-                <div className="grid grid-cols-3 gap-4 pt-2">
-                  {linkedEntry.altura && (
-                    <div className="bg-white/5 p-3 rounded-2xl border border-white/5">
-                      <p className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest">Altura</p>
-                      <p className="text-sm font-bold mt-0.5">{linkedEntry.altura}m</p>
-                    </div>
-                  )}
-                  {linkedEntry.largura && (
-                    <div className="bg-white/5 p-3 rounded-2xl border border-white/5">
-                      <p className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest">Largura</p>
-                      <p className="text-sm font-bold mt-0.5">{linkedEntry.largura}m</p>
-                    </div>
-                  )}
-                  {linkedEntry.profundidade && (
-                    <div className="bg-white/5 p-3 rounded-2xl border border-white/5">
-                      <p className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest">Profundidade</p>
-                      <p className="text-sm font-bold mt-0.5">{linkedEntry.profundidade}m</p>
-                    </div>
-                  )}
-                </div>
-              )}
+                return (
+                  <div className="space-y-4">
+                    {entryProducts.map((prod, pIdx) => (
+                      <div 
+                        key={pIdx} 
+                        className={cn(
+                          "space-y-3",
+                          entryProducts.length > 1 && "p-4 rounded-2xl bg-white/5 border border-white/10"
+                        )}
+                      >
+                        {entryProducts.length > 1 && (
+                          <div className="flex items-center gap-2">
+                            <span className="px-2 py-0.5 rounded bg-white/10 text-white text-[10px] font-bold">
+                              Item #{pIdx + 1}
+                            </span>
+                            <span className="text-xs font-bold uppercase tracking-wider text-white">
+                              {prod.product_category}
+                            </span>
+                          </div>
+                        )}
 
-              {linkedEntry.observacao && (
-                <div className="bg-white/5 p-4 rounded-2xl border border-white/5">
-                  <p className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest mb-1">Observações Técnicas</p>
-                  <p className="text-xs font-medium leading-relaxed italic">{linkedEntry.observacao}</p>
-                </div>
-              )}
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                          <div>
+                            <p className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest">Produto</p>
+                            <p className="text-sm font-bold uppercase mt-1">{prod.product_category}</p>
+                          </div>
+                          {prod.product_subcategory && (
+                            <div>
+                              <p className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest">Tipo / Opção</p>
+                              <p className="text-sm font-bold uppercase mt-1">{prod.product_subcategory}</p>
+                            </div>
+                          )}
+                          {prod.product_variant && (
+                            <div>
+                              <p className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest">Material / Acabamento</p>
+                              <p className="text-sm font-bold uppercase mt-1">{prod.product_variant}</p>
+                            </div>
+                          )}
+                        </div>
+
+                        {(prod.altura || prod.largura || prod.profundidade) && (
+                          <div className="grid grid-cols-3 gap-3 pt-1">
+                            {prod.altura && (
+                              <div className="bg-white/5 p-2.5 rounded-xl border border-white/5">
+                                <p className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest">Altura</p>
+                                <p className="text-sm font-bold mt-0.5">{prod.altura}m</p>
+                              </div>
+                            )}
+                            {prod.largura && (
+                              <div className="bg-white/5 p-2.5 rounded-xl border border-white/5">
+                                <p className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest">Largura</p>
+                                <p className="text-sm font-bold mt-0.5">{prod.largura}m</p>
+                              </div>
+                            )}
+                            {prod.profundidade && (
+                              <div className="bg-white/5 p-2.5 rounded-xl border border-white/5">
+                                <p className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest">Profundidade</p>
+                                <p className="text-sm font-bold mt-0.5">{prod.profundidade}m</p>
+                              </div>
+                            )}
+                          </div>
+                        )}
+
+                        {prod.observacao && (
+                          <div className="bg-white/5 p-3 rounded-xl border border-white/5">
+                            <p className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest mb-0.5">Observações do Produto</p>
+                            <p className="text-xs font-medium leading-relaxed italic text-zinc-300">{prod.observacao}</p>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                );
+              })()}
             </div>
           )}
 

@@ -144,6 +144,17 @@ export interface OrderDetails {
   gluing: { items: ProductionItem[] };
 }
 
+export interface ServiceEntryProduct {
+  id?: string;
+  product_category: string;
+  product_subcategory?: string;
+  product_variant?: string;
+  altura?: string;
+  largura?: string;
+  profundidade?: string;
+  observacao?: string;
+}
+
 export interface ServiceEntry {
   id: string | number;
   client_id: string | number;
@@ -152,6 +163,7 @@ export interface ServiceEntry {
   local: 'Sky 1' | 'Sky 2';
   valor: number;
   agencia?: string;
+  products?: ServiceEntryProduct[];
   product_category?: string;
   product_subcategory?: string;
   product_variant?: string;
