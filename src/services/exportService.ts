@@ -172,3 +172,130 @@ export const exportGenericToPDF = (data: any[], columns: { key: string, label: s
   
   doc.save(`${filename}_${new Date().toISOString().split('T')[0]}.pdf`);
 };
+
+export interface MaterialExportItem {
+  descricao: string;
+  preco_medio: number;
+  id?: string | number;
+  codigo?: string | number;
+  nome?: string;
+  name?: string;
+  categoria?: string;
+  category?: string;
+  unidade?: string;
+  unit?: string;
+  quantidade_estoque?: number;
+  quantity?: number;
+  estoque_minimo?: number | null;
+  min_quantity?: number | null;
+  status?: 'Normal' | 'Estoque Baixo';
+  preco_custo_base?: number;
+  cost_price?: number;
+  valor_unitario_medio?: number; // Campo solicitado: Valor Unitário (Média)
+  average_unit_price?: number;
+  valor_unitario_medio_ponderado?: number;
+  weighted_average_unit_price?: number;
+  valor_total_estoque?: number;
+  total_value?: number;
+  entradas_consideradas?: number;
+  ultimo_fornecedor?: string;
+  last_supplier?: string;
+  atualizado_em?: string;
+}
+
+export const computeMaterialExportData = (
+  products: Product[],
+  movements: Movement[] = []
+): MaterialExportItem[] => {
+  const now = new Date().toISOString();
+
+  return products.map(product => {
+    // Entradas do tipo 'IN' com preço unitário > 0 deste produto
+    const inMovements = (movements || []).filter(m => 
+      (m.product_id === product.id || String(m.product_id) === String(product.id)) &&
+      m.type === 'IN' &&
+      Number(m.unit_price || 0) > 0
+    );
+
+    // Média aritmética simples das entradas (mesma fórmula usada nos detalhes do produto)
+    const avgSimple = inMovements.length > 0
+      ? inMovements.reduce((sum, m) => sum + Number(m.unit_price || 0), 0) / inMovements.length
+      : Number(product.cost_price || 0);
+
+    // Média ponderada pela quantidade de entrada
+    const totalInQty = inMovements.reduce((sum, m) => sum + Number(m.quantity || 0), 0);
+    const totalInCost = inMovements.reduce((sum, m) => sum + (Number(m.quantity || 0) * Number(m.unit_price || 0)), 0);
+    const weightedAvg = totalInQty > 0 ? (totalInCost / totalInQty) : Number(product.cost_price || 0);
+
+    const valorUnitarioMedio = Number(avgSimple.toFixed(2));
+    const valorPonderado = Number(weightedAvg.toFixed(2));
+    const precoCusto = Number((product.cost_price || 0).toFixed(2));
+    const totalEstoque = Number(((product.quantity || 0) * valorUnitarioMedio).toFixed(2));
+    const isLow = product.min_quantity !== null && (product.quantity || 0) <= product.min_quantity;
+
+    return {
+      descricao: product.name,
+      preco_medio: valorUnitarioMedio,
+      id: product.id,
+      codigo: product.id,
+      nome: product.name,
+      name: product.name,
+      categoria: product.category,
+      category: product.category,
+      unidade: product.unit,
+      unit: product.unit,
+      quantidade_estoque: product.quantity || 0,
+      quantity: product.quantity || 0,
+      estoque_minimo: product.min_quantity,
+      min_quantity: product.min_quantity,
+      status: isLow ? 'Estoque Baixo' : 'Normal',
+      preco_custo_base: precoCusto,
+      cost_price: precoCusto,
+      valor_unitario_medio: valorUnitarioMedio,
+      average_unit_price: valorUnitarioMedio,
+      valor_unitario_medio_ponderado: valorPonderado,
+      weighted_average_unit_price: valorPonderado,
+      valor_total_estoque: totalEstoque,
+      total_value: totalEstoque,
+      entradas_consideradas: inMovements.length,
+      ultimo_fornecedor: product.last_supplier,
+      last_supplier: product.last_supplier,
+      atualizado_em: now
+    };
+  });
+};
+
+export const exportToJSON = (products: Product[], movements: Movement[] = []) => {
+  const exportData = computeMaterialExportData(products, movements);
+  const jsonString = JSON.stringify(exportData, null, 2);
+  const blob = new Blob([jsonString], { type: 'application/json;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.setAttribute('href', url);
+  link.setAttribute('download', `estoque_materiais_${new Date().toISOString().split('T')[0]}.json`);
+  link.style.visibility = 'hidden';
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+  return exportData;
+};
+
+export const syncMaterialsToApi = async (products: Product[], movements: Movement[] = []) => {
+  const exportData = computeMaterialExportData(products, movements);
+  try {
+    const res = await fetch('/api/inventory/sync-materials', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(exportData)
+    });
+    if (!res.ok) {
+      throw new Error(`Falha ao sincronizar: ${res.statusText}`);
+    }
+    return await res.json();
+  } catch (error) {
+    console.error('Erro na sincronização de materiais:', error);
+    throw error;
+  }
+};
+

@@ -65,6 +65,70 @@ async function startServer() {
     }
   });
 
+  const materialsExportFile = path.join(uploadsDir, 'materials_export.json');
+
+  // CORS preflight for materials export endpoints
+  app.options(['/api/inventory/materials.json', '/api/inventory/materials', '/api/materials'], (req, res) => {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    res.sendStatus(204);
+  });
+
+  // Sync endpoint from ERP client
+  app.post('/api/inventory/sync-materials', (req, res) => {
+    try {
+      const payload = req.body;
+      const dataToSave = {
+        updated_at: new Date().toISOString(),
+        total_items: Array.isArray(payload) ? payload.length : (payload?.items?.length || 0),
+        items: Array.isArray(payload) ? payload : (payload?.items || [])
+      };
+      fs.writeFileSync(materialsExportFile, JSON.stringify(dataToSave, null, 2), 'utf8');
+      res.setHeader('Access-Control-Allow-Origin', '*');
+      res.json({ 
+        success: true, 
+        count: dataToSave.total_items, 
+        updated_at: dataToSave.updated_at 
+      });
+    } catch (error: any) {
+      console.error('Erro ao sincronizar materiais:', error);
+      res.status(500).json({ error: 'Erro ao salvar exportação de materiais: ' + error.message });
+    }
+  });
+
+  // Public/Integration endpoint for other applications
+  const getMaterialsHandler = (req: any, res: any) => {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    res.setHeader('Content-Type', 'application/json; charset=utf-8');
+
+    if (fs.existsSync(materialsExportFile)) {
+      try {
+        const raw = fs.readFileSync(materialsExportFile, 'utf8');
+        const parsed = JSON.parse(raw);
+        const rawItems = Array.isArray(parsed) ? parsed : (parsed.items || []);
+
+        // Retorna APENAS os 2 campos solicitados: descrição e preço médio
+        const result = rawItems.map((item: any) => ({
+          descricao: item.descricao || item.nome || item.name || item.description || '',
+          preco_medio: Number(item.preco_medio ?? item.valor_unitario_medio ?? item.average_unit_price ?? item.cost_price ?? 0)
+        }));
+
+        return res.json(result);
+      } catch (err: any) {
+        return res.status(500).json({ error: 'Erro ao ler arquivo de materiais' });
+      }
+    }
+
+    return res.json([]);
+  };
+
+  app.get('/api/inventory/materials.json', getMaterialsHandler);
+  app.get('/api/inventory/materials', getMaterialsHandler);
+  app.get('/api/materials', getMaterialsHandler);
+
   app.post('/api/backup', async (req, res) => {
     try {
       const dbData = req.body;

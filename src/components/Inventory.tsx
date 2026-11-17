@@ -403,10 +403,11 @@ export const Inventory = ({
       const isDuplicate = movements.some(m => 
         m.type === 'IN' && 
         m.doc_number === stockInData.doc_number && 
-        m.supplier_id === parseInt(stockInData.supplier_id)
+        m.supplier_id?.toString() === stockInData.supplier_id?.toString() &&
+        m.product_id?.toString() === stockInData.product_id?.toString()
       );
       if (isDuplicate) {
-        newFieldErrors.doc_number = 'Nº DOCUMENTO JÁ CADASTRADO PARA ESTE FORNECEDOR';
+        newFieldErrors.doc_number = 'Nº DOCUMENTO JÁ CADASTRADO PARA ESTE FORNECEDOR E PRODUTO';
         hasError = true;
       }
     }
@@ -421,7 +422,7 @@ export const Inventory = ({
       return;
     }
 
-    const product = products.find(p => p.id === parseInt(stockInData.product_id));
+    const product = products.find(p => p.id.toString() === stockInData.product_id.toString());
     const supplier = suppliers.find(s => s.id.toString() === stockInData.supplier_id.toString());
     const supplierName = supplier ? (supplier.tipo === 'PF' ? supplier.name : supplier.razao_social) : '';
 
@@ -928,6 +929,7 @@ export const Inventory = ({
         setNewLocationName={setNewLocationName}
         onAddLocation={handleAddLocation}
         products={products}
+        movements={movements}
         stockInError={stockInError}
         fieldErrors={stockInFieldErrors}
         onClear={resetStockInForm}

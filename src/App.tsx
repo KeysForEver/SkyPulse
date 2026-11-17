@@ -18,7 +18,9 @@ import {
   ShieldCheck,
   Eye,
   EyeOff,
-  Briefcase
+  Briefcase,
+  PanelLeftClose,
+  PanelLeftOpen
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
@@ -60,6 +62,7 @@ import { FinancialDetailModal } from './components/FinancialDetailModal';
 import { maskValue, formatCurrency, formatNumber } from './lib/valueMask';
 import { ConfirmModal } from './components/Common';
 import { ProfileModal } from './components/ProfileModal';
+import { syncMaterialsToApi } from './services/exportService';
 
 // --- Login Component ---
 
@@ -695,6 +698,13 @@ export default function App() {
     setFinancialEntries(financial);
   }, [movements, products, assets]);
 
+  // Sincroniza silenciosamente os dados de materiais para a API REST externa (sem interferir na UI)
+  useEffect(() => {
+    if (products && products.length > 0) {
+      syncMaterialsToApi(products, movements).catch(() => {});
+    }
+  }, [products, movements]);
+
   // Load tab dependencies lazily
   const loadTabDependencies = async (tab: string, forceRefresh = false) => {
     if (!user) return;
@@ -1321,7 +1331,7 @@ export default function App() {
   const handleStockIn = async (data: any) => {
     const toastId = showToast('Processando entrada de estoque...', 'loading');
     try {
-      const product = products.find(p => p.id === parseInt(data.product_id));
+      const product = products.find(p => p.id.toString() === data.product_id.toString());
       
       let invoiceUrls = [];
       if (data.invoices && data.invoices.length > 0) {
@@ -1345,15 +1355,19 @@ export default function App() {
       await apiService.stockIn(submissionData);
       logAction('ENTRADA DE ESTOQUE', `PRODUTO: ${product?.name || data.product_id}, QTD: ${data.quantity}`);
       const qty = parseFloat(data.quantity) || 0;
-      setProducts(prev => prev.map(p => p.id === parseInt(data.product_id) ? { ...p, quantity: (p.quantity || 0) + qty } : p));
+      setProducts(prev => prev.map(p => p.id.toString() === data.product_id.toString() ? { ...p, quantity: (p.quantity || 0) + qty } : p));
       const newMov = {
         id: Date.now().toString(),
         product_id: data.product_id,
+        product_name: data.product_name || product?.name || '',
         type: 'IN',
         quantity: qty,
         unit_price: parseFloat(data.unit_price) || 0,
+        supplier_id: data.supplier_id,
         supplier_name: data.supplier_name,
-        invoice_number: data.invoice_number,
+        doc_number: data.doc_number,
+        issue_date: data.issue_date,
+        xml: data.xml,
         invoice_pdf: submissionData.invoice_pdf,
         location: data.location,
         date: new Date().toISOString()
@@ -1737,22 +1751,34 @@ export default function App() {
       {/* Sidebar */}
       <aside className={cn(
         "fixed inset-y-0 left-0 z-50 bg-white border-r border-zinc-200 transition-all duration-300 lg:relative lg:translate-x-0 dark:bg-zinc-950 dark:border-zinc-800 flex-shrink-0 shadow-2xl lg:shadow-none",
-        isSidebarCollapsed ? "w-20" : "w-72 sm:w-64",
+        isSidebarCollapsed ? "w-72 sm:w-64 lg:w-20" : "w-72 sm:w-64",
         !isSidebarOpen && "-translate-x-full lg:translate-x-0"
       )}>
         <div className="flex flex-col h-full overflow-hidden">
-          <div className={cn("p-4 sm:p-5 flex items-center justify-between border-b border-zinc-100 dark:border-zinc-800/80", isSidebarCollapsed && "px-2 justify-center")}>
-            <div className="flex items-center gap-3 overflow-hidden">
+          <div className={cn(
+            "h-16 px-4 flex items-center justify-between border-b border-zinc-100 dark:border-zinc-800/80 flex-shrink-0",
+            isSidebarCollapsed && "lg:px-2 lg:justify-center"
+          )}>
+            <div className={cn("flex items-center gap-3 overflow-hidden", isSidebarCollapsed && "lg:hidden")}>
               <div className="w-9 h-9 bg-zinc-900 rounded-xl flex items-center justify-center dark:bg-zinc-100 flex-shrink-0 shadow-sm">
                 <Package className="text-white dark:text-zinc-900" size={20} />
               </div>
-              {!isSidebarCollapsed && (
-                <div className="flex flex-col min-w-0">
-                  <span className="font-bold text-base tracking-tight dark:text-white truncate">SkySmart</span>
-                  <span className="text-[10px] text-zinc-400 dark:text-zinc-500 uppercase tracking-widest font-semibold">ERP System</span>
-                </div>
-              )}
+              <div className="flex flex-col min-w-0">
+                <span className="font-bold text-base tracking-tight dark:text-white truncate">SkySmart</span>
+                <span className="text-[10px] text-zinc-400 dark:text-zinc-500 uppercase tracking-widest font-semibold">ERP System</span>
+              </div>
             </div>
+
+            {/* Desktop collapse/expand toggle inside the sidebar */}
+            <button
+              onClick={handleToggleSidebar}
+              className="hidden lg:inline-flex p-2 rounded-xl text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-800/80 transition-colors active:scale-95 focus:outline-none"
+              title={isSidebarCollapsed ? "Expandir menu lateral" : "Recolher menu lateral"}
+              aria-label={isSidebarCollapsed ? "Expandir menu lateral" : "Recolher menu lateral"}
+            >
+              {isSidebarCollapsed ? <PanelLeftOpen size={20} /> : <PanelLeftClose size={18} />}
+            </button>
+
             {/* Close button strictly on mobile drawer */}
             <button 
               onClick={() => setIsSidebarOpen(false)}
@@ -1833,9 +1859,9 @@ export default function App() {
           <div className="flex items-center gap-2.5 sm:gap-4 min-w-0">
             <button 
               onClick={handleToggleSidebar} 
-              className="p-2 rounded-xl text-zinc-600 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800/80 transition-colors active:scale-95 focus:outline-none"
-              title={isSidebarCollapsed ? "Expandir menu lateral" : "Recolher menu lateral"}
-              aria-label="Alternar menu"
+              className="p-2 rounded-xl text-zinc-600 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800/80 transition-colors active:scale-95 focus:outline-none lg:hidden"
+              title="Abrir menu"
+              aria-label="Abrir menu"
             >
               <Menu size={22} />
             </button>

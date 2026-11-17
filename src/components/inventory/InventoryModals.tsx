@@ -1,5 +1,5 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { X, Camera, Package, AlertTriangle, Plus, Edit, Trash2, ArrowDownLeft, ArrowUpRight, Search, ChevronDown, Barcode, FileText, Tag, Hash, MapPin, User } from 'lucide-react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
+import { X, Camera, Package, AlertTriangle, Plus, Edit, Trash2, ArrowDownLeft, ArrowUpRight, Search, ChevronDown, Barcode, FileText, Tag, Hash, MapPin, User, History, Check, ExternalLink } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Html5Qrcode } from 'html5-qrcode';
 import { Product, Supplier, Order, Movement } from '../../types';
@@ -404,6 +404,7 @@ export const StockInModal = ({
   setNewLocationName,
   onAddLocation,
   products,
+  movements = [],
   stockInError,
   fieldErrors,
   onClear,
@@ -414,8 +415,105 @@ export const StockInModal = ({
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isScanning, setIsScanning] = useState(false);
   const [cameraError, setCameraError] = useState<string | null>(null);
+  const [showRecentInvoices, setShowRecentInvoices] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const scannerRef = useRef<Html5Qrcode | null>(null);
+
+  useEffect(() => {
+    if (!isOpen) {
+      setShowRecentInvoices(false);
+    }
+  }, [isOpen]);
+
+  const recentInvoices = useMemo(() => {
+    const inMovements = [...(movements || [])]
+      .filter((m: Movement) => m.type === 'IN' && m.invoice_pdf)
+      .sort((a: Movement, b: Movement) => {
+        const timeA = new Date(a.date).getTime() || 0;
+        const timeB = new Date(b.date).getTime() || 0;
+        return timeB - timeA;
+      });
+
+    const unique: Array<{
+      name: string;
+      url: string;
+      doc_number?: string;
+      supplier_id?: string | number;
+      supplier_name?: string;
+      issue_date?: string;
+      xml?: string;
+      date?: string;
+    }> = [];
+    const seenUrls = new Set<string>();
+
+    for (const m of inMovements) {
+      let parsed: any[] = [];
+      try {
+        const raw = JSON.parse(m.invoice_pdf || '[]');
+        if (Array.isArray(raw)) {
+          parsed = raw;
+        } else if (typeof raw === 'string' && raw) {
+          parsed = [{ name: 'Nota Fiscal', url: raw }];
+        }
+      } catch {
+        if (typeof m.invoice_pdf === 'string' && m.invoice_pdf.trim()) {
+          parsed = [{ name: 'Nota Fiscal', url: m.invoice_pdf.trim() }];
+        }
+      }
+
+      for (const inv of parsed) {
+        if (!inv?.url || seenUrls.has(inv.url)) continue;
+        seenUrls.add(inv.url);
+        unique.push({
+          name: inv.name || 'Nota Fiscal',
+          url: inv.url,
+          doc_number: m.doc_number,
+          supplier_id: m.supplier_id,
+          supplier_name: m.supplier_name,
+          issue_date: m.issue_date,
+          xml: m.xml,
+          date: m.date
+        });
+        if (unique.length >= 3) break;
+      }
+      if (unique.length >= 3) break;
+    }
+
+    return unique;
+  }, [movements]);
+
+  const handleToggleRecentInvoice = (inv: {
+    name: string;
+    url: string;
+    doc_number?: string;
+    supplier_id?: string | number;
+    supplier_name?: string;
+    issue_date?: string;
+    xml?: string;
+  }) => {
+    setStockInData((prev: any) => {
+      const currentInvoices = prev.invoices || [];
+      const alreadyAdded = currentInvoices.some((f: any) => f?.url && f.url === inv.url);
+
+      if (alreadyAdded) {
+        return {
+          ...prev,
+          invoices: currentInvoices.filter((f: any) => f?.url !== inv.url)
+        };
+      }
+
+      const shouldFillIssueDate = !prev.supplier_id && !prev.doc_number && Boolean(inv.issue_date);
+      return {
+        ...prev,
+        supplier_id: prev.supplier_id || (inv.supplier_id ? inv.supplier_id.toString() : ''),
+        doc_number: prev.doc_number || inv.doc_number || '',
+        xml: prev.xml || inv.xml || '',
+        issue_date: shouldFillIssueDate ? inv.issue_date : prev.issue_date,
+        invoices: [...currentInvoices, { name: inv.name, url: inv.url }]
+      };
+    });
+    setShowRecentInvoices(false);
+  };
 
   const handleStartScanning = async () => {
     setCameraError(null);
@@ -719,6 +817,23 @@ export const StockInModal = ({
                     <FileText size={18} />
                     <span>ADICIONAR ANEXO (PDF/WEBP)</span>
                   </label>
+                  {recentInvoices.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => setShowRecentInvoices(prev => !prev)}
+                      className={cn(
+                        "px-2.5 py-2 rounded-lg border text-xs font-bold flex items-center gap-1.5 transition-colors flex-shrink-0",
+                        showRecentInvoices
+                          ? "bg-zinc-900 text-white border-zinc-900 dark:bg-zinc-100 dark:text-zinc-900 dark:border-zinc-100"
+                          : "border-zinc-200 dark:border-zinc-800 text-zinc-500 hover:text-zinc-900 hover:border-zinc-400 dark:text-zinc-400 dark:hover:text-zinc-100 dark:hover:border-zinc-700"
+                      )}
+                      title="Selecionar uma das 3 últimas notas enviadas"
+                      aria-label="Selecionar uma das 3 últimas notas enviadas"
+                    >
+                      <History size={16} />
+                      <span className="hidden sm:inline uppercase">Últimas 3</span>
+                    </button>
+                  )}
                 </div>
                 
                 {stockInData.invoices && stockInData.invoices.length > 0 && (
@@ -728,6 +843,11 @@ export const StockInModal = ({
                         <div className="flex items-center gap-2 truncate">
                           <FileText size={14} className="text-zinc-400 flex-shrink-0" />
                           <span className="text-zinc-600 dark:text-zinc-300 truncate">{file.name}</span>
+                          {!(file instanceof File) && file.url && (
+                            <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 uppercase flex-shrink-0">
+                              Referência
+                            </span>
+                          )}
                         </div>
                         <button 
                           type="button"
@@ -742,6 +862,70 @@ export const StockInModal = ({
                         </button>
                       </div>
                     ))}
+                  </div>
+                )}
+
+                {recentInvoices.length > 0 && showRecentInvoices && (
+                  <div className="pt-1.5 space-y-1.5">
+                    <div className="flex items-center gap-1.5 text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">
+                      <History size={12} />
+                      <span>Reutilizar uma das 3 últimas notas enviadas</span>
+                    </div>
+                    <div className="space-y-1">
+                      {recentInvoices.map((inv, idx) => {
+                        const isSelected = (stockInData.invoices || []).some((f: any) => f?.url && f.url === inv.url);
+                        const metaParts = [
+                          inv.doc_number ? `NF ${inv.doc_number}` : null,
+                          inv.supplier_name || null
+                        ].filter(Boolean);
+
+                        return (
+                          <div
+                            key={`${inv.url}-${idx}`}
+                            className={cn(
+                              "flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-lg border text-[11px] transition-colors",
+                              isSelected
+                                ? "bg-emerald-50 border-emerald-200 text-emerald-800 dark:bg-emerald-500/10 dark:border-emerald-500/30 dark:text-emerald-300"
+                                : "bg-zinc-50/70 border-zinc-200/80 text-zinc-700 hover:border-zinc-300 hover:bg-zinc-100/70 dark:bg-zinc-900/40 dark:border-zinc-800 dark:text-zinc-300 dark:hover:border-zinc-700"
+                            )}
+                          >
+                            <button
+                              type="button"
+                              onClick={() => handleToggleRecentInvoice(inv)}
+                              className="flex-1 flex items-center gap-2 min-w-0 text-left"
+                              title={isSelected ? "Remover nota de referência" : "Usar esta nota fiscal como referência"}
+                            >
+                              <div className={cn(
+                                "w-4 h-4 rounded flex items-center justify-center flex-shrink-0 border transition-colors",
+                                isSelected
+                                  ? "bg-emerald-600 border-emerald-600 text-white"
+                                  : "border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-950 text-transparent"
+                              )}>
+                                <Check size={11} strokeWidth={3} />
+                              </div>
+                              <div className="min-w-0 flex-1">
+                                <p className="font-medium truncate">{inv.name}</p>
+                                {metaParts.length > 0 && (
+                                  <p className="text-[10px] text-zinc-400 dark:text-zinc-500 truncate uppercase">
+                                    {metaParts.join(' • ')}
+                                  </p>
+                                )}
+                              </div>
+                            </button>
+                            <a
+                              href={inv.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              onClick={(e) => e.stopPropagation()}
+                              className="p-1 text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 rounded transition-colors flex-shrink-0"
+                              title="Visualizar nota fiscal"
+                            >
+                              <ExternalLink size={13} />
+                            </a>
+                          </div>
+                        );
+                      })}
+                    </div>
                   </div>
                 )}
               </div>
